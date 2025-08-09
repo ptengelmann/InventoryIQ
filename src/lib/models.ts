@@ -97,7 +97,11 @@ export class DatabaseService {
         await collection.updateOne(
           { sku: rec.sku },
           {
-            $push: { analyses: historyEntry },
+            $push: { 
+              analyses: {
+                $each: [historyEntry]
+              }
+            },
             $set: { updatedAt: new Date() },
             $setOnInsert: { createdAt: new Date() }
           },

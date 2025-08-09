@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { AIEngine } from './ai-engine'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -25,26 +26,97 @@ export function parseCSVData(csvContent: string) {
   return { headers, data }
 }
 
-// Price recommendation logic (basic AI simulation for MVP)
+// Enhanced AI-powered price recommendation
 export function calculatePriceRecommendation(
   currentPrice: number,
   weeklySales: number,
-  inventoryLevel: number
+  inventoryLevel: number,
+  sku: string = 'unknown'
 ) {
+  // Use the real AI engine for analysis
+  const skuData = [{
+    sku,
+    currentPrice,
+    currentInventory: inventoryLevel,
+    weeklySales
+  }]
+  
+  const aiResult = AIEngine.analyzeBatch(skuData)
+  const result = aiResult.batch_results[0]
+  
+  if (!result) {
+    // Fallback to simple logic if AI fails
+    return simpleRecommendation(currentPrice, weeklySales, inventoryLevel)
+  }
+  
+  const forecast = result.forecast
+  let newPrice = currentPrice
+  
+  switch (forecast.recommendation.action) {
+    case 'increase_price':
+      newPrice = currentPrice * 1.05 // 5% increase
+      break
+    case 'decrease_price':
+      newPrice = currentPrice * 0.95 // 5% decrease
+      break
+    case 'maintain_price':
+      newPrice = currentPrice
+      break
+    case 'reorder_stock':
+      newPrice = currentPrice // Keep price same, focus on restocking
+      break
+  }
+  
+  const changePercentage = ((newPrice - currentPrice) / currentPrice) * 100
+  
+  return {
+    currentPrice,
+    recommendedPrice: Math.round(newPrice * 100) / 100,
+    changePercentage: Math.round(changePercentage * 100) / 100,
+    reason: getAIReason(forecast, inventoryLevel, weeklySales),
+    aiInsights: result.ai_insights,
+    confidence: forecast.confidence_interval.confidence_level,
+    predictedDemand: forecast.predicted_demand,
+    trend: forecast.trend
+  }
+}
+
+function getAIReason(forecast: any, inventory: number, weeklySales: number): string {
+  const weeksOfStock = inventory / (weeklySales || 1)
+  
+  switch (forecast.recommendation.action) {
+    case 'increase_price':
+      if (forecast.trend === 'increasing') {
+        return `Strong upward demand trend (${Math.round(forecast.confidence_interval.confidence_level * 100)}% confidence) - optimize pricing`
+      }
+      return `Low stock situation - increase price to manage demand`
+    
+    case 'decrease_price':
+      if (weeksOfStock > 8) {
+        return `Overstock detected (${weeksOfStock.toFixed(1)} weeks) - promotional pricing recommended`
+      }
+      return `Declining demand trend - stimulate sales with lower price`
+    
+    case 'reorder_stock':
+      return `Critical stock shortage predicted - immediate reordering required`
+    
+    default:
+      return `AI analysis suggests maintaining current price (${Math.round(forecast.confidence_interval.confidence_level * 100)}% confidence)`
+  }
+}
+
+// Fallback simple recommendation
+function simpleRecommendation(currentPrice: number, weeklySales: number, inventoryLevel: number) {
   const salesVelocity = weeklySales
   const weeksOfStock = inventoryLevel / (salesVelocity || 1)
   
   let recommendedChange = 0
   
-  // Basic pricing logic
   if (weeksOfStock < 2) {
-    // Low stock, potentially increase price
     recommendedChange = Math.min(0.05, (2 - weeksOfStock) * 0.025)
   } else if (weeksOfStock > 8) {
-    // High stock, potentially decrease price
     recommendedChange = Math.max(-0.05, -(weeksOfStock - 8) * 0.01)
   } else if (salesVelocity > 10) {
-    // High sales velocity, can increase price slightly
     recommendedChange = 0.02
   }
   
@@ -54,15 +126,15 @@ export function calculatePriceRecommendation(
     currentPrice,
     recommendedPrice: Math.round(newPrice * 100) / 100,
     changePercentage: Math.round(recommendedChange * 10000) / 100,
-    reason: getRecommendationReason(weeksOfStock, salesVelocity, recommendedChange)
+    reason: getSimpleReason(weeksOfStock, salesVelocity, recommendedChange),
+    confidence: 0.7,
+    aiInsights: ['Basic analysis - upgrade to AI for advanced insights'],
+    predictedDemand: Math.round(weeklySales * 4.3), // Rough monthly estimate
+    trend: 'stable' as const
   }
 }
 
-function getRecommendationReason(
-  weeksOfStock: number, 
-  salesVelocity: number, 
-  change: number
-): string {
+function getSimpleReason(weeksOfStock: number, salesVelocity: number, change: number): string {
   if (change > 0.03) return "High demand, low stock - optimize revenue"
   if (change > 0) return "Good performance - small price increase"
   if (change < -0.03) return "Overstock situation - boost sales"
@@ -70,12 +142,23 @@ function getRecommendationReason(
   return "Optimal pricing - maintain current price"
 }
 
-// Inventory risk assessment
+// Enhanced inventory risk assessment with AI
 export function assessInventoryRisk(
   inventoryLevel: number,
   weeklySales: number,
   sku: string
 ) {
+  // Use AI for more sophisticated risk assessment
+  const skuData = [{
+    sku,
+    currentPrice: 0, // Not needed for risk assessment
+    currentInventory: inventoryLevel,
+    weeklySales
+  }]
+  
+  const aiResult = AIEngine.analyzeBatch(skuData)
+  const result = aiResult.batch_results[0]
+  
   const velocity = weeklySales || 0.1
   const weeksOfStock = inventoryLevel / velocity
   
@@ -101,13 +184,22 @@ export function assessInventoryRisk(
     priority = weeksOfStock / 3
   }
   
+  // Enhance with AI insights if available
+  let message = getRiskMessage(riskType, weeksOfStock, riskLevel)
+  if (result?.forecast) {
+    const predictedDemand = result.forecast.predicted_demand
+    const confidence = result.forecast.confidence_interval.confidence_level
+    message += ` (AI predicts ${predictedDemand} units demand, ${Math.round(confidence * 100)}% confidence)`
+  }
+  
   return {
     sku,
     riskLevel,
     riskType,
     weeksOfStock: Math.round(weeksOfStock * 10) / 10,
     priority,
-    message: getRiskMessage(riskType, weeksOfStock, riskLevel)
+    message,
+    aiEnhanced: !!result?.forecast
   }
 }
 
