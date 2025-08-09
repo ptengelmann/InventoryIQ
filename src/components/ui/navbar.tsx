@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { BarChart3, Menu, X, User, LogOut, History, Settings, ChevronDown } from 'lucide-react'
+import { BarChart3, Menu, X, User, LogOut, History, Settings, ChevronDown, Bell } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -82,6 +82,10 @@ export function Navbar({ onLogin, onSignup }: NavbarProps) {
           <div className="hidden md:flex items-center space-x-8">
             <NavLink href="/dashboard">Dashboard</NavLink>
             <NavLink href="/analytics">Analytics</NavLink>
+            <NavLink href="/alerts" className="flex items-center space-x-1">
+              <Bell className="h-4 w-4" />
+              <span>Alerts</span>
+            </NavLink>
             <NavLink href="/history">History</NavLink>
             <NavLink href="/integrations">Integrations</NavLink>
           </div>
@@ -110,7 +114,7 @@ export function Navbar({ onLogin, onSignup }: NavbarProps) {
                   )} />
                 </button>
 
-                {/* User Dropdown - SINGLE VERSION */}
+                {/* User Dropdown */}
                 {isUserMenuOpen && (
                   <div 
                     className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50"
@@ -123,6 +127,14 @@ export function Navbar({ onLogin, onSignup }: NavbarProps) {
                     >
                       <User className="h-4 w-4" />
                       <span>Profile</span>
+                    </Link>
+                    <Link 
+                      href="/alerts" 
+                      className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <Bell className="h-4 w-4" />
+                      <span>Alert Management</span>
                     </Link>
                     <Link 
                       href="/history" 
@@ -196,6 +208,10 @@ export function Navbar({ onLogin, onSignup }: NavbarProps) {
               </NavLink>
               <NavLink href="/analytics" className="block px-3 py-2">
                 Analytics
+              </NavLink>
+              <NavLink href="/alerts" className="flex items-center space-x-2 px-3 py-2">
+                <Bell className="h-4 w-4" />
+                <span>Alerts</span>
               </NavLink>
               <NavLink href="/history" className="block px-3 py-2">
                 History

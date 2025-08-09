@@ -1,5 +1,5 @@
-// Smart Alert Engine for InventoryIQ
-// Proactive monitoring and intelligent notifications
+// COMPLETE REPLACEMENT: /lib/alert-engine.ts
+// Smart Alert Engine for InventoryIQ with Fixed Unique IDs
 
 import { AIEngine } from './ai-engine'
 
@@ -49,77 +49,87 @@ export interface Alert {
 }
 
 export class AlertEngine {
-  
-  // Default alert rules for new users
-  static getDefaultAlertRules(): AlertRule[] {
-    return [
-      {
-        id: 'critical-stockout',
-        name: 'Critical Stockout Warning',
-        type: 'stockout',
-        severity: 'critical',
-        conditions: {
-          weeks_of_stock_below: 1.5,
-          confidence_threshold: 0.7
-        },
-        delivery_methods: ['email', 'push'],
-        enabled: true,
-        frequency: 'immediate'
-      },
-      {
-        id: 'stockout-warning',
-        name: 'Low Stock Alert',
-        type: 'stockout',
-        severity: 'high',
-        conditions: {
-          weeks_of_stock_below: 3,
-          confidence_threshold: 0.6
-        },
-        delivery_methods: ['email'],
-        enabled: true,
-        frequency: 'daily'
-      },
-      {
-        id: 'overstock-alert',
-        name: 'Overstock Detection',
-        type: 'overstock',
-        severity: 'medium',
-        conditions: {
-          weeks_of_stock_above: 12,
-          confidence_threshold: 0.7
-        },
-        delivery_methods: ['email'],
-        enabled: true,
-        frequency: 'weekly'
-      },
-      {
-        id: 'price-opportunity',
-        name: 'Revenue Opportunity',
-        type: 'price_opportunity',
-        severity: 'medium',
-        conditions: {
-          revenue_opportunity_above: 100,
-          confidence_threshold: 0.8
-        },
-        delivery_methods: ['email'],
-        enabled: true,
-        frequency: 'daily'
-      },
-      {
-        id: 'demand-spike',
-        name: 'Demand Spike Detection',
-        type: 'demand_spike',
-        severity: 'high',
-        conditions: {
-          demand_change_percentage: 50,
-          confidence_threshold: 0.75
-        },
-        delivery_methods: ['email', 'push'],
-        enabled: true,
-        frequency: 'immediate'
-      }
-    ]
+  // Counter to ensure unique IDs
+  private static alertCounter = 0
+
+  // Generate truly unique alert ID
+  private static generateUniqueId(sku: string, ruleType: string): string {
+    const timestamp = Date.now()
+    const counter = ++AlertEngine.alertCounter
+    const random = Math.random().toString(36).substr(2, 8)
+    return `alert-${timestamp}-${counter}-${sku}-${ruleType}-${random}`
   }
+  
+// Default alert rules for new users
+static getDefaultAlertRules(): AlertRule[] {
+  return [
+    {
+      id: 'critical-stockout',
+      name: 'Critical Stockout Warning',
+      type: 'stockout',
+      severity: 'critical',
+      conditions: {
+        weeks_of_stock_below: 2,
+        confidence_threshold: 0.5
+      },
+      delivery_methods: ['email', 'push'],
+      enabled: true,
+      frequency: 'immediate'
+    },
+    {
+      id: 'stockout-warning',
+      name: 'Low Stock Alert',
+      type: 'stockout',
+      severity: 'high',
+      conditions: {
+        weeks_of_stock_below: 4,
+        confidence_threshold: 0.4
+      },
+      delivery_methods: ['email'],
+      enabled: true,
+      frequency: 'daily'
+    },
+    {
+      id: 'overstock-alert',
+      name: 'Overstock Detection',
+      type: 'overstock',
+      severity: 'medium',
+      conditions: {
+        weeks_of_stock_above: 10,
+        confidence_threshold: 0.5
+      },
+      delivery_methods: ['email'],
+      enabled: true,
+      frequency: 'weekly'
+    },
+    {
+      id: 'price-opportunity',
+      name: 'Revenue Opportunity',
+      type: 'price_opportunity',
+      severity: 'medium',
+      conditions: {
+        revenue_opportunity_above: 50,
+        confidence_threshold: 0.6
+      },
+      delivery_methods: ['email'],
+      enabled: true,
+      frequency: 'daily'
+    },
+    {
+      id: 'demand-spike',
+      name: 'Demand Spike Detection',
+      type: 'demand_spike',
+      severity: 'high',
+      conditions: {
+        demand_change_percentage: 30,
+        confidence_threshold: 0.6
+      },
+      delivery_methods: ['email', 'push'],
+      enabled: true,
+      frequency: 'immediate'
+    }
+  ]
+}
 
   // Analyze inventory data and generate alerts
   static analyzeAndGenerateAlerts(
@@ -271,8 +281,9 @@ export class AlertEngine {
     
     if (!triggered) return null
     
+    // Use the new unique ID generator
     return {
-      id: `alert-${Date.now()}-${sku}`,
+      id: AlertEngine.generateUniqueId(sku, rule.type),
       rule_id: rule.id,
       sku,
       type: rule.type,
@@ -316,12 +327,6 @@ export class AlertEngine {
     console.log(`Message: ${alert.message}`)
     console.log(`Action: ${alert.action_required}`)
     console.log(`Delivery via: ${deliveryMethods.join(', ')}`)
-    
-    // In production, integrate with:
-    // - SendGrid/Mailgun for email
-    // - Twilio for SMS
-    // - Firebase for push notifications
-    // - Slack API for Slack notifications
     
     return true
   }
@@ -371,31 +376,31 @@ export class AlertEngine {
     }
   }
 
-  // Generate human-readable alert insights
-  static generateInsights(alerts: Alert[]): string[] {
-    const insights: string[] = []
-    
-    const criticalCount = alerts.filter(a => a.severity === 'critical').length
-    if (criticalCount > 0) {
-      insights.push(`🚨 ${criticalCount} critical alert${criticalCount > 1 ? 's' : ''} require immediate attention`)
-    }
-    
-    const stockoutAlerts = alerts.filter(a => a.type === 'stockout')
-    if (stockoutAlerts.length > 0) {
-      insights.push(`📦 ${stockoutAlerts.length} SKU${stockoutAlerts.length > 1 ? 's' : ''} at risk of stockout`)
-    }
-    
-    const opportunities = alerts.filter(a => a.impact.profit_opportunity && a.impact.profit_opportunity > 0)
-    if (opportunities.length > 0) {
-      const totalOpportunity = opportunities.reduce((sum, a) => sum + (a.impact.profit_opportunity || 0), 0)
-      insights.push(`💰 $${Math.round(totalOpportunity)} in revenue opportunities identified`)
-    }
-    
-    const demandSpikes = alerts.filter(a => a.type === 'demand_spike')
-    if (demandSpikes.length > 0) {
-      insights.push(`📈 ${demandSpikes.length} demand surge${demandSpikes.length > 1 ? 's' : ''} detected`)
-    }
-    
-    return insights
+// Generate human-readable alert insights
+static generateInsights(alerts: Alert[]): string[] {
+  const insights: string[] = []
+  
+  const criticalCount = alerts.filter(a => a.severity === 'critical').length
+  if (criticalCount > 0) {
+    insights.push(`${criticalCount} critical alert${criticalCount > 1 ? 's' : ''} require immediate attention`)
   }
+  
+  const stockoutAlerts = alerts.filter(a => a.type === 'stockout')
+  if (stockoutAlerts.length > 0) {
+    insights.push(`${stockoutAlerts.length} SKU${stockoutAlerts.length > 1 ? 's' : ''} at risk of stockout`)
+  }
+  
+  const opportunities = alerts.filter(a => a.impact.profit_opportunity && a.impact.profit_opportunity > 0)
+  if (opportunities.length > 0) {
+    const totalOpportunity = opportunities.reduce((sum, a) => sum + (a.impact.profit_opportunity || 0), 0)
+    insights.push(`$${Math.round(totalOpportunity)} in revenue opportunities identified`)
+  }
+  
+  const demandSpikes = alerts.filter(a => a.type === 'demand_spike')
+  if (demandSpikes.length > 0) {
+    insights.push(`${demandSpikes.length} demand surge${demandSpikes.length > 1 ? 's' : ''} detected`)
+  }
+  
+  return insights
+}
 }

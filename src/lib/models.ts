@@ -1,4 +1,8 @@
-// Database schema types for InventoryIQ
+// COMPLETE REPLACEMENT: /lib/models.ts
+// Database schema types and service functions for InventoryIQ
+
+import { Alert } from './alert-engine'
+import clientPromise from './mongodb'
 
 export interface AnalysisRecord {
   _id?: string
@@ -32,6 +36,8 @@ export interface AnalysisRecord {
     priority: number
     message: string
   }[]
+  smartAlerts: Alert[]
+  alertsGenerated: boolean
   userAgent?: string
   ipAddress?: string
 }
@@ -52,9 +58,6 @@ export interface SKUHistory {
   updatedAt: Date
 }
 
-// Database service functions
-import clientPromise from './mongodb'
-
 export class DatabaseService {
   private static async getDb() {
     const client = await clientPromise
@@ -68,7 +71,7 @@ export class DatabaseService {
       const result = await db.collection('analyses').insertOne(analysis)
       
       // Also update SKU history
-      await this.updateSKUHistory(analysis)
+      await this.updateSKUHistory(analysis as AnalysisRecord)
       
       return result.insertedId.toString()
     } catch (error) {
@@ -98,10 +101,8 @@ export class DatabaseService {
           { sku: rec.sku },
           {
             $push: { 
-              analyses: {
-                $each: [historyEntry]
-              }
-            },
+              analyses: historyEntry
+            } as any, // Type assertion to fix MongoDB typing issue
             $set: { updatedAt: new Date() },
             $setOnInsert: { createdAt: new Date() }
           },
@@ -134,6 +135,164 @@ export class DatabaseService {
     }
   }
 
+  // Get specific analysis by ID
+  static async getAnalysisById(analysisId: string): Promise<AnalysisRecord | null> {
+    try {
+      const db = await this.getDb()
+      const analysis = await db.collection('analyses').findOne({ uploadId: analysisId })
+      
+      if (!analysis) return null
+      
+      return {
+        ...analysis,
+        _id: analysis._id.toString()
+      } as AnalysisRecord
+    } catch (error) {
+      console.error('Error fetching analysis:', error)
+      return null
+    }
+  }
+
+  // Update alert status (enhanced to support snooze)
+  static async updateAlertStatus(
+    analysisId: string, 
+    alertId: string, 
+    status: 'acknowledged' | 'resolved' | 'snoozed'
+  ): Promise<boolean> {
+    try {
+      const db = await this.getDb()
+      
+      let updateDoc: any = {}
+      
+      if (status === 'resolved') {
+        // If resolving, also acknowledge
+        updateDoc = { 
+          'smartAlerts.$.acknowledged': true, 
+          'smartAlerts.$.resolved': true,
+          'smartAlerts.$.resolvedAt': new Date()
+        }
+      } else if (status === 'acknowledged') {
+        updateDoc = { 
+          'smartAlerts.$.acknowledged': true,
+          'smartAlerts.$.acknowledgedAt': new Date()
+        }
+      } else if (status === 'snoozed') {
+        updateDoc = { 
+          'smartAlerts.$.snoozed': true,
+          'smartAlerts.$.snoozedAt': new Date(),
+          'smartAlerts.$.snoozeUntil': new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+        }
+      }
+      
+      const result = await db.collection('analyses').updateOne(
+        { uploadId: analysisId, 'smartAlerts.id': alertId },
+        { $set: updateDoc }
+      )
+      
+      return result.modifiedCount > 0
+    } catch (error) {
+      console.error('Error updating alert status:', error)
+      return false
+    }
+  }
+
+  // Delete specific alert
+  static async deleteAlert(analysisId: string, alertId: string): Promise<boolean> {
+    try {
+      const db = await this.getDb()
+      
+      const result = await db.collection('analyses').updateOne(
+        { uploadId: analysisId },
+        { $pull: { smartAlerts: { id: alertId } } as any }
+      )
+      
+      return result.modifiedCount > 0
+    } catch (error) {
+      console.error('Error deleting alert:', error)
+      return false
+    }
+  }
+
+  // Delete all alerts for an analysis
+  static async deleteAllAlertsForAnalysis(analysisId: string): Promise<boolean> {
+    try {
+      const db = await this.getDb()
+      
+      const result = await db.collection('analyses').updateOne(
+        { uploadId: analysisId },
+        { $set: { smartAlerts: [] } }
+      )
+      
+      return result.modifiedCount > 0
+    } catch (error) {
+      console.error('Error deleting all alerts:', error)
+      return false
+    }
+  }
+
+  // Delete entire analysis (and all its alerts)
+  static async deleteAnalysis(analysisId: string): Promise<boolean> {
+    try {
+      const db = await this.getDb()
+      
+      // Also delete from SKU history
+      await db.collection('sku_history').updateMany(
+        {},
+        { $pull: { analyses: { analysisId: analysisId } } as any }
+      )
+      
+      const result = await db.collection('analyses').deleteOne({ uploadId: analysisId })
+      
+      return result.deletedCount > 0
+    } catch (error) {
+      console.error('Error deleting analysis:', error)
+      return false
+    }
+  }
+
+  // Get all analyses (for management)
+  static async getAllAnalyses(): Promise<AnalysisRecord[]> {
+    try {
+      const db = await this.getDb()
+      const analyses = await db.collection('analyses')
+        .find({})
+        .sort({ processedAt: -1 })
+        .toArray()
+      
+      return analyses.map(doc => ({
+        ...doc,
+        _id: doc._id.toString()
+      })) as AnalysisRecord[]
+    } catch (error) {
+      console.error('Error fetching all analyses:', error)
+      return []
+    }
+  }
+
+  // Get alerts for specific analysis
+  static async getAlertsForAnalysis(analysisId: string): Promise<Alert[]> {
+    try {
+      const analysis = await this.getAnalysisById(analysisId)
+      return analysis?.smartAlerts || []
+    } catch (error) {
+      console.error('Error fetching alerts:', error)
+      return []
+    }
+  }
+
+  // Get latest alerts (from most recent analysis)
+  static async getLatestAlerts(): Promise<Alert[]> {
+    try {
+      const recentAnalyses = await this.getRecentAnalyses(1)
+      if (recentAnalyses.length === 0) return []
+      
+      return recentAnalyses[0].smartAlerts || []
+    } catch (error) {
+      console.error('Error fetching latest alerts:', error)
+      return []
+    }
+  }
+
   // Get SKU performance history
   static async getSKUHistory(sku: string): Promise<SKUHistory | null> {
     try {
@@ -152,6 +311,49 @@ export class DatabaseService {
     }
   }
 
+  // Get alert statistics
+  static async getAlertStatistics() {
+    try {
+      const db = await this.getDb()
+      const analyses = await db.collection('analyses')
+        .find({})
+        .toArray()
+      
+      let totalAlerts = 0
+      let criticalAlerts = 0
+      let unreadAlerts = 0
+      let resolvedAlerts = 0
+      
+      analyses.forEach((analysis: any) => {
+        if (analysis.smartAlerts) {
+          totalAlerts += analysis.smartAlerts.length
+          criticalAlerts += analysis.smartAlerts.filter((a: any) => a.severity === 'critical').length
+          unreadAlerts += analysis.smartAlerts.filter((a: any) => !a.acknowledged && !a.resolved).length
+          resolvedAlerts += analysis.smartAlerts.filter((a: any) => a.resolved).length
+        }
+      })
+      
+      return {
+        totalAlerts,
+        criticalAlerts,
+        unreadAlerts,
+        resolvedAlerts,
+        acknowledgementRate: totalAlerts > 0 ? ((totalAlerts - unreadAlerts) / totalAlerts * 100) : 0,
+        resolutionRate: totalAlerts > 0 ? (resolvedAlerts / totalAlerts * 100) : 0
+      }
+    } catch (error) {
+      console.error('Error fetching alert statistics:', error)
+      return {
+        totalAlerts: 0,
+        criticalAlerts: 0,
+        unreadAlerts: 0,
+        resolvedAlerts: 0,
+        acknowledgementRate: 0,
+        resolutionRate: 0
+      }
+    }
+  }
+
   // Get dashboard stats
   static async getDashboardStats() {
     try {
@@ -167,12 +369,12 @@ export class DatabaseService {
         .limit(30)
         .toArray()
       
-      const totalRevenuePotential = recentAnalyses.reduce((sum, analysis) => 
+      const totalRevenuePotential = recentAnalyses.reduce((sum: number, analysis: any) => 
         sum + (analysis.summary?.totalRevenuePotential || 0), 0
       )
       
       const avgSKUsPerAnalysis = recentAnalyses.length > 0 
-        ? recentAnalyses.reduce((sum, analysis) => sum + (analysis.summary?.totalSKUs || 0), 0) / recentAnalyses.length
+        ? recentAnalyses.reduce((sum: number, analysis: any) => sum + (analysis.summary?.totalSKUs || 0), 0) / recentAnalyses.length
         : 0
 
       return {

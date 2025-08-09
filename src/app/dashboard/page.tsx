@@ -1,3 +1,6 @@
+// RECREATE: /src/app/dashboard/page.tsx
+// Complete Dashboard Page
+
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -12,11 +15,46 @@ import {
   Bell, 
   Clock, 
   TrendingUp,
-  AlertTriangle,
   Package,
-  DollarSign
+  DollarSign,
+  AlertTriangle,
+  FileText,
+  Plus,
+  ArrowRight
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+interface DashboardStats {
+  totalAnalyses: number
+  totalSKUs: number
+  totalRevenuePotential: number
+  avgSKUsPerAnalysis: number
+  recentAnalyses: number
+}
+
+interface AnalysisRecord {
+  _id: string
+  uploadId: string
+  fileName: string
+  uploadedAt: string
+  processedAt: string
+  summary: {
+    totalSKUs: number
+    priceIncreases: number
+    priceDecreases: number
+    noChange: number
+    highRiskSKUs: number
+    mediumRiskSKUs: number
+    totalRevenuePotential: number
+  }
+}
+
+interface Trends {
+  skuGrowth: number
+  revenueGrowth: number
+  riskChange: number
+  optimizationRate: number
+}
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -25,9 +63,46 @@ export default function DashboardPage() {
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login')
   const [activeTab, setActiveTab] = useState<'overview' | 'alerts' | 'history'>('overview')
   
-  // Mock alert count for badge
-  const [alertCount, setAlertCount] = useState(4)
-  const [criticalAlerts, setCriticalAlerts] = useState(1)
+  // Dashboard data state
+  const [dashboardData, setDashboardData] = useState<{
+    stats: DashboardStats | null
+    recentAnalyses: AnalysisRecord[]
+    trends: Trends | null
+    hasHistory: boolean
+  }>({
+    stats: null,
+    recentAnalyses: [],
+    trends: null,
+    hasHistory: false
+  })
+  
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch dashboard data
+  useEffect(() => {
+    if (user) {
+      fetchDashboardData()
+    }
+  }, [user])
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/history?limit=5')
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch dashboard data')
+      }
+      
+      setDashboardData(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleLogin = () => {
     setAuthMode('login')
@@ -96,21 +171,17 @@ export default function DashboardPage() {
     {
       id: 'overview',
       label: 'Overview',
-      icon: BarChart3,
-      count: null
+      icon: BarChart3
     },
     {
       id: 'alerts',
       label: 'Smart Alerts',
-      icon: Bell,
-      count: alertCount,
-      critical: criticalAlerts > 0
+      icon: Bell
     },
     {
       id: 'history',
       label: 'Analysis History',
-      icon: Clock,
-      count: null
+      icon: Clock
     }
   ]
 
@@ -140,7 +211,7 @@ export default function DashboardPage() {
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
                     className={cn(
-                      "group inline-flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm relative",
+                      "group inline-flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm",
                       isActive
                         ? "border-blue-500 text-blue-600"
                         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
@@ -151,16 +222,6 @@ export default function DashboardPage() {
                       isActive ? "text-blue-500" : "text-gray-400 group-hover:text-gray-500"
                     )} />
                     <span>{tab.label}</span>
-                    
-                    {/* Badge for alerts */}
-                    {tab.count !== null && tab.count > 0 && (
-                      <div className={cn(
-                        "absolute -top-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center text-xs font-bold text-white",
-                        tab.critical ? "bg-red-500 animate-pulse" : "bg-blue-500"
-                      )}>
-                        {tab.count}
-                      </div>
-                    )}
                   </button>
                 )
               })}
@@ -171,150 +232,281 @@ export default function DashboardPage() {
         {/* Tab Content */}
         {activeTab === 'overview' && (
           <div className="space-y-8">
-            {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Active Alerts</p>
-                    <p className="text-2xl font-bold text-gray-900">{alertCount}</p>
-                  </div>
-                  <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center relative">
-                    <Bell className="h-6 w-6 text-red-600" />
-                    {criticalAlerts > 0 && (
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-pulse"></div>
-                    )}
-                  </div>
-                </div>
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading dashboard data...</p>
               </div>
-
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Critical Issues</p>
-                    <p className="text-2xl font-bold text-red-600">{criticalAlerts}</p>
-                  </div>
-                  <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
-                    <AlertTriangle className="h-6 w-6 text-red-600" />
-                  </div>
+            ) : error ? (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+                <div className="flex items-center space-x-2 mb-2">
+                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                  <h3 className="font-medium text-red-900">Error Loading Dashboard</h3>
                 </div>
-              </div>
-
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Revenue Opportunity</p>
-                    <p className="text-2xl font-bold text-green-600">$4,157</p>
-                  </div>
-                  <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                    <DollarSign className="h-6 w-6 text-green-600" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">SKUs Monitored</p>
-                    <p className="text-2xl font-bold text-blue-600">247</p>
-                  </div>
-                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                    <Package className="h-6 w-6 text-blue-600" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Welcome Message */}
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 border border-blue-200">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                Welcome back, {user.name}! 👋
-              </h2>
-              <p className="text-gray-700 mb-6">
-                Your AI-powered inventory optimization system is actively monitoring your SKUs. 
-                We've detected {alertCount} opportunities to improve your inventory performance.
-              </p>
-              
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button
-                  onClick={() => setActiveTab('alerts')}
-                  className="inline-flex items-center space-x-2 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                <p className="text-red-700">{error}</p>
+                <button 
+                  onClick={fetchDashboardData}
+                  className="mt-3 text-red-600 hover:text-red-800 text-sm underline"
                 >
-                  <AlertTriangle className="h-5 w-5" />
-                  <span>View {criticalAlerts} Critical Alert{criticalAlerts !== 1 ? 's' : ''}</span>
+                  Try Again
                 </button>
+              </div>
+            ) : !dashboardData.hasHistory ? (
+              /* No Analysis State */
+              <div className="text-center py-16">
+                <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <BarChart3 className="h-8 w-8 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  Welcome to InventoryIQ, {user.name}!
+                </h2>
+                <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
+                  Upload your first inventory CSV file to start getting AI-powered 
+                  price recommendations and inventory risk alerts.
+                </p>
                 
                 <button
                   onClick={() => router.push('/analytics')}
-                  className="inline-flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  className="inline-flex items-center space-x-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold text-lg rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
-                  <TrendingUp className="h-5 w-5" />
-                  <span>Run New Analysis</span>
+                  <Plus className="h-5 w-5" />
+                  <span>Upload Your First Analysis</span>
+                  <ArrowRight className="h-5 w-5" />
                 </button>
+                
+                <div className="mt-12 grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                  <div className="bg-white rounded-xl p-6 border border-gray-200 text-center">
+                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                      <TrendingUp className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <h3 className="font-semibold text-gray-900 mb-2">Price Optimization</h3>
+                    <p className="text-gray-600 text-sm">Get AI-powered price recommendations to maximize revenue</p>
+                  </div>
+                  
+                  <div className="bg-white rounded-xl p-6 border border-gray-200 text-center">
+                    <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                      <AlertTriangle className="h-6 w-6 text-red-600" />
+                    </div>
+                    <h3 className="font-semibold text-gray-900 mb-2">Risk Detection</h3>
+                    <p className="text-gray-600 text-sm">Identify stockouts and overstock situations before they happen</p>
+                  </div>
+                  
+                  <div className="bg-white rounded-xl p-6 border border-gray-200 text-center">
+                    <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                      <Package className="h-6 w-6 text-green-600" />
+                    </div>
+                    <h3 className="font-semibold text-gray-900 mb-2">Inventory Insights</h3>
+                    <p className="text-gray-600 text-sm">Track performance and optimize stock levels with AI</p>
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : (
+              /* Dashboard with Data */
+              <div className="space-y-8">
+                {/* Quick Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-600">Total Analyses</p>
+                        <p className="text-2xl font-bold text-gray-900">{dashboardData.stats?.totalAnalyses || 0}</p>
+                      </div>
+                      <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                        <FileText className="h-6 w-6 text-blue-600" />
+                      </div>
+                    </div>
+                  </div>
 
-            {/* Recent Activity Preview */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3 p-3 bg-red-50 rounded-lg border border-red-200">
-                  <AlertTriangle className="h-5 w-5 text-red-600" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">Critical stock alert for DEF456</p>
-                    <p className="text-xs text-gray-600">Only 0.4 weeks remaining • 30 minutes ago</p>
+                  <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-600">SKUs Tracked</p>
+                        <p className="text-2xl font-bold text-gray-900">{dashboardData.stats?.totalSKUs || 0}</p>
+                      </div>
+                      <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                        <Package className="h-6 w-6 text-green-600" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-600">Revenue Potential</p>
+                        <p className="text-2xl font-bold text-green-600">
+                          ${Math.round(dashboardData.stats?.totalRevenuePotential || 0).toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                        <DollarSign className="h-6 w-6 text-green-600" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-600">Avg SKUs/Analysis</p>
+                        <p className="text-2xl font-bold text-blue-600">
+                          {Math.round(dashboardData.stats?.avgSKUsPerAnalysis || 0)}
+                        </p>
+                      </div>
+                      <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                        <BarChart3 className="h-6 w-6 text-blue-600" />
+                      </div>
+                    </div>
                   </div>
                 </div>
-                
-                <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                  <DollarSign className="h-5 w-5 text-green-600" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">Price optimization opportunity for ABC123</p>
-                    <p className="text-xs text-gray-600">$1,847 monthly opportunity • 2 hours ago</p>
+
+                {/* Recent Analysis Summary */}
+                {dashboardData.recentAnalyses.length > 0 && (
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-lg font-semibold text-gray-900">Latest Analysis</h3>
+                      <button
+                        onClick={() => router.push('/analytics')}
+                        className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+                      >
+                        Run New Analysis
+                      </button>
+                    </div>
+                    
+                    {(() => {
+                      const latest = dashboardData.recentAnalyses[0]
+                      return (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-medium text-gray-900">{latest.fileName}</h4>
+                              <p className="text-sm text-gray-600">
+                                Processed {new Date(latest.processedAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
+                              Latest
+                            </span>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="text-center p-4 bg-blue-50 rounded-lg">
+                              <div className="text-2xl font-bold text-blue-600">{latest.summary.totalSKUs}</div>
+                              <div className="text-sm text-gray-600">SKUs Analyzed</div>
+                            </div>
+                            <div className="text-center p-4 bg-green-50 rounded-lg">
+                              <div className="text-2xl font-bold text-green-600">{latest.summary.priceIncreases}</div>
+                              <div className="text-sm text-gray-600">Price Increases</div>
+                            </div>
+                            <div className="text-center p-4 bg-red-50 rounded-lg">
+                              <div className="text-2xl font-bold text-red-600">{latest.summary.highRiskSKUs}</div>
+                              <div className="text-sm text-gray-600">High Risk SKUs</div>
+                            </div>
+                            <div className="text-center p-4 bg-purple-50 rounded-lg">
+                              <div className="text-2xl font-bold text-purple-600">
+                                ${Math.round(latest.summary.totalRevenuePotential).toLocaleString()}
+                              </div>
+                              <div className="text-sm text-gray-600">Revenue Potential</div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })()}
                   </div>
-                </div>
-                
-                <div className="flex items-center space-x-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
-                  <TrendingUp className="h-5 w-5 text-orange-600" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">Demand surge detected for GHI999</p>
-                    <p className="text-xs text-gray-600">67% increase predicted • 4 hours ago</p>
+                )}
+
+                {/* Trends (if available) */}
+                {dashboardData.trends && (
+                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Trends</h3>
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700">SKU Coverage</span>
+                          <div className={cn(
+                            "flex items-center space-x-1 text-sm font-medium",
+                            dashboardData.trends.skuGrowth >= 0 ? "text-green-600" : "text-red-600"
+                          )}>
+                            {dashboardData.trends.skuGrowth >= 0 ? (
+                              <TrendingUp className="h-4 w-4" />
+                            ) : (
+                              <TrendingUp className="h-4 w-4 transform rotate-180" />
+                            )}
+                            <span>{Math.abs(dashboardData.trends.skuGrowth)} SKUs</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700">Revenue Opportunity</span>
+                          <div className={cn(
+                            "flex items-center space-x-1 text-sm font-medium",
+                            dashboardData.trends.revenueGrowth >= 0 ? "text-green-600" : "text-red-600"
+                          )}>
+                            {dashboardData.trends.revenueGrowth >= 0 ? (
+                              <TrendingUp className="h-4 w-4" />
+                            ) : (
+                              <TrendingUp className="h-4 w-4 transform rotate-180" />
+                            )}
+                            <span>${Math.abs(dashboardData.trends.revenueGrowth).toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700">Risk Management</span>
+                          <div className={cn(
+                            "flex items-center space-x-1 text-sm font-medium",
+                            dashboardData.trends.riskChange <= 0 ? "text-green-600" : "text-red-600"
+                          )}>
+                            {dashboardData.trends.riskChange <= 0 ? (
+                              <TrendingUp className="h-4 w-4" />
+                            ) : (
+                              <TrendingUp className="h-4 w-4 transform rotate-180" />
+                            )}
+                            <span>{Math.abs(dashboardData.trends.riskChange)} risk SKUs</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700">Optimizations Made</span>
+                          <span className="text-blue-600 font-medium">
+                            {dashboardData.trends.optimizationRate}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
+                )}
+
+                {/* Quick Actions */}
+                <div className="text-center">
+                  <button
+                    onClick={() => router.push('/analytics')}
+                    className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                  >
+                    <Plus className="h-5 w-5" />
+                    <span>Run New Analysis</span>
+                  </button>
                 </div>
               </div>
-              
-              <button
-                onClick={() => setActiveTab('alerts')}
-                className="w-full mt-4 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-medium"
-              >
-                View All Alerts
-              </button>
-            </div>
+            )}
           </div>
         )}
 
         {activeTab === 'alerts' && (
-          <AlertDashboard
+          <AlertDashboard 
+            analysisId={dashboardData.recentAnalyses[0]?.uploadId}
             onAcknowledge={(alertId) => {
               console.log('Acknowledged alert:', alertId)
-              // Update alert count when alerts are acknowledged
-              setAlertCount(prev => Math.max(0, prev - 1))
             }}
             onResolve={(alertId) => {
               console.log('Resolved alert:', alertId)
-              // Update alert count when alerts are resolved
-              setAlertCount(prev => Math.max(0, prev - 1))
-              if (alertId === '1') { // Critical alert
-                setCriticalAlerts(0)
-              }
             }}
           />
         )}
 
         {activeTab === 'history' && (
-          <HistoryDashboard
+          <HistoryDashboard 
             onSelectAnalysis={(analysisId) => {
-              router.push(`/history?analysis=${analysisId}`)
+              console.log('Selected analysis:', analysisId)
+              // You could switch to alerts tab and show that analysis
+              setActiveTab('alerts')
             }}
           />
         )}

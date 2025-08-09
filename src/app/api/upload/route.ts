@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { parseCSVData, calculatePriceRecommendation, assessInventoryRisk } from '@/lib/utils'
 import { DatabaseService } from '@/lib/models'
+import { AlertEngine } from '@/lib/alert-engine'
 import { v4 as uuidv4 } from 'uuid'
 
 export async function POST(request: NextRequest) {
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
       if (!sku || currentPrice <= 0) continue
       
       // Calculate price recommendation
-      const priceRec = calculatePriceRecommendation(currentPrice, weeklySales, inventoryLevel)
+      const priceRec = calculatePriceRecommendation(currentPrice, weeklySales, inventoryLevel, sku)
       priceRecommendations.push({
         sku,
         ...priceRec,
@@ -71,6 +72,23 @@ export async function POST(request: NextRequest) {
 
     // Get top 5 alerts
     const topAlerts = inventoryAlerts.slice(0, 5)
+
+    // ✨ NEW: Generate Smart Alerts using AI Engine
+    const inventoryDataForAlerts = priceRecommendations.map(rec => ({
+      sku: rec.sku,
+      currentPrice: rec.currentPrice,
+      currentInventory: rec.inventoryLevel,
+      weeklySales: rec.weeklySales
+    }))
+
+    console.log('Generating alerts for', inventoryDataForAlerts.length, 'SKUs')
+    
+    const smartAlerts = AlertEngine.analyzeAndGenerateAlerts(
+      inventoryDataForAlerts,
+      AlertEngine.getDefaultAlertRules()
+    )
+
+    console.log('Generated', smartAlerts.length, 'smart alerts')
 
     // Calculate summary stats
     const summary = {
@@ -98,6 +116,8 @@ export async function POST(request: NextRequest) {
       summary,
       priceRecommendations,
       inventoryAlerts: topAlerts,
+      smartAlerts, // ✨ NEW: Save smart alerts to database
+      alertsGenerated: true, // ✨ NEW: Track that alerts were generated
       userAgent: request.headers.get('user-agent') || undefined,
       ipAddress: request.headers.get('x-forwarded-for') || 
                  request.headers.get('x-real-ip') || 
@@ -109,6 +129,7 @@ export async function POST(request: NextRequest) {
     try {
       savedId = await DatabaseService.saveAnalysis(analysisRecord)
       console.log('Analysis saved to database with ID:', savedId)
+      console.log(`Generated ${smartAlerts.length} smart alerts for analysis ${uploadId}`)
     } catch (dbError) {
       console.error('Database save failed, but continuing with response:', dbError)
       // We'll still return the analysis even if database save fails
@@ -121,6 +142,8 @@ export async function POST(request: NextRequest) {
       summary,
       priceRecommendations,
       inventoryAlerts: topAlerts,
+      smartAlerts, // ✨ NEW: Return smart alerts in response
+      alertsGenerated: smartAlerts.length,
       processedAt: now.toISOString()
     })
 
