@@ -6,7 +6,9 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test-scraper": "npx ts-node scripts/test-scraper.ts",
+    "start-monitoring": "npx ts-node scripts/start-monitoring.ts"
   },
   "dependencies": {
     "@types/papaparse": "^5.3.16",
@@ -25,11 +27,13 @@
     "react-dom": "19.1.0",
     "recharts": "^3.1.2",
     "tailwind-merge": "^3.3.1",
+    "ts-node": "^10.9.2",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/cheerio": "^0.22.35",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

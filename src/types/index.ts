@@ -1,5 +1,4 @@
-// REPLACE: /src/types/index.ts
-// Enhanced types for alcohol industry vertical
+// src/types/index.ts - Enhanced types for alcohol industry vertical
 
 export interface CSVRow {
   sku: string
@@ -41,7 +40,7 @@ export interface AlcoholSKU {
   [key: string]: string | number | boolean | string[] | undefined
 }
 
-// Competitor pricing data
+// Competitor pricing data - UPDATED with scraping fields
 export interface CompetitorPrice {
   sku: string
   upc?: string
@@ -52,10 +51,12 @@ export interface CompetitorPrice {
   price_difference_percentage: number
   availability: boolean
   last_updated: Date
-  source: 'wine_com' | 'total_wine' | 'local_store' | 'distributor' | 'manual' | 'api'
+  source: 'majestic' | 'waitrose' | 'tesco' | 'asda' | 'wine_com' | 'total_wine' | 'local_store' | 'distributor' | 'manual' | 'api'
   url?: string
   promotional?: boolean
   promotion_details?: string
+  product_name?: string // NEW: For scraped products
+  relevance_score?: number // NEW: How well this matches the search
 }
 
 // Market trend data
@@ -202,6 +203,62 @@ export interface AlcoholInsight {
   action_items: string[]
   related_skus: string[]
   generated_at: Date
+}
+
+// NEW: Scraping-related types
+export interface ScrapingJob {
+  id: string
+  product_name: string
+  category: string
+  brand?: string
+  volume?: number
+  retailers: string[]
+  status: 'pending' | 'running' | 'completed' | 'failed'
+  started_at: Date
+  completed_at?: Date
+  results?: CompetitorPrice[]
+  error?: string
+}
+
+export interface RetailerAvailability {
+  retailer: string
+  available: boolean
+  last_checked: Date
+  response_time_ms: number
+  rate_limited: boolean
+}
+
+// Enhanced types for better competitor analysis
+export interface CompetitiveAnalysis {
+  sku: string
+  our_price: number
+  market_position: {
+    rank: number // 1 = cheapest
+    percentile: number // 0-100
+    price_vs_average: number // percentage difference
+  }
+  competitor_data: CompetitorPrice[]
+  price_recommendation: {
+    action: 'increase' | 'decrease' | 'maintain' | 'investigate'
+    suggested_price?: number
+    confidence: number
+    reasoning: string
+  }
+  last_updated: Date
+}
+
+export interface PriceMonitoringAlert {
+  id: string
+  sku: string
+  alert_type: 'price_drop' | 'price_increase' | 'new_competitor' | 'out_of_stock'
+  severity: 'low' | 'medium' | 'high' | 'critical'
+  message: string
+  competitor?: string
+  old_price?: number
+  new_price?: number
+  price_change_percentage?: number
+  detected_at: Date
+  acknowledged: boolean
 }
 
 // Legacy compatibility
