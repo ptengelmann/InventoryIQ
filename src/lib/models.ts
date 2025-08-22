@@ -29,13 +29,19 @@ export interface AnalysisRecord {
     inventoryLevel: number
   }[]
   inventoryAlerts: {
-    sku: string
-    riskLevel: 'low' | 'medium' | 'high'
-    riskType: 'stockout' | 'overstock' | 'none'
-    weeksOfStock: number
-    priority: number
-    message: string
-  }[]
+  sku: string
+  riskLevel: 'low' | 'medium' | 'high'
+  riskType: 'stockout' | 'overstock' | 'expiration' | 'seasonal_shortage' | 'none'  // ENHANCED
+  weeksOfStock: number
+  priority: number
+  message: string
+  aiEnhanced?: boolean
+  alcoholContext?: {
+    category?: string
+    shelfLifeDays?: number
+    seasonalPeak?: string
+  }
+}[]
   smartAlerts: Alert[]
   alertsGenerated: boolean
   userAgent?: string

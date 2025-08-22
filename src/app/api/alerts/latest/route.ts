@@ -1,22 +1,62 @@
+// =================================================================
+// FILE 2: /src/app/api/alerts/latest/route.ts - Fixed Import Issues
+// =================================================================
+
 import { NextRequest, NextResponse } from 'next/server'
 import { DatabaseService } from '@/lib/models'
+import { Alert } from '@/lib/alert-engine'
 
-// GET /api/alerts/latest - Get alerts from most recent analysis
 export async function GET(request: NextRequest) {
   try {
+    console.log('Fetching latest alerts...')
+    
     const alerts = await DatabaseService.getLatestAlerts()
+    
+    console.log(`Found ${alerts.length} latest alerts`)
     
     return NextResponse.json({
       success: true,
       alerts,
       count: alerts.length,
-      source: 'latest_analysis'
+      timestamp: new Date().toISOString()
     })
+    
   } catch (error) {
-    console.error('Error fetching latest alerts:', error)
+    console.error('Latest alerts API error:', error)
+    
+    // Return fallback demo alerts if database fails
+    const fallbackAlerts: Alert[] = [
+      {
+        id: 'demo-alert-1',
+        rule_id: 'critical-stockout',
+        sku: 'WHISKEY-DEMO-001',
+        category: 'spirits',
+        type: 'stockout',
+        severity: 'critical',
+        title: 'DEMO: Critical Stockout Alert',
+        message: 'This is demo data. Upload a CSV file to see real alerts.',
+        action_required: 'Upload your inventory data for real alerts',
+        impact: { revenue_at_risk: 0 },
+        data: { 
+          current_stock: 0, 
+          predicted_demand: 0, 
+          weeks_of_stock: 0, 
+          confidence: 0.5, 
+          trend: 'stable' 
+        },
+        created_at: new Date(),
+        acknowledged: false,
+        resolved: false,
+        delivered_via: []
+      }
+    ]
+    
     return NextResponse.json({
-      error: 'Failed to fetch latest alerts',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
+      success: false,
+      alerts: fallbackAlerts,
+      count: fallbackAlerts.length,
+      error: 'Database unavailable - showing demo data',
+      timestamp: new Date().toISOString()
+    })
   }
 }

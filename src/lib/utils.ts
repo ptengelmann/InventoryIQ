@@ -1,6 +1,10 @@
+// REPLACE: /src/lib/utils.ts
+// Fixed utils with correct AI engine import
+
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { AIEngine } from './ai-engine'
+import { AlcoholAIEngine } from './ai-engine'
+import { AlcoholSKU } from '@/types'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -26,58 +30,106 @@ export function parseCSVData(csvContent: string) {
   return { headers, data }
 }
 
+// Convert CSV row to AlcoholSKU format
+export function convertToAlcoholSKU(csvRow: any): AlcoholSKU {
+  return {
+    sku: csvRow.sku || '',
+    price: csvRow.price || '0',
+    weekly_sales: csvRow.weekly_sales || '0',
+    inventory_level: csvRow.inventory_level || '0',
+    category: csvRow.category || 'spirits',
+    subcategory: csvRow.subcategory || '',
+    brand: csvRow.brand || '',
+    abv: parseFloat(csvRow.abv) || 0,
+    volume_ml: parseInt(csvRow.volume_ml) || 750,
+    container_type: csvRow.container_type || 'bottle',
+    seasonal_peak: csvRow.seasonal_peak || undefined,
+    shelf_life_days: csvRow.shelf_life_days ? parseInt(csvRow.shelf_life_days) : undefined,
+    distributor: csvRow.distributor || '',
+    state_restrictions: csvRow.state_restrictions ? csvRow.state_restrictions.split('|') : undefined,
+    origin_country: csvRow.origin_country || undefined,
+    origin_region: csvRow.origin_region || undefined,
+    vintage_year: csvRow.vintage_year ? parseInt(csvRow.vintage_year) : undefined,
+    organic: csvRow.organic === 'true',
+    gluten_free: csvRow.gluten_free === 'true',
+    craft: csvRow.craft === 'true',
+    import_cost: csvRow.import_cost ? parseFloat(csvRow.import_cost) : undefined,
+    excise_tax: csvRow.excise_tax ? parseFloat(csvRow.excise_tax) : undefined
+  }
+}
+
 // Enhanced AI-powered price recommendation
 export function calculatePriceRecommendation(
   currentPrice: number,
   weeklySales: number,
   inventoryLevel: number,
-  sku: string = 'unknown'
+  sku: string = 'unknown',
+  alcoholSKU?: AlcoholSKU
 ) {
-  // Use the real AI engine for analysis
-  const skuData = [{
-    sku,
-    currentPrice,
-    currentInventory: inventoryLevel,
-    weeklySales
-  }]
-  
-  const aiResult = AIEngine.analyzeBatch(skuData)
-  const result = aiResult.batch_results[0]
-  
-  if (!result) {
-    // Fallback to simple logic if AI fails
+  try {
+    // Create AlcoholSKU if not provided
+    const skuData: AlcoholSKU = alcoholSKU || {
+      sku,
+      price: currentPrice.toString(),
+      weekly_sales: weeklySales.toString(),
+      inventory_level: inventoryLevel.toString(),
+      category: 'spirits',
+      subcategory: 'Unknown',
+      brand: 'Unknown',
+      abv: 40,
+      volume_ml: 750,
+      container_type: 'bottle',
+      distributor: 'Unknown'
+    }
+    
+    // Use the alcohol AI engine for analysis
+    const aiResult = AlcoholAIEngine.analyzeAlcoholBatch([skuData])
+    const result = aiResult.batch_results[0]
+    
+    if (!result) {
+      // Fallback to simple logic if AI fails
+      return simpleRecommendation(currentPrice, weeklySales, inventoryLevel)
+    }
+    
+    const forecast = result.forecast
+    let newPrice = currentPrice
+    
+    switch (forecast.recommendation.action) {
+      case 'increase_price':
+        newPrice = currentPrice * 1.05 // 5% increase
+        break
+      case 'decrease_price':
+        newPrice = currentPrice * 0.95 // 5% decrease
+        break
+      case 'promotional_pricing':
+        newPrice = currentPrice * 0.85 // 15% discount for promotions
+        break
+      case 'maintain_price':
+        newPrice = currentPrice
+        break
+      case 'reorder_stock':
+        newPrice = currentPrice // Keep price same, focus on restocking
+        break
+    }
+    
+    const changePercentage = ((newPrice - currentPrice) / currentPrice) * 100
+    
+    return {
+      currentPrice,
+      recommendedPrice: Math.round(newPrice * 100) / 100,
+      changePercentage: Math.round(changePercentage * 100) / 100,
+      reason: getAIReason(forecast, inventoryLevel, weeklySales),
+      aiInsights: result.ai_insights,
+      confidence: forecast.confidence_interval.confidence_level,
+      predictedDemand: forecast.predicted_demand,
+      trend: forecast.trend,
+      seasonalFactor: forecast.seasonality_factor,
+      categoryTrend: forecast.category_trend,
+      alcoholContext: forecast.alcohol_specific
+    }
+  } catch (error) {
+    console.error('AI recommendation failed, using fallback:', error)
     return simpleRecommendation(currentPrice, weeklySales, inventoryLevel)
-  }
-  
-  const forecast = result.forecast
-  let newPrice = currentPrice
-  
-  switch (forecast.recommendation.action) {
-    case 'increase_price':
-      newPrice = currentPrice * 1.05 // 5% increase
-      break
-    case 'decrease_price':
-      newPrice = currentPrice * 0.95 // 5% decrease
-      break
-    case 'maintain_price':
-      newPrice = currentPrice
-      break
-    case 'reorder_stock':
-      newPrice = currentPrice // Keep price same, focus on restocking
-      break
-  }
-  
-  const changePercentage = ((newPrice - currentPrice) / currentPrice) * 100
-  
-  return {
-    currentPrice,
-    recommendedPrice: Math.round(newPrice * 100) / 100,
-    changePercentage: Math.round(changePercentage * 100) / 100,
-    reason: getAIReason(forecast, inventoryLevel, weeklySales),
-    aiInsights: result.ai_insights,
-    confidence: forecast.confidence_interval.confidence_level,
-    predictedDemand: forecast.predicted_demand,
-    trend: forecast.trend
   }
 }
 
@@ -89,15 +141,30 @@ function getAIReason(forecast: any, inventory: number, weeklySales: number): str
       if (forecast.trend === 'increasing') {
         return `Strong upward demand trend (${Math.round(forecast.confidence_interval.confidence_level * 100)}% confidence) - optimize pricing`
       }
-      return `Low stock situation - increase price to manage demand`
+      if (forecast.alcohol_specific?.seasonal_peak_in_days && forecast.alcohol_specific.seasonal_peak_in_days < 60) {
+        return `Approaching peak season in ${forecast.alcohol_specific.seasonal_peak_in_days} days - seasonal pricing opportunity`
+      }
+      return `Market positioning allows price increase - low competitive risk`
     
     case 'decrease_price':
       if (weeksOfStock > 8) {
         return `Overstock detected (${weeksOfStock.toFixed(1)} weeks) - promotional pricing recommended`
       }
+      if (forecast.alcohol_specific?.competitor_price_position === 'lagging') {
+        return `Competitors pricing significantly lower - adjust for competitiveness`
+      }
       return `Declining demand trend - stimulate sales with lower price`
     
+    case 'promotional_pricing':
+      if (forecast.alcohol_specific?.seasonal_peak_in_days && forecast.alcohol_specific.seasonal_peak_in_days > 180) {
+        return `Off-season detected - promotional pricing to move inventory`
+      }
+      return `Excess inventory with expiration risk - aggressive promotion needed`
+    
     case 'reorder_stock':
+      if (forecast.alcohol_specific?.seasonal_peak_in_days && forecast.alcohol_specific.seasonal_peak_in_days < 30) {
+        return `Peak season approaching - critical reorder to avoid stockouts`
+      }
       return `Critical stock shortage predicted - immediate reordering required`
     
     default:
@@ -128,9 +195,11 @@ function simpleRecommendation(currentPrice: number, weeklySales: number, invento
     changePercentage: Math.round(recommendedChange * 10000) / 100,
     reason: getSimpleReason(weeksOfStock, salesVelocity, recommendedChange),
     confidence: 0.7,
-    aiInsights: ['Basic analysis - upgrade to AI for advanced insights'],
+    aiInsights: ['Basic analysis - enhanced alcohol industry AI available'],
     predictedDemand: Math.round(weeklySales * 4.3), // Rough monthly estimate
-    trend: 'stable' as const
+    trend: 'stable' as const,
+    seasonalFactor: 1.0,
+    categoryTrend: 'stable' as const
   }
 }
 
@@ -142,75 +211,141 @@ function getSimpleReason(weeksOfStock: number, salesVelocity: number, change: nu
   return "Optimal pricing - maintain current price"
 }
 
-// Enhanced inventory risk assessment with AI
+// Enhanced inventory risk assessment with alcohol AI
 export function assessInventoryRisk(
   inventoryLevel: number,
   weeklySales: number,
-  sku: string
+  sku: string,
+  alcoholSKU?: AlcoholSKU
 ) {
-  // Use AI for more sophisticated risk assessment
-  const skuData = [{
-    sku,
-    currentPrice: 0, // Not needed for risk assessment
-    currentInventory: inventoryLevel,
-    weeklySales
-  }]
-  
-  const aiResult = AIEngine.analyzeBatch(skuData)
-  const result = aiResult.batch_results[0]
-  
-  const velocity = weeklySales || 0.1
-  const weeksOfStock = inventoryLevel / velocity
-  
-  let riskLevel: 'low' | 'medium' | 'high' = 'low'
-  let riskType: 'stockout' | 'overstock' | 'none' = 'none'
-  let priority = 0
-  
-  if (weeksOfStock < 1.5) {
-    riskLevel = 'high'
-    riskType = 'stockout'
-    priority = 10 - weeksOfStock
-  } else if (weeksOfStock < 3) {
-    riskLevel = 'medium'
-    riskType = 'stockout'
-    priority = 7 - weeksOfStock
-  } else if (weeksOfStock > 12) {
-    riskLevel = 'high'
-    riskType = 'overstock'
-    priority = weeksOfStock / 2
-  } else if (weeksOfStock > 8) {
-    riskLevel = 'medium'
-    riskType = 'overstock'
-    priority = weeksOfStock / 3
-  }
-  
-  // Enhance with AI insights if available
-  let message = getRiskMessage(riskType, weeksOfStock, riskLevel)
-  if (result?.forecast) {
-    const predictedDemand = result.forecast.predicted_demand
-    const confidence = result.forecast.confidence_interval.confidence_level
-    message += ` (AI predicts ${predictedDemand} units demand, ${Math.round(confidence * 100)}% confidence)`
-  }
-  
-  return {
-    sku,
-    riskLevel,
-    riskType,
-    weeksOfStock: Math.round(weeksOfStock * 10) / 10,
-    priority,
-    message,
-    aiEnhanced: !!result?.forecast
+  try {
+    // Create AlcoholSKU if not provided
+    const skuData: AlcoholSKU = alcoholSKU || {
+      sku,
+      price: '0',
+      weekly_sales: weeklySales.toString(),
+      inventory_level: inventoryLevel.toString(),
+      category: 'spirits',
+      subcategory: 'Unknown',
+      brand: 'Unknown',
+      abv: 40,
+      volume_ml: 750,
+      container_type: 'bottle',
+      distributor: 'Unknown'
+    }
+    
+    const aiResult = AlcoholAIEngine.analyzeAlcoholBatch([skuData])
+    const result = aiResult.batch_results[0]
+    
+    const velocity = weeklySales || 0.1
+    const weeksOfStock = inventoryLevel / velocity
+    
+    let riskLevel: 'low' | 'medium' | 'high' = 'low'
+    let riskType: 'stockout' | 'overstock' | 'expiration' | 'seasonal_shortage' | 'none' = 'none'
+    let priority = 0
+    
+    // Enhanced risk assessment with alcohol-specific factors
+    if (weeksOfStock < 1.5) {
+      riskLevel = 'high'
+      riskType = 'stockout'
+      priority = 10 - weeksOfStock
+    } else if (weeksOfStock < 3) {
+      riskLevel = 'medium'
+      riskType = 'stockout'
+      priority = 7 - weeksOfStock
+    } else if (weeksOfStock > 12) {
+      // Check for expiration risk
+      if (skuData.shelf_life_days && (weeksOfStock * 7) > (skuData.shelf_life_days * 0.7)) {
+        riskLevel = 'high'
+        riskType = 'expiration'
+        priority = weeksOfStock / 1.5
+      } else {
+        riskLevel = 'high'
+        riskType = 'overstock'
+        priority = weeksOfStock / 2
+      }
+    } else if (weeksOfStock > 8) {
+      riskLevel = 'medium'
+      riskType = 'overstock'
+      priority = weeksOfStock / 3
+    }
+    
+    // Check for seasonal risks
+    if (result?.forecast?.alcohol_specific?.seasonal_peak_in_days && 
+        result.forecast.alcohol_specific.seasonal_peak_in_days < 30 && 
+        weeksOfStock < 4) {
+      riskLevel = 'high'
+      riskType = 'seasonal_shortage'
+      priority = 9
+    }
+    
+    // Enhance with AI insights if available
+    let message = getRiskMessage(riskType, weeksOfStock, riskLevel, skuData)
+    if (result?.forecast) {
+      const predictedDemand = result.forecast.predicted_demand
+      const confidence = result.forecast.confidence_interval.confidence_level
+      message += ` (AI predicts ${predictedDemand} units demand, ${Math.round(confidence * 100)}% confidence)`
+    }
+    
+    return {
+      sku,
+      riskLevel,
+      riskType,
+      weeksOfStock: Math.round(weeksOfStock * 10) / 10,
+      priority,
+      message,
+      aiEnhanced: !!result?.forecast,
+      alcoholContext: {
+        category: skuData.category,
+        shelfLifeDays: skuData.shelf_life_days,
+        seasonalPeak: skuData.seasonal_peak
+      }
+    }
+  } catch (error) {
+    console.error('AI risk assessment failed, using basic assessment:', error)
+    // Fallback to basic assessment
+    const velocity = weeklySales || 0.1
+    const weeksOfStock = inventoryLevel / velocity
+    
+    let riskLevel: 'low' | 'medium' | 'high' = 'low'
+    let riskType: 'stockout' | 'overstock' | 'none' = 'none'
+    
+    if (weeksOfStock < 2) {
+      riskLevel = 'high'
+      riskType = 'stockout'
+    } else if (weeksOfStock > 10) {
+      riskLevel = 'medium'
+      riskType = 'overstock'
+    }
+    
+    return {
+      sku,
+      riskLevel,
+      riskType,
+      weeksOfStock: Math.round(weeksOfStock * 10) / 10,
+      priority: riskType === 'stockout' ? 8 : 3,
+      message: getRiskMessage(riskType, weeksOfStock, riskLevel),
+      aiEnhanced: false
+    }
   }
 }
 
 function getRiskMessage(
-  riskType: 'stockout' | 'overstock' | 'none',
+  riskType: 'stockout' | 'overstock' | 'expiration' | 'seasonal_shortage' | 'none',
   weeksOfStock: number,
-  riskLevel: 'low' | 'medium' | 'high'
+  riskLevel: 'low' | 'medium' | 'high',
+  alcoholSKU?: AlcoholSKU
 ): string {
   if (riskType === 'stockout') {
     if (riskLevel === 'high') return `Critical: Only ${weeksOfStock.toFixed(1)} weeks of stock remaining`
     return `Warning: ${weeksOfStock.toFixed(1)} weeks of stock remaining`
+  }
+  if (riskType === 'expiration') {
+    const shelfLife = alcoholSKU?.shelf_life_days || 365
+    return `Expiration risk: ${weeksOfStock.toFixed(1)} weeks of stock with ${Math.round(shelfLife / 7)} week shelf life`
+  }
+  if (riskType === 'seasonal_shortage') {
+    return `Seasonal risk: Insufficient inventory for upcoming ${alcoholSKU?.seasonal_peak || 'peak'} season`
   }
   if (riskType === 'overstock') {
     if (riskLevel === 'high') return `Overstock: ${weeksOfStock.toFixed(1)} weeks of excess inventory`

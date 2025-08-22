@@ -1,11 +1,13 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { BarChart3, Menu, X, User, LogOut, History, Settings, ChevronDown, Bell } from 'lucide-react'
+import { BarChart3, Menu, X, User, LogOut, History, Settings, ChevronDown, Bell, LineChart, Zap, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useUser } from '@/contexts/UserContext'
+import { Target } from 'lucide-react'
+
 
 interface NavbarProps {
   onLogin: () => void
@@ -78,17 +80,33 @@ export function Navbar({ onLogin, onSignup }: NavbarProps) {
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Navigation - ALL WITH PROPER ICONS */}
           <div className="hidden md:flex items-center space-x-8">
-            <NavLink href="/dashboard">Dashboard</NavLink>
-            <NavLink href="/analytics">Analytics</NavLink>
+            <NavLink href="/dashboard" className="flex items-center space-x-1">
+              <BarChart3 className="h-4 w-4" />
+              <span>Dashboard</span>
+            </NavLink>
+            <NavLink href="/analytics" className="flex items-center space-x-1">
+              <LineChart className="h-4 w-4" />
+              <span>Analytics</span>
+            </NavLink>
             <NavLink href="/alerts" className="flex items-center space-x-1">
               <Bell className="h-4 w-4" />
               <span>Alerts</span>
             </NavLink>
-            <NavLink href="/history">History</NavLink>
-            <NavLink href="/integrations">Integrations</NavLink>
+            <NavLink href="/history" className="flex items-center space-x-1">
+              <Clock className="h-4 w-4" />
+              <span>History</span>
+            </NavLink>
+            <NavLink href="/integrations" className="flex items-center space-x-1">
+              <Zap className="h-4 w-4" />
+              <span>Integrations</span>
+            </NavLink>
           </div>
+          <NavLink href="/competitive" className="flex items-center space-x-1">
+  <Target className="h-4 w-4" />
+  <span>Competitive Intel</span>
+</NavLink>
 
           {/* User Actions */}
           <div className="flex items-center space-x-4">
@@ -199,25 +217,29 @@ export function Navbar({ onLogin, onSignup }: NavbarProps) {
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu - ALL WITH PROPER ICONS */}
         {isMobileMenuOpen && (
           <div className="md:hidden border-t border-gray-200 py-4">
             <div className="space-y-3">
-              <NavLink href="/dashboard" className="block px-3 py-2">
-                Dashboard
+              <NavLink href="/dashboard" className="flex items-center space-x-2 px-3 py-2">
+                <BarChart3 className="h-4 w-4" />
+                <span>Dashboard</span>
               </NavLink>
-              <NavLink href="/analytics" className="block px-3 py-2">
-                Analytics
+              <NavLink href="/analytics" className="flex items-center space-x-2 px-3 py-2">
+                <LineChart className="h-4 w-4" />
+                <span>Analytics</span>
               </NavLink>
               <NavLink href="/alerts" className="flex items-center space-x-2 px-3 py-2">
                 <Bell className="h-4 w-4" />
                 <span>Alerts</span>
               </NavLink>
-              <NavLink href="/history" className="block px-3 py-2">
-                History
+              <NavLink href="/history" className="flex items-center space-x-2 px-3 py-2">
+                <Clock className="h-4 w-4" />
+                <span>History</span>
               </NavLink>
-              <NavLink href="/integrations" className="block px-3 py-2">
-                Integrations
+              <NavLink href="/integrations" className="flex items-center space-x-2 px-3 py-2">
+                <Zap className="h-4 w-4" />
+                <span>Integrations</span>
               </NavLink>
               
               {!user && (

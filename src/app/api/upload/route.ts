@@ -1,7 +1,9 @@
+// FILE 1: /src/app/api/upload/route.ts - Fixed TypeScript Issues
 import { NextRequest, NextResponse } from 'next/server'
-import { parseCSVData, calculatePriceRecommendation, assessInventoryRisk } from '@/lib/utils'
+import { parseCSVData, calculatePriceRecommendation, assessInventoryRisk, convertToAlcoholSKU } from '@/lib/utils'
 import { DatabaseService } from '@/lib/models'
-import { AlertEngine } from '@/lib/alert-engine'
+import { AlcoholAlertEngine as AlertEngine, Alert } from '@/lib/alert-engine'
+import { AlcoholSKU } from '@/types'
 import { v4 as uuidv4 } from 'uuid'
 
 export async function POST(request: NextRequest) {
@@ -16,6 +18,8 @@ export async function POST(request: NextRequest) {
     if (!file.name.endsWith('.csv')) {
       return NextResponse.json({ error: 'File must be a CSV' }, { status: 400 })
     }
+
+    console.log(`Processing file: ${file.name} (${file.size} bytes)`)
 
     // Read the file content
     const content = await file.text()
@@ -35,9 +39,12 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Process each row
+    console.log(`Parsed ${data.length} rows with headers:`, headers)
+
+    // Process each row for basic recommendations
     const priceRecommendations = []
     const inventoryAlerts = []
+    const alcoholSKUs: AlcoholSKU[] = []
     
     for (const row of data) {
       const sku = row.sku
@@ -46,10 +53,17 @@ export async function POST(request: NextRequest) {
       const inventoryLevel = parseFloat(row.inventory_level) || 0
       
       // Skip invalid rows
-      if (!sku || currentPrice <= 0) continue
+      if (!sku || currentPrice <= 0) {
+        console.log(`Skipping invalid row: ${sku}`)
+        continue
+      }
+      
+      // Convert to AlcoholSKU format
+      const alcoholSKU = convertToAlcoholSKU(row)
+      alcoholSKUs.push(alcoholSKU)
       
       // Calculate price recommendation
-      const priceRec = calculatePriceRecommendation(currentPrice, weeklySales, inventoryLevel, sku)
+      const priceRec = calculatePriceRecommendation(currentPrice, weeklySales, inventoryLevel, sku, alcoholSKU)
       priceRecommendations.push({
         sku,
         ...priceRec,
@@ -58,11 +72,14 @@ export async function POST(request: NextRequest) {
       })
       
       // Assess inventory risk
-      const riskAssessment = assessInventoryRisk(inventoryLevel, weeklySales, sku)
+      const riskAssessment = assessInventoryRisk(inventoryLevel, weeklySales, sku, alcoholSKU)
       if (riskAssessment.riskType !== 'none') {
         inventoryAlerts.push(riskAssessment)
       }
     }
+
+    console.log(`Generated ${priceRecommendations.length} price recommendations`)
+    console.log(`Generated ${inventoryAlerts.length} inventory alerts`)
 
     // Sort recommendations by potential impact
     priceRecommendations.sort((a, b) => Math.abs(b.changePercentage) - Math.abs(a.changePercentage))
@@ -70,25 +87,21 @@ export async function POST(request: NextRequest) {
     // Sort alerts by priority (highest risk first)
     inventoryAlerts.sort((a, b) => b.priority - a.priority)
 
-    // Get top 5 alerts
-    const topAlerts = inventoryAlerts.slice(0, 5)
-
-    // ✨ NEW: Generate Smart Alerts using AI Engine
-    const inventoryDataForAlerts = priceRecommendations.map(rec => ({
-      sku: rec.sku,
-      currentPrice: rec.currentPrice,
-      currentInventory: rec.inventoryLevel,
-      weeklySales: rec.weeklySales
-    }))
-
-    console.log('Generating alerts for', inventoryDataForAlerts.length, 'SKUs')
+    // Generate Smart Alerts using AI Engine with proper typing
+    console.log('Generating AI-powered smart alerts...')
     
-    const smartAlerts = AlertEngine.analyzeAndGenerateAlerts(
-      inventoryDataForAlerts,
-      AlertEngine.getDefaultAlertRules()
-    )
-
-    console.log('Generated', smartAlerts.length, 'smart alerts')
+    let smartAlerts: Alert[] = []
+    try {
+      smartAlerts = AlertEngine.analyzeAndGenerateAlcoholAlerts(
+        alcoholSKUs,
+        [], // No competitor data for now
+        AlertEngine.getAlcoholAlertRules()
+      )
+      console.log(`Generated ${smartAlerts.length} smart alerts`)
+    } catch (alertError) {
+      console.error('Smart alert generation failed:', alertError)
+      // Continue without smart alerts rather than failing entire upload
+    }
 
     // Calculate summary stats
     const summary = {
@@ -104,6 +117,8 @@ export async function POST(request: NextRequest) {
       }, 0)
     }
 
+    console.log('Analysis summary:', summary)
+
     // Prepare analysis record for database
     const uploadId = uuidv4()
     const now = new Date()
@@ -115,40 +130,61 @@ export async function POST(request: NextRequest) {
       processedAt: now,
       summary,
       priceRecommendations,
-      inventoryAlerts: topAlerts,
-      smartAlerts, // ✨ NEW: Save smart alerts to database
-      alertsGenerated: true, // ✨ NEW: Track that alerts were generated
+      inventoryAlerts: inventoryAlerts.slice(0, 20), // Limit to top 20
+      smartAlerts,
+      alertsGenerated: smartAlerts.length > 0,
       userAgent: request.headers.get('user-agent') || undefined,
       ipAddress: request.headers.get('x-forwarded-for') || 
                  request.headers.get('x-real-ip') || 
                  'unknown'
     }
 
-    // Save to database (but don't let database errors break the response)
+    // Save to database
     let savedId: string | null = null
+    let databaseError: string | null = null
+    
     try {
+      console.log('Saving analysis to database...')
       savedId = await DatabaseService.saveAnalysis(analysisRecord)
-      console.log('Analysis saved to database with ID:', savedId)
-      console.log(`Generated ${smartAlerts.length} smart alerts for analysis ${uploadId}`)
+      console.log(`✅ Analysis saved to database with ID: ${savedId}`)
+      console.log(`📊 Generated ${smartAlerts.length} smart alerts for analysis ${uploadId}`)
     } catch (dbError) {
-      console.error('Database save failed, but continuing with response:', dbError)
-      // We'll still return the analysis even if database save fails
+      console.error('❌ Database save failed:', dbError)
+      databaseError = dbError instanceof Error ? dbError.message : 'Database save failed'
+      // Continue with response even if database save fails
     }
 
-    return NextResponse.json({
+    // Return successful response
+    const response = {
       success: true,
       uploadId,
       savedToDatabase: !!savedId,
+      databaseError,
       summary,
       priceRecommendations,
-      inventoryAlerts: topAlerts,
-      smartAlerts, // ✨ NEW: Return smart alerts in response
+      inventoryAlerts: inventoryAlerts.slice(0, 10), // Show top 10 in response
+      smartAlerts: smartAlerts.slice(0, 5), // Show top 5 smart alerts in response
       alertsGenerated: smartAlerts.length,
-      processedAt: now.toISOString()
+      processedAt: now.toISOString(),
+      debugInfo: {
+        totalRowsParsed: data.length,
+        validSKUs: alcoholSKUs.length,
+        smartAlertsGenerated: smartAlerts.length,
+        databaseSaved: !!savedId
+      }
+    }
+
+    console.log('✅ Upload processing complete:', {
+      uploadId,
+      skusProcessed: alcoholSKUs.length,
+      alertsGenerated: smartAlerts.length,
+      databaseSaved: !!savedId
     })
 
+    return NextResponse.json(response)
+
   } catch (error) {
-    console.error('Upload processing error:', error)
+    console.error('❌ Upload processing error:', error)
     return NextResponse.json({ 
       error: 'Failed to process file',
       details: error instanceof Error ? error.message : 'Unknown error'
