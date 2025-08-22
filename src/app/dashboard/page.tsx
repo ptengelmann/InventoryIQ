@@ -1,6 +1,3 @@
-// RECREATE: /src/app/dashboard/page.tsx
-// Complete Dashboard Page
-
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -20,7 +17,9 @@ import {
   AlertTriangle,
   FileText,
   Plus,
-  ArrowRight
+  ArrowRight,
+  RefreshCw,
+  Database
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -78,8 +77,9 @@ export default function DashboardPage() {
   
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [debugMode, setDebugMode] = useState(false)
 
-  // Fetch dashboard data
+  // Fetch dashboard data with enhanced debugging
   useEffect(() => {
     if (user) {
       fetchDashboardData()
@@ -87,20 +87,96 @@ export default function DashboardPage() {
   }, [user])
 
   const fetchDashboardData = async () => {
-    try {
-      setLoading(true)
-      const response = await fetch('/api/history?limit=5')
-      const data = await response.json()
+  if (!user) {
+    setError('User not authenticated')
+    return
+  }
+
+  try {
+    setLoading(true)
+    setError(null)
+    
+    console.log('Fetching dashboard data...')
+    
+    const response = await fetch(`/api/history?limit=5&userId=${user.email}&userEmail=${user.email}`)
+    const data = await response.json()
+      
+      console.log('Dashboard API Response:', {
+        status: response.status,
+        ok: response.ok,
+        hasHistory: data.hasHistory,
+        statsPresent: !!data.stats,
+        analysesCount: data.recentAnalyses?.length || 0,
+        data: data
+      })
       
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch dashboard data')
       }
       
+      // Validate data structure
+      if (data.hasHistory && (!data.stats || !data.recentAnalyses)) {
+        console.warn('Invalid data structure returned from API')
+        throw new Error('Invalid dashboard data structure')
+      }
+      
       setDashboardData(data)
+      
+      if (data.hasHistory) {
+        console.log('Real data loaded:', {
+          analyses: data.stats?.totalAnalyses,
+          skus: data.stats?.totalSKUs,
+          revenue: data.stats?.totalRevenuePotential
+        })
+      } else {
+        console.log('No history found - showing welcome state')
+      }
+      
     } catch (err) {
+      console.error('Dashboard fetch error:', err)
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Debug function to test all APIs
+  const debugAPIs = async () => {
+    console.log('Testing all APIs...')
+    
+    try {
+      // Test history API
+      const historyRes = await fetch('/api/history')
+      const historyData = await historyRes.json()
+      console.log('History API:', { 
+        status: historyRes.status, 
+        hasHistory: historyData.hasHistory,
+        stats: historyData.stats,
+        analyses: historyData.recentAnalyses?.length
+      })
+      
+      // Test alerts API
+      const alertsRes = await fetch('/api/alerts/latest')
+      const alertsData = await alertsRes.json()
+      console.log('Alerts API:', { 
+        status: alertsRes.status, 
+        success: alertsData.success,
+        count: alertsData.alerts?.length 
+      })
+      
+      // Test alert stats
+      const statsRes = await fetch('/api/alerts/stats')
+      const statsData = await statsRes.json()
+      console.log('Stats API:', { 
+        status: statsRes.status, 
+        totalAlerts: statsData.totalAlerts 
+      })
+      
+      // Test MongoDB connection by checking if we can save/read
+      console.log('Database connection test complete')
+      
+    } catch (error) {
+      console.error('API test failed:', error)
     }
   }
 
@@ -117,6 +193,8 @@ export default function DashboardPage() {
   const handleAuthSuccess = (userData: any) => {
     login(userData)
     setAuthModalOpen(false)
+    // Refresh data after login
+    fetchDashboardData()
   }
 
   const switchAuthMode = () => {
@@ -192,11 +270,73 @@ export default function DashboardPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Dashboard Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-2">
-            Track your inventory optimization progress and insights.
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+              <p className="text-gray-600 mt-2">
+                Track your inventory optimization progress and insights.
+              </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={fetchDashboardData}
+                className="flex items-center space-x-2 px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={loading}
+              >
+                <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+                <span className="text-sm">Refresh</span>
+              </button>
+              {process.env.NODE_ENV === 'development' && (
+                <button
+                  onClick={() => setDebugMode(!debugMode)}
+                  className="flex items-center space-x-2 px-3 py-2 bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 transition-colors"
+                >
+                  <Database className="h-4 w-4" />
+                  <span className="text-sm">Debug</span>
+                </button>
+              )}
+            </div>
+          </div>
         </div>
+
+        {/* Debug Panel (Development Only) */}
+        {debugMode && process.env.NODE_ENV === 'development' && (
+          <div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <h4 className="font-medium text-yellow-800 mb-3">Debug Tools</h4>
+            <div className="space-y-2">
+              <div className="flex space-x-2">
+                <button
+                  onClick={debugAPIs}
+                  className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded text-sm hover:bg-yellow-200"
+                >
+                  Test All APIs
+                </button>
+                <button
+                  onClick={() => console.log('Dashboard State:', dashboardData)}
+                  className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm hover:bg-blue-200"
+                >
+                  Log Dashboard State
+                </button>
+                <button
+                  onClick={() => {
+                    fetch('/api/upload', { method: 'OPTIONS' })
+                      .then(() => console.log('Upload API accessible'))
+                      .catch(err => console.error('Upload API error:', err))
+                  }}
+                  className="px-3 py-1 bg-green-100 text-green-800 rounded text-sm hover:bg-green-200"
+                >
+                  Test Upload API
+                </button>
+              </div>
+              <div className="text-sm text-yellow-700">
+                <p>Has History: {dashboardData.hasHistory ? 'Yes' : 'No'}</p>
+                <p>Stats Available: {dashboardData.stats ? 'Yes' : 'No'}</p>
+                <p>Recent Analyses: {dashboardData.recentAnalyses.length}</p>
+                {error && <p className="text-red-600">Error: {error}</p>}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tab Navigation */}
         <div className="mb-8">
@@ -243,13 +383,23 @@ export default function DashboardPage() {
                   <AlertTriangle className="h-5 w-5 text-red-600" />
                   <h3 className="font-medium text-red-900">Error Loading Dashboard</h3>
                 </div>
-                <p className="text-red-700">{error}</p>
-                <button 
-                  onClick={fetchDashboardData}
-                  className="mt-3 text-red-600 hover:text-red-800 text-sm underline"
-                >
-                  Try Again
-                </button>
+                <p className="text-red-700 mb-3">{error}</p>
+                <div className="space-x-2">
+                  <button 
+                    onClick={fetchDashboardData}
+                    className="text-red-600 hover:text-red-800 text-sm underline"
+                  >
+                    Try Again
+                  </button>
+                  {process.env.NODE_ENV === 'development' && (
+                    <button 
+                      onClick={debugAPIs}
+                      className="text-red-600 hover:text-red-800 text-sm underline ml-4"
+                    >
+                      Debug APIs
+                    </button>
+                  )}
+                </div>
               </div>
             ) : !dashboardData.hasHistory ? (
               /* No Analysis State */
@@ -262,7 +412,7 @@ export default function DashboardPage() {
                 </h2>
                 <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
                   Upload your first inventory CSV file to start getting AI-powered 
-                  price recommendations and inventory risk alerts.
+                  price recommendations and inventory risk alerts for your alcohol business.
                 </p>
                 
                 <button
@@ -279,29 +429,29 @@ export default function DashboardPage() {
                     <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
                       <TrendingUp className="h-6 w-6 text-blue-600" />
                     </div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Price Optimization</h3>
-                    <p className="text-gray-600 text-sm">Get AI-powered price recommendations to maximize revenue</p>
+                    <h3 className="font-semibold text-gray-900 mb-2">Alcohol Price Optimization</h3>
+                    <p className="text-gray-600 text-sm">AI-powered pricing for beer, wine, spirits with seasonal considerations</p>
                   </div>
                   
                   <div className="bg-white rounded-xl p-6 border border-gray-200 text-center">
                     <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto mb-4">
                       <AlertTriangle className="h-6 w-6 text-red-600" />
                     </div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Risk Detection</h3>
-                    <p className="text-gray-600 text-sm">Identify stockouts and overstock situations before they happen</p>
+                    <h3 className="font-semibold text-gray-900 mb-2">Inventory Risk Detection</h3>
+                    <p className="text-gray-600 text-sm">Prevent stockouts during peak seasons and manage expiration risks</p>
                   </div>
                   
                   <div className="bg-white rounded-xl p-6 border border-gray-200 text-center">
                     <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-4">
                       <Package className="h-6 w-6 text-green-600" />
                     </div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Inventory Insights</h3>
-                    <p className="text-gray-600 text-sm">Track performance and optimize stock levels with AI</p>
+                    <h3 className="font-semibold text-gray-900 mb-2">Alcohol Industry Insights</h3>
+                    <p className="text-gray-600 text-sm">Track performance with alcohol-specific analytics and compliance</p>
                   </div>
                 </div>
               </div>
             ) : (
-              /* Dashboard with Data */
+              /* Dashboard with Real Data */
               <div className="space-y-8">
                 {/* Quick Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -494,9 +644,13 @@ export default function DashboardPage() {
             analysisId={dashboardData.recentAnalyses[0]?.uploadId}
             onAcknowledge={(alertId) => {
               console.log('Acknowledged alert:', alertId)
+              // Refresh dashboard data to reflect changes
+              fetchDashboardData()
             }}
             onResolve={(alertId) => {
               console.log('Resolved alert:', alertId)
+              // Refresh dashboard data to reflect changes
+              fetchDashboardData()
             }}
           />
         )}
@@ -505,7 +659,7 @@ export default function DashboardPage() {
           <HistoryDashboard 
             onSelectAnalysis={(analysisId) => {
               console.log('Selected analysis:', analysisId)
-              // You could switch to alerts tab and show that analysis
+              // Switch to alerts tab and show that analysis
               setActiveTab('alerts')
             }}
           />

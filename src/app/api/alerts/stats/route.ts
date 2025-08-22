@@ -7,9 +7,12 @@ import { DatabaseService } from '@/lib/models'
 
 export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const userId = searchParams.get('userId') || 'demo-user'
+    
     console.log('Fetching alert statistics...')
     
-    const stats = await DatabaseService.getAlertStatistics()
+    const stats = await DatabaseService.getAlertStatistics(userId)
     
     console.log('Alert statistics:', stats)
     

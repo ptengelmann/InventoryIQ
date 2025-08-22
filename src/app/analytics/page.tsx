@@ -66,34 +66,41 @@ export default function AnalyticsPage() {
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login')
 
-  const handleFileUpload = async (file: File) => {
-    setUploadedFile(file)
-    setIsAnalyzing(true)
-    setError(null)
-    
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      })
-      
-      const data = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to process file')
-      }
-      
-      setResults(data)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-      setUploadedFile(null)
-    } finally {
-      setIsAnalyzing(false)
-    }
+const handleFileUpload = async (file: File) => {
+  if (!user) {
+    setError('User not authenticated')
+    return
   }
+
+  setUploadedFile(file)
+  setIsAnalyzing(true)
+  setError(null)
+  
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('userId', user.email) // Now safe - user is checked
+    formData.append('userEmail', user.email)
+    
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData
+    })
+    
+    const data = await response.json()
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to process file')
+    }
+    
+    setResults(data)
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'An error occurred')
+    setUploadedFile(null)
+  } finally {
+    setIsAnalyzing(false)
+  }
+}
 
   const downloadReport = () => {
     if (!results) return

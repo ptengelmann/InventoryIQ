@@ -8,9 +8,12 @@ import { Alert } from '@/lib/alert-engine'
 
 export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const userId = searchParams.get('userId') || 'demo-user'
+    
     console.log('Fetching latest alerts...')
     
-    const alerts = await DatabaseService.getLatestAlerts()
+    const alerts = await DatabaseService.getLatestAlerts(userId)
     
     console.log(`Found ${alerts.length} latest alerts`)
     
@@ -25,7 +28,7 @@ export async function GET(request: NextRequest) {
     console.error('Latest alerts API error:', error)
     
     // Return fallback demo alerts if database fails
-    const fallbackAlerts: Alert[] = [
+    const fallbackAlerts = [
       {
         id: 'demo-alert-1',
         rule_id: 'critical-stockout',

@@ -7,7 +7,11 @@ import { DatabaseService } from '@/lib/models'
 // GET /api/alerts/manage - Get all analyses with alert counts for management
 export async function GET(request: NextRequest) {
   try {
-    const analyses = await DatabaseService.getAllAnalyses()
+    const { searchParams } = new URL(request.url)
+    const userId = searchParams.get('userId') || 'demo-user'
+    
+    // Use getRecentAnalyses instead of getAllAnalyses
+    const analyses = await DatabaseService.getRecentAnalyses(userId, 100) // Get more for management
     
     const analysesWithAlertCounts = analyses.map((analysis: any) => ({
       uploadId: analysis.uploadId,
@@ -19,11 +23,6 @@ export async function GET(request: NextRequest) {
       unreadAlerts: analysis.smartAlerts?.filter((a: any) => !a.acknowledged && !a.resolved).length || 0,
       resolvedAlerts: analysis.smartAlerts?.filter((a: any) => a.resolved).length || 0
     }))
-    
-    // Sort by most recent first
-    analysesWithAlertCounts.sort((a: any, b: any) => 
-      new Date(b.processedAt).getTime() - new Date(a.processedAt).getTime()
-    )
     
     return NextResponse.json({
       success: true,
@@ -43,27 +42,26 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// DELETE /api/alerts/manage - Delete analysis
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const analysisId = searchParams.get('analysisId')
+    const userId = searchParams.get('userId') || 'demo-user'
     const deleteAll = searchParams.get('deleteAll') === 'true'
     
     if (deleteAll) {
-      // This would be dangerous - let's not implement for now
       return NextResponse.json({
         error: 'Delete all analyses not implemented for safety'
       }, { status: 400 })
     } else if (analysisId) {
-      const success = await DatabaseService.deleteAnalysis(analysisId)
+      const success = await DatabaseService.deleteAnalysis(analysisId, userId)
       
       if (!success) {
         return NextResponse.json({
           error: 'Failed to delete analysis'
         }, { status: 404 })
       }
-
+      
       return NextResponse.json({
         success: true,
         message: 'Analysis deleted successfully'

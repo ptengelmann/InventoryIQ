@@ -1,7 +1,8 @@
-// REPLACE: /src/components/ui/alert-dashboard.tsx
+// UPDATE: /src/components/ui/alert-dashboard.tsx - Add user context
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useUser } from '@/contexts/UserContext' // ✅ ADD THIS IMPORT
 import { 
   AlertTriangle, 
   TrendingUp, 
@@ -39,6 +40,7 @@ interface AlertStats {
 }
 
 export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete }: AlertDashboardProps) {
+  const { user } = useUser() // ✅ ADD THIS
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [alertStats, setAlertStats] = useState<AlertStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -48,30 +50,44 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
   const [deleting, setDeleting] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchRealAlerts()
-    fetchRealAlertStats()
-  }, [analysisId])
+    if (user) { // ✅ ONLY FETCH IF USER EXISTS
+      fetchRealAlerts()
+      fetchRealAlertStats()
+    }
+  }, [analysisId, user])
 
   const fetchRealAlerts = async () => {
+    if (!user) {
+      setError('User not authenticated')
+      return
+    }
+
     try {
       setLoading(true)
       setError(null)
       
+      console.log('Fetching alerts for user:', user.email)
+      
       const endpoint = analysisId 
-        ? `/api/alerts/${analysisId}`
-        : '/api/alerts/latest'
+        ? `/api/alerts/${analysisId}?userId=${user.email}`
+        : `/api/alerts/latest?userId=${user.email}`
+      
+      console.log('Alert API endpoint:', endpoint)
       
       const response = await fetch(endpoint)
       
       if (!response.ok) {
-        throw new Error('Failed to fetch alerts')
+        throw new Error(`API returned ${response.status}: ${response.statusText}`)
       }
       
       const data = await response.json()
+      console.log('Alert API response:', data)
+      
       setAlerts(data.alerts || [])
       
     } catch (err) {
       console.error('Error fetching alerts:', err)
+      setError(err instanceof Error ? err.message : 'Failed to fetch alerts')
       // Fallback to demo data if API fails
       setAlerts(generateFallbackAlerts())
     } finally {
@@ -80,14 +96,19 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
   }
 
   const fetchRealAlertStats = async () => {
+    if (!user) return
+
     try {
-      const response = await fetch('/api/alerts/stats')
+      console.log('Fetching alert stats for user:', user.email)
+      
+      const response = await fetch(`/api/alerts/stats?userId=${user.email}`)
       
       if (response.ok) {
         const data = await response.json()
+        console.log('Alert stats response:', data)
         setAlertStats(data)
       } else {
-        // Generate stats from current alerts
+        console.warn('Alert stats API failed, generating from current alerts')
         generateStatsFromAlerts()
       }
       
@@ -146,49 +167,23 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
         acknowledged: false,
         resolved: false,
         delivered_via: []
-      },
-      {
-        id: 'alert-2-beer-seasonal',
-        rule_id: 'seasonal-prep',
-        sku: 'CRAFT-IPA-001',
-        category: 'beer',
-        type: 'seasonal_prep',
-        severity: 'high',
-        title: 'Seasonal Prep Alert: CRAFT-IPA-001',
-        message: 'Summer beer season approaching in 45 days. Current inventory insufficient for seasonal demand surge.',
-        action_required: 'Increase inventory by 200 units for seasonal peak',
-        impact: {
-          revenue_at_risk: 3200,
-          time_to_critical: 45
-        },
-        data: {
-          current_stock: 150,
-          predicted_demand: 180,
-          weeks_of_stock: 5.2,
-          confidence: 0.85,
-          trend: 'increasing',
-          seasonal_factor: 1.4
-        },
-        alcohol_context: {
-          abv: 6.2,
-          shelf_life_days: 120,
-          seasonal_peak: '45 days'
-        },
-        created_at: new Date(Date.now() - 6 * 60 * 60 * 1000),
-        acknowledged: false,
-        resolved: false,
-        delivered_via: []
       }
     ]
   }
 
   const handleAcknowledge = async (alertId: string) => {
+    if (!user) return
+
     try {
       if (analysisId) {
         await fetch(`/api/alerts/${analysisId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ alertId, action: 'acknowledge' })
+          body: JSON.stringify({ 
+            alertId, 
+            action: 'acknowledge',
+            userId: user.email 
+          })
         })
       }
       
@@ -203,12 +198,18 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
   }
 
   const handleResolve = async (alertId: string) => {
+    if (!user) return
+
     try {
       if (analysisId) {
         await fetch(`/api/alerts/${analysisId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ alertId, action: 'resolve' })
+          body: JSON.stringify({ 
+            alertId, 
+            action: 'resolve',
+            userId: user.email 
+          })
         })
       }
       
@@ -223,11 +224,13 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
   }
 
   const handleDelete = async (alertId: string) => {
+    if (!user) return
+
     try {
       setDeleting(alertId)
       
       if (analysisId) {
-        await fetch(`/api/alerts/${analysisId}?alertId=${alertId}`, {
+        await fetch(`/api/alerts/${analysisId}?alertId=${alertId}&userId=${user.email}`, {
           method: 'DELETE'
         })
       }
@@ -243,6 +246,17 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
     }
   }
 
+  // Show loading if user not loaded yet
+  if (!user) {
+    return (
+      <div className="text-center py-12">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading user context...</p>
+      </div>
+    )
+  }
+
+  // Rest of component remains the same...
   const filteredAlerts = alerts.filter(alert => {
     if (alert.resolved && filter !== 'all') return false
     
@@ -316,6 +330,27 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
     )
   }
 
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+        <div className="flex items-center space-x-2 mb-2">
+          <AlertTriangle className="h-5 w-5 text-red-600" />
+          <h3 className="font-medium text-red-900">Error Loading Alerts</h3>
+        </div>
+        <p className="text-red-700 mb-3">{error}</p>
+        <button 
+          onClick={() => {
+            fetchRealAlerts()
+            fetchRealAlertStats()
+          }}
+          className="text-red-600 hover:text-red-800 text-sm underline"
+        >
+          Try Again
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Alert Summary Cards */}
@@ -369,30 +404,7 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
         </div>
       </div>
 
-      {/* AI Insights */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200">
-        <div className="flex items-center space-x-3 mb-4">
-          <Brain className="h-6 w-6 text-blue-600" />
-          <h3 className="text-lg font-semibold text-gray-900">Alcohol Industry AI Insights</h3>
-        </div>
-        <div className="space-y-2">
-          <p className="text-gray-700">
-            {alerts.filter(a => a.severity === 'critical').length > 0 
-              ? "Critical stockout alerts require immediate attention"
-              : "No critical issues detected"}
-          </p>
-          <p className="text-gray-700">
-            {alerts.filter(a => a.type === 'seasonal_prep').length > 0
-              ? "Seasonal preparation opportunities identified"
-              : "Seasonal inventory levels optimal"}
-          </p>
-          <p className="text-gray-700">
-            Revenue at risk: ${alerts.reduce((sum, a) => sum + (a.impact.revenue_at_risk || 0), 0).toLocaleString()}
-          </p>
-        </div>
-      </div>
-
-      {/* Filter Controls */}
+      {/* Filter Controls and Alert List */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-gray-900">Alerts ({filteredAlerts.length})</h2>
         <div className="flex items-center space-x-2">
@@ -439,7 +451,12 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
           <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
             <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">No Alerts</h3>
-            <p className="text-gray-600">All clear! Your alcohol inventory is running smoothly.</p>
+            <p className="text-gray-600">
+              {alerts.length === 0 
+                ? "Upload a CSV file to generate alerts for your alcohol inventory."
+                : "All alerts have been filtered out based on your current selection."
+              }
+            </p>
           </div>
         ) : (
           filteredAlerts.map(alert => {
@@ -484,26 +501,6 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
                         </div>
                         <p className="text-gray-700 font-medium">{alert.action_required}</p>
                       </div>
-                      
-                      {/* Alcohol Context */}
-                      {alert.alcohol_context && (
-                        <div className="bg-blue-50 rounded-lg p-3">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <Package className="h-4 w-4 text-blue-600" />
-                            <span className="font-medium text-gray-900">Alcohol Details:</span>
-                          </div>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                            <div>ABV: {alert.alcohol_context.abv}%</div>
-                            {alert.alcohol_context.shelf_life_days && (
-                              <div>Shelf Life: {alert.alcohol_context.shelf_life_days} days</div>
-                            )}
-                            {alert.alcohol_context.seasonal_peak && (
-                              <div>Peak Season: {alert.alcohol_context.seasonal_peak}</div>
-                            )}
-                            <div>Category: {alert.category}</div>
-                          </div>
-                        </div>
-                      )}
                       
                       {/* Impact Summary */}
                       {(alert.impact.revenue_at_risk || alert.impact.profit_opportunity || alert.impact.time_to_critical) && (
@@ -561,37 +558,6 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
           })
         )}
       </div>
-
-      {/* Performance Summary */}
-      {alerts.length > 0 && (
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200">
-          <div className="flex items-center space-x-3 mb-4">
-            <Target className="h-6 w-6 text-blue-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Performance Summary</h3>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">
-                {alerts.filter(a => a.severity === 'critical').length}
-              </div>
-              <div className="text-sm text-gray-600">Critical Issues</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
-                ${alerts.reduce((sum, a) => sum + (a.impact.profit_opportunity || 0), 0).toLocaleString()}
-              </div>
-              <div className="text-sm text-gray-600">Revenue Opportunity</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">
-                ${alerts.reduce((sum, a) => sum + (a.impact.revenue_at_risk || 0), 0).toLocaleString()}
-              </div>
-              <div className="text-sm text-gray-600">Revenue at Risk</div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

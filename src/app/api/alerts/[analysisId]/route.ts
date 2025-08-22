@@ -11,9 +11,12 @@ export async function GET(
 ) {
   try {
     const analysisId = params.analysisId
+    const { searchParams } = new URL(request.url)
+    const userId = searchParams.get('userId') || 'unknown'
+    
     console.log(`Fetching alerts for analysis: ${analysisId}`)
     
-    const alerts = await DatabaseService.getAlertsForAnalysis(analysisId)
+    const alerts = await DatabaseService.getAlertsForAnalysis(analysisId, userId)
     
     console.log(`Found ${alerts.length} alerts for analysis ${analysisId}`)
     
@@ -40,11 +43,11 @@ export async function PATCH(
 ) {
   try {
     const analysisId = params.analysisId
-    const { alertId, action } = await request.json()
+    const { alertId, action, userId } = await request.json()
     
     console.log(`Updating alert ${alertId} in analysis ${analysisId}: ${action}`)
     
-    const success = await DatabaseService.updateAlertStatus(analysisId, alertId, action)
+    const success = await DatabaseService.updateAlertStatus(analysisId, alertId, action, userId)
     
     if (success) {
       return NextResponse.json({
@@ -78,6 +81,7 @@ export async function DELETE(
     const analysisId = params.analysisId
     const { searchParams } = new URL(request.url)
     const alertId = searchParams.get('alertId')
+    const userId = searchParams.get('userId') || 'unknown'
     
     if (!alertId) {
       return NextResponse.json({ error: 'Alert ID required' }, { status: 400 })
@@ -85,7 +89,7 @@ export async function DELETE(
     
     console.log(`Deleting alert ${alertId} from analysis ${analysisId}`)
     
-    const success = await DatabaseService.deleteAlert(analysisId, alertId)
+    const success = await DatabaseService.deleteAlert(analysisId, alertId, userId)
     
     if (success) {
       return NextResponse.json({

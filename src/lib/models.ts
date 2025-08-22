@@ -1,6 +1,4 @@
-// COMPLETE REPLACEMENT: /lib/models.ts
-// Database schema types and service functions for InventoryIQ
-
+// 1. UPDATE: /src/lib/models.ts - Add user isolation
 import { Alert } from './alert-engine'
 import clientPromise from './mongodb'
 
@@ -10,6 +8,8 @@ export interface AnalysisRecord {
   fileName: string
   uploadedAt: Date
   processedAt: Date
+  userId: string  // ✅ NEW: User isolation
+  userEmail: string  // ✅ NEW: User identification
   summary: {
     totalSKUs: number
     priceIncreases: number
@@ -29,19 +29,19 @@ export interface AnalysisRecord {
     inventoryLevel: number
   }[]
   inventoryAlerts: {
-  sku: string
-  riskLevel: 'low' | 'medium' | 'high'
-  riskType: 'stockout' | 'overstock' | 'expiration' | 'seasonal_shortage' | 'none'  // ENHANCED
-  weeksOfStock: number
-  priority: number
-  message: string
-  aiEnhanced?: boolean
-  alcoholContext?: {
-    category?: string
-    shelfLifeDays?: number
-    seasonalPeak?: string
-  }
-}[]
+    sku: string
+    riskLevel: 'low' | 'medium' | 'high'
+    riskType: 'stockout' | 'overstock' | 'expiration' | 'seasonal_shortage' | 'none'
+    weeksOfStock: number
+    priority: number
+    message: string
+    aiEnhanced?: boolean
+    alcoholContext?: {
+      category?: string
+      shelfLifeDays?: number
+      seasonalPeak?: string
+    }
+  }[]
   smartAlerts: Alert[]
   alertsGenerated: boolean
   userAgent?: string
@@ -51,6 +51,7 @@ export interface AnalysisRecord {
 export interface SKUHistory {
   _id?: string
   sku: string
+  userId: string  // ✅ NEW: User isolation
   analyses: {
     analysisId: string
     date: Date
@@ -70,14 +71,22 @@ export class DatabaseService {
     return client.db('InventoryIQ')
   }
 
-  // Save analysis to database
-  static async saveAnalysis(analysis: Omit<AnalysisRecord, '_id'>): Promise<string> {
+  // Save analysis to database with user isolation
+  static async saveAnalysis(analysis: Omit<AnalysisRecord, '_id'>, userId: string, userEmail: string): Promise<string> {
     try {
       const db = await this.getDb()
-      const result = await db.collection('analyses').insertOne(analysis)
       
-      // Also update SKU history
-      await this.updateSKUHistory(analysis as AnalysisRecord)
+      // Add user identification to analysis
+      const analysisWithUser = {
+        ...analysis,
+        userId,
+        userEmail
+      }
+      
+      const result = await db.collection('analyses').insertOne(analysisWithUser)
+      
+      // Also update SKU history with user isolation
+      await this.updateSKUHistory(analysisWithUser as AnalysisRecord)
       
       return result.insertedId.toString()
     } catch (error) {
@@ -86,7 +95,7 @@ export class DatabaseService {
     }
   }
 
-  // Update SKU history for trend tracking
+  // Update SKU history for trend tracking with user isolation
   private static async updateSKUHistory(analysis: AnalysisRecord) {
     try {
       const db = await this.getDb()
@@ -104,29 +113,31 @@ export class DatabaseService {
         }
 
         await collection.updateOne(
-          { sku: rec.sku },
+          { sku: rec.sku, userId: analysis.userId },  // ✅ Filter by user
           {
             $push: { 
               analyses: historyEntry
-            } as any, // Type assertion to fix MongoDB typing issue
+            } as any,
             $set: { updatedAt: new Date() },
-            $setOnInsert: { createdAt: new Date() }
+            $setOnInsert: { 
+              createdAt: new Date(),
+              userId: analysis.userId  // ✅ Set user ID
+            }
           },
           { upsert: true }
         )
       }
     } catch (error) {
       console.error('Error updating SKU history:', error)
-      // Don't throw here - we don't want to fail the main analysis
     }
   }
 
-  // Get recent analyses
-  static async getRecentAnalyses(limit: number = 10): Promise<AnalysisRecord[]> {
+  // Get recent analyses for specific user
+  static async getRecentAnalyses(userId: string, limit: number = 10): Promise<AnalysisRecord[]> {
     try {
       const db = await this.getDb()
       const analyses = await db.collection('analyses')
-        .find({})
+        .find({ userId })  // ✅ Filter by user
         .sort({ processedAt: -1 })
         .limit(limit)
         .toArray()
@@ -141,11 +152,14 @@ export class DatabaseService {
     }
   }
 
-  // Get specific analysis by ID
-  static async getAnalysisById(analysisId: string): Promise<AnalysisRecord | null> {
+  // Get specific analysis by ID and user
+  static async getAnalysisById(analysisId: string, userId: string): Promise<AnalysisRecord | null> {
     try {
       const db = await this.getDb()
-      const analysis = await db.collection('analyses').findOne({ uploadId: analysisId })
+      const analysis = await db.collection('analyses').findOne({ 
+        uploadId: analysisId,
+        userId  // ✅ Ensure user owns this analysis
+      })
       
       if (!analysis) return null
       
@@ -159,11 +173,12 @@ export class DatabaseService {
     }
   }
 
-  // Update alert status (enhanced to support snooze)
+  // Update alert status with user validation
   static async updateAlertStatus(
     analysisId: string, 
     alertId: string, 
-    status: 'acknowledged' | 'resolved' | 'snoozed'
+    status: 'acknowledged' | 'resolved' | 'snoozed',
+    userId: string  // ✅ User validation
   ): Promise<boolean> {
     try {
       const db = await this.getDb()
@@ -171,7 +186,6 @@ export class DatabaseService {
       let updateDoc: any = {}
       
       if (status === 'resolved') {
-        // If resolving, also acknowledge
         updateDoc = { 
           'smartAlerts.$.acknowledged': true, 
           'smartAlerts.$.resolved': true,
@@ -186,12 +200,16 @@ export class DatabaseService {
         updateDoc = { 
           'smartAlerts.$.snoozed': true,
           'smartAlerts.$.snoozedAt': new Date(),
-          'smartAlerts.$.snoozeUntil': new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+          'smartAlerts.$.snoozeUntil': new Date(Date.now() + 24 * 60 * 60 * 1000)
         }
       }
       
       const result = await db.collection('analyses').updateOne(
-        { uploadId: analysisId, 'smartAlerts.id': alertId },
+        { 
+          uploadId: analysisId, 
+          'smartAlerts.id': alertId,
+          userId  // ✅ Ensure user owns this analysis
+        },
         { $set: updateDoc }
       )
       
@@ -202,13 +220,13 @@ export class DatabaseService {
     }
   }
 
-  // Delete specific alert
-  static async deleteAlert(analysisId: string, alertId: string): Promise<boolean> {
+  // Delete specific alert with user validation
+  static async deleteAlert(analysisId: string, alertId: string, userId: string): Promise<boolean> {
     try {
       const db = await this.getDb()
       
       const result = await db.collection('analyses').updateOne(
-        { uploadId: analysisId },
+        { uploadId: analysisId, userId },  // ✅ User validation
         { $pull: { smartAlerts: { id: alertId } } as any }
       )
       
@@ -219,35 +237,21 @@ export class DatabaseService {
     }
   }
 
-  // Delete all alerts for an analysis
-  static async deleteAllAlertsForAnalysis(analysisId: string): Promise<boolean> {
-    try {
-      const db = await this.getDb()
-      
-      const result = await db.collection('analyses').updateOne(
-        { uploadId: analysisId },
-        { $set: { smartAlerts: [] } }
-      )
-      
-      return result.modifiedCount > 0
-    } catch (error) {
-      console.error('Error deleting all alerts:', error)
-      return false
-    }
-  }
-
-  // Delete entire analysis (and all its alerts)
-  static async deleteAnalysis(analysisId: string): Promise<boolean> {
+  // Delete entire analysis with user validation
+  static async deleteAnalysis(analysisId: string, userId: string): Promise<boolean> {
     try {
       const db = await this.getDb()
       
       // Also delete from SKU history
       await db.collection('sku_history').updateMany(
-        {},
+        { userId },  // ✅ Only user's SKU history
         { $pull: { analyses: { analysisId: analysisId } } as any }
       )
       
-      const result = await db.collection('analyses').deleteOne({ uploadId: analysisId })
+      const result = await db.collection('analyses').deleteOne({ 
+        uploadId: analysisId,
+        userId  // ✅ User validation
+      })
       
       return result.deletedCount > 0
     } catch (error) {
@@ -256,29 +260,10 @@ export class DatabaseService {
     }
   }
 
-  // Get all analyses (for management)
-  static async getAllAnalyses(): Promise<AnalysisRecord[]> {
+  // Get alerts for specific analysis and user
+  static async getAlertsForAnalysis(analysisId: string, userId: string): Promise<Alert[]> {
     try {
-      const db = await this.getDb()
-      const analyses = await db.collection('analyses')
-        .find({})
-        .sort({ processedAt: -1 })
-        .toArray()
-      
-      return analyses.map(doc => ({
-        ...doc,
-        _id: doc._id.toString()
-      })) as AnalysisRecord[]
-    } catch (error) {
-      console.error('Error fetching all analyses:', error)
-      return []
-    }
-  }
-
-  // Get alerts for specific analysis
-  static async getAlertsForAnalysis(analysisId: string): Promise<Alert[]> {
-    try {
-      const analysis = await this.getAnalysisById(analysisId)
+      const analysis = await this.getAnalysisById(analysisId, userId)
       return analysis?.smartAlerts || []
     } catch (error) {
       console.error('Error fetching alerts:', error)
@@ -286,10 +271,10 @@ export class DatabaseService {
     }
   }
 
-  // Get latest alerts (from most recent analysis)
-  static async getLatestAlerts(): Promise<Alert[]> {
+  // Get latest alerts for specific user
+  static async getLatestAlerts(userId: string): Promise<Alert[]> {
     try {
-      const recentAnalyses = await this.getRecentAnalyses(1)
+      const recentAnalyses = await this.getRecentAnalyses(userId, 1)
       if (recentAnalyses.length === 0) return []
       
       return recentAnalyses[0].smartAlerts || []
@@ -299,11 +284,14 @@ export class DatabaseService {
     }
   }
 
-  // Get SKU performance history
-  static async getSKUHistory(sku: string): Promise<SKUHistory | null> {
+  // Get SKU performance history for specific user
+  static async getSKUHistory(sku: string, userId: string): Promise<SKUHistory | null> {
     try {
       const db = await this.getDb()
-      const history = await db.collection('sku_history').findOne({ sku })
+      const history = await db.collection('sku_history').findOne({ 
+        sku, 
+        userId  // ✅ User-specific SKU history
+      })
       
       if (!history) return null
       
@@ -317,12 +305,12 @@ export class DatabaseService {
     }
   }
 
-  // Get alert statistics
-  static async getAlertStatistics() {
+  // Get alert statistics for specific user
+  static async getAlertStatistics(userId: string) {
     try {
       const db = await this.getDb()
       const analyses = await db.collection('analyses')
-        .find({})
+        .find({ userId })  // ✅ User-specific alerts
         .toArray()
       
       let totalAlerts = 0
@@ -360,17 +348,17 @@ export class DatabaseService {
     }
   }
 
-  // Get dashboard stats
-  static async getDashboardStats() {
+  // Get dashboard stats for specific user
+  static async getDashboardStats(userId: string) {
     try {
       const db = await this.getDb()
       
-      const totalAnalyses = await db.collection('analyses').countDocuments()
-      const totalSKUs = await db.collection('sku_history').countDocuments()
+      const totalAnalyses = await db.collection('analyses').countDocuments({ userId })
+      const totalSKUs = await db.collection('sku_history').countDocuments({ userId })
       
-      // Get recent performance
+      // Get recent performance for this user
       const recentAnalyses = await db.collection('analyses')
-        .find({})
+        .find({ userId })  // ✅ User-specific stats
         .sort({ processedAt: -1 })
         .limit(30)
         .toArray()

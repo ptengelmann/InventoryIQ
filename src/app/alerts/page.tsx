@@ -79,24 +79,32 @@ export default function AlertManagementPage() {
     }
   }, [analyses])
 
-  const fetchAnalyses = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const response = await fetch('/api/alerts/manage')
-      const data = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch analyses')
-      }
-      
-      setAnalyses(data.analyses || [])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-    } finally {
-      setLoading(false)
-    }
+const fetchAnalyses = async () => {
+  if (!user) {
+    setError('User not authenticated')
+    return
   }
+
+  try {
+    setLoading(true)
+    setError(null)
+    
+    console.log('Fetching analyses for user:', user.email)
+    const response = await fetch(`/api/alerts/manage?userId=${user.email}`)
+    const data = await response.json()
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to fetch analyses')
+    }
+    
+    setAnalyses(data.analyses || [])
+  } catch (err) {
+    console.error('Fetch analyses error:', err)
+    setError(err instanceof Error ? err.message : 'An error occurred')
+  } finally {
+    setLoading(false)
+  }
+}
 
   const calculateAlertStats = () => {
     const totalAlerts = analyses.reduce((sum, a) => sum + a.alertCount, 0)

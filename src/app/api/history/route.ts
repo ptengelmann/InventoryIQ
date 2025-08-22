@@ -1,3 +1,7 @@
+// =================================================================
+// 3. UPDATE: /src/app/api/history/route.ts - Add user filtering
+// =================================================================
+
 import { NextRequest, NextResponse } from 'next/server'
 import { DatabaseService } from '@/lib/models'
 
@@ -5,12 +9,26 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const limit = parseInt(searchParams.get('limit') || '10')
+    const userId = searchParams.get('userId')  // ✅ Get user ID from query
+    const userEmail = searchParams.get('userEmail')  // ✅ Get user email
     
-    // Get recent analyses
-    const recentAnalyses = await DatabaseService.getRecentAnalyses(limit)
+    if (!userId || !userEmail) {
+      return NextResponse.json({ 
+        error: 'User authentication required',
+        hasHistory: false,
+        stats: null,
+        recentAnalyses: [],
+        trends: null
+      }, { status: 401 })
+    }
     
-    // Get dashboard stats
-    const stats = await DatabaseService.getDashboardStats()
+    console.log(`Fetching history for user: ${userEmail}`)
+    
+    // Get recent analyses for this specific user
+    const recentAnalyses = await DatabaseService.getRecentAnalyses(userId, limit)
+    
+    // Get dashboard stats for this specific user
+    const stats = await DatabaseService.getDashboardStats(userId)
     
     // Calculate trends (comparing last 2 analyses if available)
     let trends = null
@@ -26,12 +44,16 @@ export async function GET(request: NextRequest) {
       }
     }
     
+    console.log(`Found ${recentAnalyses.length} analyses for user ${userEmail}`)
+    
     return NextResponse.json({
       success: true,
       stats,
       recentAnalyses,
       trends,
-      hasHistory: recentAnalyses.length > 0
+      hasHistory: recentAnalyses.length > 0,
+      userId,
+      userEmail
     })
     
   } catch (error) {
