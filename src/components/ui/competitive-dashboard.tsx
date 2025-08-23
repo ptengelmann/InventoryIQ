@@ -158,59 +158,92 @@ export function CompetitiveDashboard() {
     }
   }
 
-  const testLiveCompetitorData = async () => {
-    if (!testProduct) return
+const testLiveCompetitorData = async () => {
+  if (!testProduct) return
+  
+  setRefreshing(true)
+  try {
+    // Build query parameters
+    const queryParams = new URLSearchParams({
+      product: testProduct,
+      category: 'spirits'
+    })
     
-    setRefreshing(true)
-    try {
-      const response = await fetch(`/api/competitors/live?product=${encodeURIComponent(testProduct)}&category=spirits`)
-      const data = await response.json()
-      
-      if (data.success && data.competitors) {
-        const newCompetitorData: PriceComparisonResult = {
+    // Add user context if available
+    if (user) {
+      queryParams.append('userEmail', user.email)
+      queryParams.append('userId', user.email) // Using email as userId since that's what your system uses
+    }
+    
+    console.log('Making API call with params:', queryParams.toString())
+    
+    const response = await fetch(`/api/competitors/live?${queryParams.toString()}`)
+    const data = await response.json()
+    
+    console.log('API Response:', data)
+    
+    if (data.success && data.competitors) {
+      const newCompetitorData: PriceComparisonResult = {
+        sku: `LIVE-${testProduct.replace(/\s+/g, '-').toUpperCase()}`,
+        our_price: data.our_price || 0,
+        competitor_prices: data.competitors.map((comp: any) => ({
           sku: `LIVE-${testProduct.replace(/\s+/g, '-').toUpperCase()}`,
-          our_price: 0,
-          competitor_prices: data.competitors.map((comp: any) => ({
-            sku: `LIVE-${testProduct.replace(/\s+/g, '-').toUpperCase()}`,
-            competitor: comp.retailer,
-            competitor_price: comp.price,
-            our_price: 0,
-            price_difference: 0,
-            price_difference_percentage: 0,
-            availability: comp.availability,
-            last_updated: new Date(),
-            source: comp.retailer.toLowerCase().replace(/\s+/g, '_') as any,
-            url: comp.url,
-            product_name: comp.product_name,
-            relevance_score: comp.relevance_score
-          })),
-          market_position: {
-            rank: 1,
-            percentile: 50,
-            price_advantage: 0
-          },
-          recommendations: {
-            action: 'investigate',
-            reasoning: 'Live competitive data - set your price to see recommendations',
-            urgency: 'medium'
-          }
+          competitor: comp.retailer,
+          competitor_price: comp.price,
+          our_price: data.our_price || 0,
+          price_difference: data.our_price > 0 ? (comp.price - data.our_price) : 0,
+          price_difference_percentage: data.our_price > 0 ? (((comp.price - data.our_price) / data.our_price) * 100) : 0,
+          availability: comp.availability,
+          last_updated: new Date(),
+          source: comp.retailer.toLowerCase().replace(/\s+/g, '_') as any,
+          url: comp.url,
+          product_name: comp.product_name,
+          relevance_score: comp.relevance_score
+        })),
+        market_position: {
+          rank: 1,
+          percentile: 50,
+          price_advantage: data.our_price > 0 && data.competitors.length > 0 ? 
+            (((data.our_price - (data.competitors.reduce((sum: number, c: any) => sum + c.price, 0) / data.competitors.length)) 
+            / (data.competitors.reduce((sum: number, c: any) => sum + c.price, 0) / data.competitors.length)) * 100) : 0
+        },
+        recommendations: {
+          action: data.price_found_in_uploads ? 
+            (data.our_price > (data.competitors.reduce((sum: number, c: any) => sum + c.price, 0) / data.competitors.length) * 1.1 ? 'decrease' : 
+             data.our_price < (data.competitors.reduce((sum: number, c: any) => sum + c.price, 0) / data.competitors.length) * 0.9 ? 'increase' : 'maintain') :
+            'investigate',
+          reasoning: data.price_found_in_uploads ? 
+            `Your price: £${data.our_price.toFixed(2)} vs avg competitor: £${(data.competitors.reduce((sum: number, c: any) => sum + c.price, 0) / data.competitors.length).toFixed(2)}` :
+            'Upload inventory data with matching product names to see price comparisons',
+          urgency: data.price_found_in_uploads ? 'medium' : 'low'
         }
-        
-        setCompetitorData(prev => [newCompetitorData, ...prev])
-        setTestProduct('')
-        
-        alert(`Found ${data.competitors.length} competitor prices for ${testProduct}`)
-      } else {
-        alert('No competitive data found.')
       }
       
-    } catch (error) {
-      console.error('Live test failed:', error)
-      alert('Failed to fetch live data.')
-    } finally {
-      setRefreshing(false)
+      setCompetitorData(prev => [newCompetitorData, ...prev])
+      setTestProduct('')
+      
+      // Show helpful message
+      if (data.price_found_in_uploads) {
+        const avgCompetitorPrice = data.competitors.reduce((sum: number, c: any) => sum + c.price, 0) / data.competitors.length
+        const message = `Found ${data.competitors.length} competitor prices for ${testProduct}:\n` +
+                       `Your price: £${data.our_price.toFixed(2)}\n` +
+                       `Average competitor: £${avgCompetitorPrice.toFixed(2)}\n` +
+                       `Your position: ${data.our_price < avgCompetitorPrice ? 'Lower' : 'Higher'} than average`
+        alert(message)
+      } else {
+        alert(`Found ${data.competitors.length} competitor prices for ${testProduct}, but no matching product in your uploaded inventory. Try uploading a CSV file first, or use a product name that matches your SKU names.`)
+      }
+    } else {
+      alert('No competitive data found.')
     }
+    
+  } catch (error) {
+    console.error('Live test failed:', error)
+    alert('Failed to fetch live data.')
+  } finally {
+    setRefreshing(false)
   }
+}
 
   const refreshData = async () => {
     setRefreshing(true)
