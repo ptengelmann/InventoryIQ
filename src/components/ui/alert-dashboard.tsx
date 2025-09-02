@@ -1,8 +1,8 @@
-// UPDATE: /src/components/ui/alert-dashboard.tsx - Add user context
+// src/components/ui/alert-dashboard.tsx - FIXED VERSION
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useUser } from '@/contexts/UserContext' // ✅ ADD THIS IMPORT
+import { useUser } from '@/contexts/UserContext'
 import { 
   AlertTriangle, 
   TrendingUp, 
@@ -40,7 +40,7 @@ interface AlertStats {
 }
 
 export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete }: AlertDashboardProps) {
-  const { user } = useUser() // ✅ ADD THIS
+  const { user } = useUser()
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [alertStats, setAlertStats] = useState<AlertStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -50,7 +50,7 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
   const [deleting, setDeleting] = useState<string | null>(null)
 
   useEffect(() => {
-    if (user) { // ✅ ONLY FETCH IF USER EXISTS
+    if (user) {
       fetchRealAlerts()
       fetchRealAlertStats()
     }
@@ -134,6 +134,7 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
     })
   }
 
+  // FIXED: Generate fallback alerts with proper urgency property
   const generateFallbackAlerts = (): Alert[] => {
     return [
       {
@@ -148,7 +149,8 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
         action_required: 'EMERGENCY REORDER NOW',
         impact: {
           revenue_at_risk: 5500,
-          time_to_critical: 3
+          time_to_critical: 3,
+          urgency: 10 // FIXED: Added missing urgency property
         },
         data: {
           current_stock: 25,
@@ -166,7 +168,86 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
         created_at: new Date(Date.now() - 2 * 60 * 60 * 1000),
         acknowledged: false,
         resolved: false,
-        delivered_via: []
+        delivered_via: [],
+        metadata: {
+          source: 'fallback',
+          analysis_id: analysisId || 'demo'
+        }
+      },
+      {
+        id: 'alert-2-gin-opportunity',
+        rule_id: 'price-opportunity',
+        sku: 'GIN-005',
+        category: 'spirits',
+        type: 'price_opportunity',
+        severity: 'high',
+        title: 'PRICING OPPORTUNITY: GIN-005',
+        message: 'Hendricks Gin underpriced vs competitors. 15% price increase opportunity detected.',
+        action_required: 'INCREASE PRICE TO £47.99',
+        impact: {
+          revenue_at_risk: 0,
+          profit_opportunity: 2800,
+          time_to_critical: 0,
+          urgency: 8 // FIXED: Added missing urgency property
+        },
+        data: {
+          current_stock: 180,
+          predicted_demand: 45,
+          weeks_of_stock: 4.0,
+          confidence: 0.87,
+          trend: 'stable'
+        },
+        alcohol_context: {
+          abv: 41.4,
+          shelf_life_days: 5475,
+          seasonal_peak: '120 days',
+          compliance_notes: []
+        },
+        created_at: new Date(Date.now() - 6 * 60 * 60 * 1000),
+        acknowledged: false,
+        resolved: false,
+        delivered_via: [],
+        metadata: {
+          source: 'fallback',
+          analysis_id: analysisId || 'demo'
+        }
+      },
+      {
+        id: 'alert-3-beer-seasonal',
+        rule_id: 'seasonal-prep',
+        sku: 'BEER-012',
+        category: 'beer',
+        type: 'seasonal_prep',
+        severity: 'medium',
+        title: 'SEASONAL PREP: BEER-012',
+        message: 'Summer beer season approaching. Current stock insufficient for projected demand spike.',
+        action_required: 'ORDER ADDITIONAL 200 UNITS',
+        impact: {
+          revenue_at_risk: 1200,
+          time_to_critical: 14,
+          urgency: 6 // FIXED: Added missing urgency property
+        },
+        data: {
+          current_stock: 80,
+          predicted_demand: 120,
+          weeks_of_stock: 2.1,
+          confidence: 0.78,
+          trend: 'seasonal_increasing'
+        },
+        alcohol_context: {
+          abv: 4.5,
+          shelf_life_days: 180,
+          seasonal_peak: '60 days',
+          compliance_notes: []
+        },
+        created_at: new Date(Date.now() - 12 * 60 * 60 * 1000),
+        acknowledged: true,
+        resolved: false,
+        delivered_via: [],
+        metadata: {
+          source: 'fallback',
+          analysis_id: analysisId || 'demo'
+        }
       }
     ]
   }
@@ -256,7 +337,7 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
     )
   }
 
-  // Rest of component remains the same...
+  // Filter alerts properly
   const filteredAlerts = alerts.filter(alert => {
     if (alert.resolved && filter !== 'all') return false
     
@@ -505,14 +586,41 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
                       {/* Impact Summary */}
                       {(alert.impact.revenue_at_risk || alert.impact.profit_opportunity || alert.impact.time_to_critical) && (
                         <div className="flex items-center space-x-4 text-sm">
-                          {alert.impact.revenue_at_risk && (
-                            <span className="text-red-600">Risk: ${alert.impact.revenue_at_risk.toLocaleString()}</span>
+                          {alert.impact.revenue_at_risk && alert.impact.revenue_at_risk > 0 && (
+                            <span className="text-red-600">Risk: £{alert.impact.revenue_at_risk.toLocaleString()}</span>
                           )}
-                          {alert.impact.profit_opportunity && (
-                            <span className="text-green-600">Opportunity: ${alert.impact.profit_opportunity.toLocaleString()}</span>
+                          {alert.impact.profit_opportunity && alert.impact.profit_opportunity > 0 && (
+                            <span className="text-green-600">Opportunity: £{alert.impact.profit_opportunity.toLocaleString()}</span>
                           )}
-                          {alert.impact.time_to_critical && (
+                          {alert.impact.time_to_critical && alert.impact.time_to_critical > 0 && (
                             <span className="text-orange-600">{alert.impact.time_to_critical} days to critical</span>
+                          )}
+                          <span className="text-blue-600">Urgency: {alert.impact.urgency}/10</span>
+                        </div>
+                      )}
+                      
+                      {/* Alcohol-specific context */}
+                      {alert.alcohol_context && (
+                        <div className="bg-blue-50 rounded-lg p-3">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <Brain className="h-4 w-4 text-blue-600" />
+                            <span className="font-medium text-gray-900">Product Details:</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
+                            {alert.alcohol_context.abv && (
+                              <span>ABV: {alert.alcohol_context.abv}%</span>
+                            )}
+                            {alert.alcohol_context.seasonal_peak && (
+                              <span>Peak Season: {alert.alcohol_context.seasonal_peak}</span>
+                            )}
+                          </div>
+                          {alert.alcohol_context.compliance_notes && alert.alcohol_context.compliance_notes.length > 0 && (
+                            <div className="mt-2">
+                              <p className="text-xs text-gray-600 font-medium">Compliance Notes:</p>
+                              {alert.alcohol_context.compliance_notes.map((note, idx) => (
+                                <p key={idx} className="text-xs text-gray-600">• {note}</p>
+                              ))}
+                            </div>
                           )}
                         </div>
                       )}

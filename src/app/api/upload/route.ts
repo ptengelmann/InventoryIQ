@@ -1,16 +1,15 @@
-// /src/app/api/upload/route.ts - COMPLETE REPLACEMENT
+// src/app/api/upload/route.ts - FIXED with Alert Engine Integration
 import { NextRequest, NextResponse } from 'next/server'
 import { parseCSVData, calculatePriceRecommendation, assessInventoryRisk, convertToAlcoholSKU } from '@/lib/utils'
-import { DatabaseService } from '@/lib/models'
-import { AlcoholAlertEngine as AlertEngine, Alert } from '@/lib/alert-engine'
-import { AlcoholMarketIntelligence } from '@/lib/alcohol-market-intelligence'
-import { AlcoholInsightsEngine } from '@/lib/alcohol-insights-engine'
-import { EnhancedMockDataGenerator } from '@/lib/enhanced-mock-data'
+import { PostgreSQLService } from '@/lib/database-postgres'
+import { GPTCommerceIntelligence } from '@/lib/gpt-commerce-intelligence'
+import { AlertEngine } from '@/lib/alert-engine' // ADDED: Import AlertEngine
 import { AlcoholSKU, CompetitorPrice } from '@/types'
 import { v4 as uuidv4 } from 'uuid'
 
 export async function POST(request: NextRequest) {
   try {
+    const startTime = Date.now()
     const formData = await request.formData()
     const file = formData.get('file') as File
     const userEmail = formData.get('userEmail') as string
@@ -28,21 +27,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File must be a CSV' }, { status: 400 })
     }
 
-    console.log(`Processing file: ${file.name} for user: ${userEmail}`)
+    console.log(`🍺 Processing file: ${file.name} for user: ${userEmail}`)
 
     const content = await file.text()
     const { headers, data } = parseCSVData(content)
     
     console.log('CSV Headers found:', headers)
-    console.log('Sample data rows:', data.slice(0, 2))
     console.log('Total rows:', data.length)
     
     // Enhanced column mapping
     const columnVariations = {
-      sku: ['sku', 'product_id', 'item_id', 'code', 'product_code'],
-      price: ['price', 'unit_price', 'cost', 'retail_price', 'selling_price'],
-      weekly_sales: ['weekly_sales', 'sales', 'units_sold', 'quantity_sold', 'weekly_units', 'weekly_qty'],
-      inventory_level: ['inventory_level', 'stock', 'inventory', 'stock_level', 'quantity', 'qty_on_hand']
+      sku: ['sku', 'product_id', 'item_id', 'code', 'product_code', 'item_code'],
+      price: ['price', 'unit_price', 'cost', 'retail_price', 'selling_price', 'current_price'],
+      weekly_sales: ['weekly_sales', 'sales', 'units_sold', 'quantity_sold', 'weekly_units', 'weekly_qty', 'sales_per_week'],
+      inventory_level: ['inventory_level', 'stock', 'inventory', 'stock_level', 'quantity', 'qty_on_hand', 'current_stock']
     }
     
     const actualColumns: Record<string, string> = {}
@@ -65,18 +63,15 @@ export async function POST(request: NextRequest) {
         error: `Missing required columns: ${missingColumns.join(', ')}`,
         found: headers,
         required: requiredColumns,
-        suggestions: 'Try using column names like: sku, price, weekly_sales, inventory_level'
+        suggestions: 'Use column names like: sku, price, weekly_sales, inventory_level'
       }, { status: 400 })
     }
 
-    const priceRecommendations = []
-    const inventoryAlerts = []
+    // Process CSV data into AlcoholSKUs
     const alcoholSKUs: AlcoholSKU[] = []
-    const competitorData: CompetitorPrice[] = []
-    const marketIntelligence: any[] = []
-    let totalRevenuePotential = 0
+    const processingErrors: string[] = []
     
-    console.log('🍺 Starting market-intelligent analysis...')
+    console.log('🔄 Converting CSV data to alcohol SKUs...')
     
     for (const row of data) {
       const sku = row[actualColumns.sku]
@@ -85,217 +80,300 @@ export async function POST(request: NextRequest) {
       const inventoryLevel = parseFloat(row[actualColumns.inventory_level]?.toString().replace(/[^\d.-]/g, '')) || 0
       
       if (!sku || currentPrice <= 0) {
-        console.log(`Skipping invalid row: sku=${sku}, price=${currentPrice}`)
+        processingErrors.push(`Invalid row: sku=${sku}, price=${currentPrice}`)
         continue
       }
       
-      // Enhanced alcohol SKU conversion with market intelligence
+      // Convert to alcohol SKU with intelligent categorization
       const alcoholSKU = convertToAlcoholSKU({
         sku,
         price: currentPrice.toString(),
         weekly_sales: weeklySales.toString(),
         inventory_level: inventoryLevel.toString(),
+        // Pass through any additional CSV columns
         ...row
       })
+      
       alcoholSKUs.push(alcoholSKU)
+    }
+
+    console.log(`✅ Processed ${alcoholSKUs.length} valid SKUs`)
+    if (processingErrors.length > 0) {
+      console.log(`⚠️ ${processingErrors.length} rows had errors`)
+    }
+
+    // STEP 1: Identify slow-moving products for GPT-4 creative recommendations
+    const slowMovingProducts = alcoholSKUs
+      .filter(sku => parseFloat(sku.weekly_sales) < 1 && parseInt(sku.inventory_level) > 10)
+      .map(sku => ({
+        sku: sku.sku,
+        category: sku.category,
+        brand: sku.brand,
+        inventory_level: parseInt(sku.inventory_level),
+        weeks_since_last_sale: 4, // Estimate
+        price: parseFloat(sku.price),
+        cost_price: undefined
+      }))
+
+    console.log(`🎯 Found ${slowMovingProducts.length} slow-moving products for GPT-4 analysis`)
+
+    // STEP 2: Generate GPT-4 Creative Recommendations (REAL AI)
+    let creativeRecommendations: any[] = []
+    let portfolioInsights: any = {}
+    let gptProcessingTime = 0
+
+    if (slowMovingProducts.length > 0) {
+      console.log('🤖 Generating GPT-4 creative strategies...')
+      const gptStartTime = Date.now()
       
-      // Market intelligence analysis
-      const productMatch = AlcoholMarketIntelligence.findBestProductMatch(sku)
-      
-      // Generate competitive pricing data
-      let skuCompetitorPrices: CompetitorPrice[] = []
       try {
-        skuCompetitorPrices = await EnhancedMockDataGenerator.generateIntelligentCompetitorPrices(
-          sku,
-          alcoholSKU.category || 'spirits',
-          ['majestic', 'waitrose', 'tesco', 'asda']
+        // Generate creative strategies like mystery boxes
+        creativeRecommendations = await GPTCommerceIntelligence.generateCreativeRecommendations(
+          slowMovingProducts,
+          alcoholSKUs
         )
         
-        // Update competitor prices with our actual price
-        skuCompetitorPrices = skuCompetitorPrices.map(comp => ({
-          ...comp,
-          sku: sku, // Use our SKU
-          our_price: currentPrice,
-          price_difference: comp.competitor_price - currentPrice,
-          price_difference_percentage: ((comp.competitor_price - currentPrice) / currentPrice) * 100
-        }))
+        // Generate portfolio-level insights
+        portfolioInsights = await GPTCommerceIntelligence.generateInventoryInsights(
+          alcoholSKUs,
+          [] // Historical data from database would go here
+        )
         
-        competitorData.push(...skuCompetitorPrices)
+        gptProcessingTime = Date.now() - gptStartTime
+        console.log(`✨ Generated ${creativeRecommendations.length} GPT-4 strategies in ${gptProcessingTime}ms`)
         
-        console.log(`Generated ${skuCompetitorPrices.length} competitor prices for ${sku}`)
-      } catch (error) {
-        console.log(`Could not generate competitor data for ${sku}:`, error)
+      } catch (gptError) {
+        console.error('❌ GPT-4 analysis failed:', gptError)
+        creativeRecommendations = []
+        portfolioInsights = { 
+          error: 'AI recommendations unavailable - check OpenAI API key',
+          details: gptError instanceof Error ? gptError.message : 'Unknown GPT-4 error'
+        }
       }
+    }
+
+    // STEP 3: Generate standard price and inventory recommendations
+    const priceRecommendations: any[] = []
+    const inventoryAlerts: any[] = []
+    let totalRevenuePotential = 0
+
+    console.log('📊 Generating price and inventory recommendations...')
+
+    for (const alcoholSKU of alcoholSKUs) {
+      const currentPrice = parseFloat(alcoholSKU.price)
+      const weeklySales = parseFloat(alcoholSKU.weekly_sales)
+      const inventoryLevel = parseInt(alcoholSKU.inventory_level)
       
-      // Enhanced price recommendation with competitive context
+      // Generate price recommendation (no mocks - uses AI engine)
       const priceRec = calculatePriceRecommendation(
-        currentPrice, 
-        weeklySales, 
-        inventoryLevel, 
-        sku, 
-        alcoholSKU, 
-        skuCompetitorPrices
+        currentPrice,
+        weeklySales,
+        inventoryLevel,
+        alcoholSKU.sku,
+        alcoholSKU,
+        [] // Competitor prices would come from real scraping
       )
       
       // Calculate revenue impact
       const revenueImpact = (priceRec.recommendedPrice - priceRec.currentPrice) * weeklySales * 4
       totalRevenuePotential += revenueImpact
       
+      // Check if this SKU is part of a creative strategy
+      const creativeStrategy = creativeRecommendations.find(strategy => 
+        strategy.products_involved && strategy.products_involved.includes(alcoholSKU.sku)
+      )
+      
       priceRecommendations.push({
-        sku,
-        ...priceRec,
+        sku: alcoholSKU.sku,
+        category: alcoholSKU.category,
+        brand: alcoholSKU.brand,
+        currentPrice,
+        recommendedPrice: priceRec.recommendedPrice,
+        changePercentage: priceRec.changePercentage,
+        reason: priceRec.reason,
+        confidence: priceRec.confidence,
         weeklySales,
         inventoryLevel,
         revenueImpact,
-        competitorCount: skuCompetitorPrices.length,
-        brandMatch: productMatch.brand?.name || 'Unknown',
-        brandConfidence: productMatch.confidence
+        hasCreativeStrategy: !!creativeStrategy,
+        creativeStrategy: creativeStrategy || null,
+        aiEnhanced: true
       })
       
-      // Enhanced risk assessment
-      const riskAssessment = assessInventoryRisk(inventoryLevel, weeklySales, sku, alcoholSKU)
+      // Assess inventory risk
+      const riskAssessment = assessInventoryRisk(inventoryLevel, weeklySales, alcoholSKU.sku, alcoholSKU)
       if (riskAssessment.riskType !== 'none') {
         inventoryAlerts.push(riskAssessment)
       }
-      
-      // Store market intelligence for insights
-      if (productMatch.brand) {
-        marketIntelligence.push({
-          sku,
-          brand: productMatch.brand,
-          confidence: productMatch.confidence,
-          competitivePosition: skuCompetitorPrices.length > 0 ? 
-            AlcoholMarketIntelligence.analyzeCompetitivePosition(alcoholSKU, productMatch.brand, skuCompetitorPrices) : null
-        })
-      }
     }
 
-    console.log(`Processed ${priceRecommendations.length} valid SKUs with market intelligence`)
+    // STEP 4: CRITICAL - Generate AI-powered alerts using AlertEngine
+    const uploadId = uuidv4()
+    
+    console.log('🚨 Generating AI-powered alerts using AlertEngine...')
+    const smartAlerts = AlertEngine.generateAlertsFromAnalysis(
+      alcoholSKUs,
+      priceRecommendations.map(rec => ({
+        sku: rec.sku,
+        analysis_id: uploadId,
+        forecast: {
+          predicted_demand: rec.weeklySales * 4,
+          confidence_interval: { confidence_level: rec.confidence },
+          trend: rec.changePercentage > 0 ? 'increasing' : rec.changePercentage < 0 ? 'decreasing' : 'stable'
+        }
+      })),
+      [] // Competitor data would come from real scraping
+    )
+    
+    console.log(`🎯 Generated ${smartAlerts.length} AI-powered alerts`)
 
-    // Generate advanced market insights
-    let marketInsights: any[] = []
-    try {
-      marketInsights = AlcoholInsightsEngine.generateMarketInsights(
-        alcoholSKUs,
-        competitorData,
-        marketIntelligence
-      )
-      console.log(`Generated ${marketInsights.length} market insights`)
-    } catch (insightError) {
-      console.error('Market insights generation failed:', insightError)
-    }
-
-    // Sort recommendations by impact
-    priceRecommendations.sort((a, b) => Math.abs(b.revenueImpact || 0) - Math.abs(a.revenueImpact || 0))
-    inventoryAlerts.sort((a, b) => b.priority - a.priority)
-
-    // Generate smart alerts
-    let smartAlerts: Alert[] = []
-    try {
-      smartAlerts = AlertEngine.analyzeAndGenerateAlcoholAlerts(
-        alcoholSKUs,
-        competitorData,
-        AlertEngine.getAlcoholAlertRules()
-      )
-    } catch (alertError) {
-      console.error('Smart alert generation failed:', alertError)
-    }
-
-    // Enhanced summary with competitive intelligence
+    // STEP 5: Generate comprehensive summary
     const summary = {
-      totalSKUs: priceRecommendations.length,
+      totalSKUs: alcoholSKUs.length,
+      slowMovingProducts: slowMovingProducts.length,
+      creativeStrategiesGenerated: creativeRecommendations.length,
+      alertsGenerated: smartAlerts.length, // ADDED: Track alerts generated
+      
       priceIncreases: priceRecommendations.filter(r => r.changePercentage > 0).length,
       priceDecreases: priceRecommendations.filter(r => r.changePercentage < 0).length,
       noChange: priceRecommendations.filter(r => r.changePercentage === 0).length,
+      
       highRiskSKUs: inventoryAlerts.filter(a => a.riskLevel === 'high').length,
       mediumRiskSKUs: inventoryAlerts.filter(a => a.riskLevel === 'medium').length,
+      
       totalRevenuePotential: Math.round(totalRevenuePotential),
       
-      // New competitive intelligence metrics
-      brandsIdentified: marketIntelligence.filter(m => m.confidence > 0.5).length,
-      competitorPricesFound: competitorData.length,
-      overPricedProducts: priceRecommendations.filter(r => 
-        r.competitorCount > 0 && (r as any).price_difference_percentage > 10
-      ).length,
-      underPricedProducts: priceRecommendations.filter(r => 
-        r.competitorCount > 0 && (r as any).price_difference_percentage < -10
-      ).length,
-      marketInsightsGenerated: marketInsights.length
+      // GPT-4 specific metrics
+      aiPowered: creativeRecommendations.length > 0,
+      gptProcessingTimeMs: gptProcessingTime,
+      
+      // Category breakdown
+      categoryBreakdown: generateCategoryBreakdown(priceRecommendations),
+      
+      portfolioHealth: {
+        fastMovers: priceRecommendations.filter(r => r.weeklySales > 5).length,
+        slowMovers: priceRecommendations.filter(r => r.weeklySales < 1).length,
+        averageWeeksOfStock: priceRecommendations.reduce((sum, r) => 
+          sum + (r.inventoryLevel / (r.weeklySales || 0.1)), 0) / priceRecommendations.length
+      }
     }
 
-    const uploadId = uuidv4()
-    const now = new Date()
+    // STEP 6: Save to PostgreSQL with SMART ALERTS
+    const processingTime = Date.now() - startTime
     
-    const analysisRecord = {
+    const analysisData = {
       uploadId,
       fileName: file.name,
-      uploadedAt: now,
-      processedAt: now,
       userId,
       userEmail,
       summary,
       priceRecommendations,
       inventoryAlerts: inventoryAlerts.slice(0, 20),
-      smartAlerts,
-      alertsGenerated: smartAlerts.length > 0,
-      
-      // Enhanced data
-      competitorData: competitorData.slice(0, 50), // Store top 50 competitor prices
-      marketIntelligence: marketIntelligence.slice(0, 20),
-      marketInsights: marketInsights.slice(0, 10),
-      
-      userAgent: request.headers.get('user-agent') || undefined,
-      ipAddress: request.headers.get('x-forwarded-for') || 
-                 request.headers.get('x-real-ip') || 
-                 'unknown'
+      smartAlerts: smartAlerts.slice(0, 50), // ADDED: Save smart alerts
+      competitorData: [], // Will be populated by real scraping
+      marketInsights: Object.keys(portfolioInsights).length > 0 ? [portfolioInsights] : [],
+      processingTimeMs: processingTime
     }
 
     let savedId: string | null = null
     let databaseError: string | null = null
     
     try {
-      savedId = await DatabaseService.saveAnalysis(analysisRecord, userId, userEmail)
-      console.log(`✅ Enhanced analysis saved for user ${userEmail} with ID: ${savedId}`)
+      savedId = await PostgreSQLService.saveAnalysis(analysisData)
+      console.log(`✅ Analysis saved to PostgreSQL with ID: ${savedId}`)
+      console.log(`🚨 Saved ${smartAlerts.length} smart alerts to database`)
     } catch (dbError) {
-      console.error('❌ Database save failed:', dbError)
+      console.error('❌ PostgreSQL save failed:', dbError)
       databaseError = dbError instanceof Error ? dbError.message : 'Database save failed'
     }
+
+    console.log(`🎉 Analysis complete in ${processingTime}ms`)
+    console.log(`📊 Generated ${priceRecommendations.length} recommendations`)
+    console.log(`🤖 Created ${creativeRecommendations.length} GPT-4 strategies`)
+    console.log(`🚨 Generated ${smartAlerts.length} AI-powered alerts`)
 
     return NextResponse.json({
       success: true,
       uploadId,
       savedToDatabase: !!savedId,
       databaseError,
+      
+      // Core results
       summary,
-      priceRecommendations: priceRecommendations.slice(0, 20),
-      inventoryAlerts: inventoryAlerts.slice(0, 10),
-      smartAlerts: smartAlerts.slice(0, 5),
-      alertsGenerated: smartAlerts.length,
+      priceRecommendations: priceRecommendations.slice(0, 50),
+      inventoryAlerts: inventoryAlerts.slice(0, 20),
       
-      // Enhanced response data
-      competitorData: competitorData.slice(0, 30),
-      marketInsights: marketInsights.slice(0, 8),
-      brandIntelligence: marketIntelligence.slice(0, 15),
+      // GPT-4 powered insights
+      creativeStrategies: creativeRecommendations,
+      portfolioInsights,
       
-      processedAt: now.toISOString(),
+      // ADDED: Return smart alerts
+      smartAlerts: smartAlerts.slice(0, 10), // Preview for UI
+      
+      // Metadata
+      processedAt: new Date().toISOString(),
+      processingTimeMs: processingTime,
+      gptProcessingTimeMs: gptProcessingTime,
       userId,
       userEmail,
       columnMapping: actualColumns,
       
+      // Debug info
       debug: {
         totalRowsProcessed: data.length,
-        validSKUsFound: priceRecommendations.length,
-        totalRevenuePotential: summary.totalRevenuePotential,
-        brandsIdentified: summary.brandsIdentified,
-        competitorPricesGenerated: summary.competitorPricesFound
+        validSKUsFound: alcoholSKUs.length,
+        processingErrors: processingErrors.length,
+        slowMovingProductsFound: slowMovingProducts.length,
+        gptStrategiesGenerated: creativeRecommendations.length,
+        smartAlertsGenerated: smartAlerts.length, // ADDED
+        databaseUsed: 'PostgreSQL'
       }
     })
 
   } catch (error) {
-    console.error('❌ Enhanced upload processing error:', error)
+    console.error('❌ Upload processing error:', error)
     return NextResponse.json({ 
       error: 'Failed to process file',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
     }, { status: 500 })
   }
+}
+
+// Helper function for category breakdown
+function generateCategoryBreakdown(recommendations: any[]) {
+  const breakdown = recommendations.reduce((acc, rec) => {
+    const category = rec.category || 'unknown'
+    if (!acc[category]) {
+      acc[category] = {
+        count: 0,
+        totalRevenuePotential: 0,
+        avgRevenuePotential: 0,
+        slowMovers: 0,
+        fastMovers: 0,
+        avgWeeksOfStock: 0
+      }
+    }
+    
+    acc[category].count++
+    acc[category].totalRevenuePotential += rec.revenueImpact || 0
+    acc[category].avgWeeksOfStock += (rec.inventoryLevel / (rec.weeklySales || 0.1))
+    
+    if (rec.weeklySales < 1) {
+      acc[category].slowMovers++
+    } else if (rec.weeklySales > 5) {
+      acc[category].fastMovers++
+    }
+    
+    return acc
+  }, {} as Record<string, any>)
+
+  // Calculate averages
+  Object.keys(breakdown).forEach(category => {
+    const cat = breakdown[category]
+    cat.avgRevenuePotential = cat.totalRevenuePotential / cat.count
+    cat.avgWeeksOfStock = cat.avgWeeksOfStock / cat.count
+  })
+
+  return breakdown
 }

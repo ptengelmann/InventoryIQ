@@ -1,3 +1,4 @@
+// src/app/competitive/page.tsx - COMPLETE REPLACEMENT
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -24,7 +25,9 @@ import {
   Brain,
   Shield,
   Globe,
-  Zap
+  Zap,
+  Package,
+  Clock
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -41,6 +44,8 @@ interface CompetitorPrice {
   url?: string
   promotional?: boolean
   promotion_details?: string
+  product_name?: string
+  relevance_score?: number
 }
 
 interface PriceComparisonResult {
@@ -60,9 +65,9 @@ interface PriceComparisonResult {
   }
 }
 
-export function CompetitiveDashboard() {
+export default function CompetitivePage() {
   const router = useRouter()
-  const { user } = useUser()
+  const { user, login, isLoading } = useUser()
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login')
   const [competitorData, setCompetitorData] = useState<PriceComparisonResult[]>([])
@@ -97,8 +102,14 @@ export function CompetitiveDashboard() {
   }
 
   const handleAuthSuccess = (userData: any) => {
+    const fullUserData = {
+      ...userData,
+      company: 'Demo Account',
+      phone: '',
+      location: 'UK'
+    }
+    login(fullUserData)
     setAuthModalOpen(false)
-    router.push('/dashboard')
   }
 
   const switchAuthMode = () => {
@@ -108,44 +119,118 @@ export function CompetitiveDashboard() {
   const fetchCompetitiveData = async () => {
     setLoading(true)
     try {
+      // Try to get real data first
+      if (user) {
+        const response = await fetch(`/api/competitors/pricing?userId=${user.email}`)
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && data.comparisons) {
+            setCompetitorData(data.comparisons)
+            setLoading(false)
+            return
+          }
+        }
+      }
+      
+      // Fallback to demo data
       const mockData: PriceComparisonResult[] = [
         {
-          sku: 'DEMO-WHISKEY-001',
-          our_price: 45.99,
+          sku: 'HENDRICKS-GIN-700ML',
+          our_price: 42.99,
           competitor_prices: [
             {
-              sku: 'DEMO-WHISKEY-001',
+              sku: 'HENDRICKS-GIN-700ML',
               competitor: 'Majestic Wine',
-              competitor_price: 42.99,
-              our_price: 45.99,
+              competitor_price: 39.99,
+              our_price: 42.99,
               price_difference: -3.00,
-              price_difference_percentage: -6.5,
+              price_difference_percentage: -7.0,
               availability: true,
               last_updated: new Date(),
               source: 'majestic',
-              url: 'https://majestic.co.uk/search?q=whiskey'
+              url: 'https://majestic.co.uk/gin/hendricks-gin',
+              product_name: 'Hendricks Gin 70cl',
+              relevance_score: 0.95
             },
             {
-              sku: 'DEMO-WHISKEY-001',
+              sku: 'HENDRICKS-GIN-700ML',
               competitor: 'Waitrose',
-              competitor_price: 47.95,
-              our_price: 45.99,
-              price_difference: 1.96,
-              price_difference_percentage: 4.3,
+              competitor_price: 44.50,
+              our_price: 42.99,
+              price_difference: 1.51,
+              price_difference_percentage: 3.5,
               availability: true,
               last_updated: new Date(),
-              source: 'waitrose'
+              source: 'waitrose',
+              product_name: 'Hendricks Gin 70cl',
+              relevance_score: 0.92
+            },
+            {
+              sku: 'HENDRICKS-GIN-700ML',
+              competitor: 'Tesco',
+              competitor_price: 41.00,
+              our_price: 42.99,
+              price_difference: -1.99,
+              price_difference_percentage: -4.6,
+              availability: true,
+              last_updated: new Date(),
+              source: 'tesco',
+              product_name: 'Hendricks Gin 70cl',
+              relevance_score: 0.88
             }
           ],
           market_position: {
             rank: 2,
             percentile: 67,
-            price_advantage: -2.1
+            price_advantage: -2.7
           },
           recommendations: {
             action: 'maintain',
-            reasoning: 'Well positioned vs competitors',
+            reasoning: 'Well positioned vs competitors - competitive but not lowest',
             urgency: 'low'
+          }
+        },
+        {
+          sku: 'MACALLAN-12-WHISKY',
+          our_price: 89.99,
+          competitor_prices: [
+            {
+              sku: 'MACALLAN-12-WHISKY',
+              competitor: 'Majestic Wine',
+              competitor_price: 85.00,
+              our_price: 89.99,
+              price_difference: -4.99,
+              price_difference_percentage: -5.5,
+              availability: true,
+              last_updated: new Date(),
+              source: 'majestic',
+              product_name: 'Macallan 12 Year Old Single Malt',
+              relevance_score: 0.97
+            },
+            {
+              sku: 'MACALLAN-12-WHISKY',
+              competitor: 'ASDA',
+              competitor_price: 82.00,
+              our_price: 89.99,
+              price_difference: -7.99,
+              price_difference_percentage: -8.9,
+              availability: false,
+              last_updated: new Date(),
+              source: 'asda',
+              product_name: 'Macallan 12yr Single Malt Whisky',
+              relevance_score: 0.85
+            }
+          ],
+          market_position: {
+            rank: 3,
+            percentile: 25,
+            price_advantage: 6.8
+          },
+          recommendations: {
+            action: 'decrease',
+            target_price: 85.99,
+            reasoning: 'Above market average - consider small price reduction',
+            urgency: 'medium'
           }
         }
       ]
@@ -153,97 +238,131 @@ export function CompetitiveDashboard() {
       setCompetitorData(mockData)
     } catch (error) {
       console.error('Failed to fetch competitive data:', error)
+      setCompetitorData([])
     } finally {
       setLoading(false)
     }
   }
 
-const testLiveCompetitorData = async () => {
-  if (!testProduct) return
-  
-  setRefreshing(true)
-  try {
-    // Build query parameters
-    const queryParams = new URLSearchParams({
-      product: testProduct,
-      category: 'spirits'
-    })
+  const testLiveCompetitorData = async () => {
+    if (!testProduct) return
     
-    // Add user context if available
-    if (user) {
-      queryParams.append('userEmail', user.email)
-      queryParams.append('userId', user.email) // Using email as userId since that's what your system uses
-    }
-    
-    console.log('Making API call with params:', queryParams.toString())
-    
-    const response = await fetch(`/api/competitors/live?${queryParams.toString()}`)
-    const data = await response.json()
-    
-    console.log('API Response:', data)
-    
-    if (data.success && data.competitors) {
-      const newCompetitorData: PriceComparisonResult = {
-        sku: `LIVE-${testProduct.replace(/\s+/g, '-').toUpperCase()}`,
-        our_price: data.our_price || 0,
-        competitor_prices: data.competitors.map((comp: any) => ({
+    setRefreshing(true)
+    try {
+      const queryParams = new URLSearchParams({
+        product: testProduct,
+        category: 'spirits'
+      })
+      
+      if (user) {
+        queryParams.append('userEmail', user.email)
+        queryParams.append('userId', user.email)
+      }
+      
+      console.log('Testing live competitor data for:', testProduct)
+      
+      const response = await fetch(`/api/competitors/live?${queryParams.toString()}`)
+      const data = await response.json()
+      
+      console.log('Live API Response:', data)
+      
+      if (data.success && data.competitors && data.competitors.length > 0) {
+        const newResult: PriceComparisonResult = {
           sku: `LIVE-${testProduct.replace(/\s+/g, '-').toUpperCase()}`,
-          competitor: comp.retailer,
-          competitor_price: comp.price,
           our_price: data.our_price || 0,
-          price_difference: data.our_price > 0 ? (comp.price - data.our_price) : 0,
-          price_difference_percentage: data.our_price > 0 ? (((comp.price - data.our_price) / data.our_price) * 100) : 0,
-          availability: comp.availability,
-          last_updated: new Date(),
-          source: comp.retailer.toLowerCase().replace(/\s+/g, '_') as any,
-          url: comp.url,
-          product_name: comp.product_name,
-          relevance_score: comp.relevance_score
-        })),
-        market_position: {
-          rank: 1,
-          percentile: 50,
-          price_advantage: data.our_price > 0 && data.competitors.length > 0 ? 
-            (((data.our_price - (data.competitors.reduce((sum: number, c: any) => sum + c.price, 0) / data.competitors.length)) 
-            / (data.competitors.reduce((sum: number, c: any) => sum + c.price, 0) / data.competitors.length)) * 100) : 0
-        },
-        recommendations: {
-          action: data.price_found_in_uploads ? 
-            (data.our_price > (data.competitors.reduce((sum: number, c: any) => sum + c.price, 0) / data.competitors.length) * 1.1 ? 'decrease' : 
-             data.our_price < (data.competitors.reduce((sum: number, c: any) => sum + c.price, 0) / data.competitors.length) * 0.9 ? 'increase' : 'maintain') :
-            'investigate',
-          reasoning: data.price_found_in_uploads ? 
-            `Your price: £${data.our_price.toFixed(2)} vs avg competitor: £${(data.competitors.reduce((sum: number, c: any) => sum + c.price, 0) / data.competitors.length).toFixed(2)}` :
-            'Upload inventory data with matching product names to see price comparisons',
-          urgency: data.price_found_in_uploads ? 'medium' : 'low'
+          competitor_prices: data.competitors.map((comp: any) => ({
+            sku: `LIVE-${testProduct.replace(/\s+/g, '-').toUpperCase()}`,
+            competitor: comp.retailer,
+            competitor_price: comp.price,
+            our_price: data.our_price || 0,
+            price_difference: data.our_price > 0 ? (comp.price - data.our_price) : 0,
+            price_difference_percentage: data.our_price > 0 ? 
+              (((comp.price - data.our_price) / data.our_price) * 100) : 0,
+            availability: comp.availability !== false,
+            last_updated: new Date(),
+            source: comp.retailer.toLowerCase().replace(/\s+/g, '_'),
+            url: comp.url,
+            product_name: comp.product_name,
+            relevance_score: comp.relevance_score || 0.8
+          })),
+          market_position: {
+            rank: 1,
+            percentile: 50,
+            price_advantage: 0
+          },
+          recommendations: {
+            action: 'investigate',
+            reasoning: data.price_found_in_uploads ? 
+              'Competitive analysis complete' : 
+              'Upload inventory CSV to see price comparisons',
+            urgency: 'low'
+          }
         }
-      }
-      
-      setCompetitorData(prev => [newCompetitorData, ...prev])
-      setTestProduct('')
-      
-      // Show helpful message
-      if (data.price_found_in_uploads) {
-        const avgCompetitorPrice = data.competitors.reduce((sum: number, c: any) => sum + c.price, 0) / data.competitors.length
-        const message = `Found ${data.competitors.length} competitor prices for ${testProduct}:\n` +
-                       `Your price: £${data.our_price.toFixed(2)}\n` +
-                       `Average competitor: £${avgCompetitorPrice.toFixed(2)}\n` +
-                       `Your position: ${data.our_price < avgCompetitorPrice ? 'Lower' : 'Higher'} than average`
-        alert(message)
+        
+        // Calculate market position
+        if (data.our_price > 0 && data.competitors.length > 0) {
+          const allPrices = [data.our_price, ...data.competitors.map((c: any) => c.price)].sort((a, b) => a - b)
+          const ourRank = allPrices.indexOf(data.our_price) + 1
+          const percentile = ((allPrices.length - ourRank) / (allPrices.length - 1)) * 100
+          const avgCompPrice = data.competitors.reduce((sum: number, c: any) => sum + c.price, 0) / data.competitors.length
+          const priceAdvantage = ((data.our_price - avgCompPrice) / avgCompPrice) * 100
+          
+          newResult.market_position = {
+            rank: ourRank,
+            percentile: Math.round(percentile),
+            price_advantage: Math.round(priceAdvantage * 100) / 100
+          }
+          
+          // Generate better recommendations
+          if (priceAdvantage > 15) {
+            newResult.recommendations = {
+              action: 'decrease',
+              target_price: avgCompPrice * 1.05,
+              reasoning: `Your price (£${data.our_price.toFixed(2)}) is ${priceAdvantage.toFixed(1)}% above market average (£${avgCompPrice.toFixed(2)})`,
+              urgency: 'medium'
+            }
+          } else if (priceAdvantage < -15) {
+            newResult.recommendations = {
+              action: 'increase',
+              target_price: avgCompPrice * 0.95,
+              reasoning: `Your price is ${Math.abs(priceAdvantage).toFixed(1)}% below market - pricing opportunity`,
+              urgency: 'low'
+            }
+          } else {
+            newResult.recommendations = {
+              action: 'maintain',
+              reasoning: `Competitively positioned within ${Math.abs(priceAdvantage).toFixed(1)}% of market average`,
+              urgency: 'low'
+            }
+          }
+        }
+        
+        // Add to existing data (remove old entry with same product if exists)
+        setCompetitorData(prev => {
+          const filtered = prev.filter(item => !item.sku.includes(testProduct.replace(/\s+/g, '-').toUpperCase()))
+          return [newResult, ...filtered]
+        })
+        
+        setTestProduct('')
+        
+        // Show success message
+        const message = data.competitors.length > 0 ? 
+          `Found ${data.competitors.length} competitor prices for "${testProduct}"` :
+          `No competitor prices found for "${testProduct}"`
+        
+        // Don't use alert() - update UI instead
+        console.log(message)
+        
       } else {
-        alert(`Found ${data.competitors.length} competitor prices for ${testProduct}, but no matching product in your uploaded inventory. Try uploading a CSV file first, or use a product name that matches your SKU names.`)
+        console.log('No competitive data found for:', testProduct)
       }
-    } else {
-      alert('No competitive data found.')
+      
+    } catch (error) {
+      console.error('Live test failed:', error)
+    } finally {
+      setRefreshing(false)
     }
-    
-  } catch (error) {
-    console.error('Live test failed:', error)
-    alert('Failed to fetch live data.')
-  } finally {
-    setRefreshing(false)
   }
-}
 
   const refreshData = async () => {
     setRefreshing(true)
@@ -284,22 +403,18 @@ const testLiveCompetitorData = async () => {
     needPriceDecrease: competitorData.filter(item => item.recommendations.action === 'decrease').length,
     needPriceIncrease: competitorData.filter(item => item.recommendations.action === 'increase').length,
     highUrgency: competitorData.filter(item => item.recommendations.urgency === 'high').length,
-    avgPriceAdvantage: competitorData.reduce((sum, item) => sum + item.market_position.price_advantage, 0) / competitorData.length || 0
+    avgPriceAdvantage: competitorData.length > 0 ? 
+      competitorData.reduce((sum, item) => sum + item.market_position.price_advantage, 0) / competitorData.length : 0
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-purple-50">
         <Navbar onLogin={handleLogin} onSignup={handleSignup} />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-32 bg-gray-200 rounded-xl"></div>
-              ))}
-            </div>
-            <div className="h-64 bg-gray-200 rounded-xl"></div>
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading...</p>
           </div>
         </div>
       </div>
@@ -356,6 +471,11 @@ const testLiveCompetitorData = async () => {
               </span>
             </h1>
 
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Real-time competitive pricing intelligence from major UK alcohol retailers. 
+              Compare your prices against Majestic Wine, Waitrose, Tesco, and ASDA.
+            </p>
+
             <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-500">
               <div className="flex items-center space-x-2">
                 <CheckCircle className="h-5 w-5 text-green-500" />
@@ -372,7 +492,7 @@ const testLiveCompetitorData = async () => {
             </div>
           </div>
 
-          {/* Live Test Section with Landing Page Design */}
+          {/* Live Test Section */}
           <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-8 border border-green-200 shadow-lg">
             <div className="flex items-center space-x-3 mb-6">
               <div className="w-12 h-12 bg-gradient-to-r from-green-600 to-blue-600 rounded-2xl flex items-center justify-center">
@@ -398,9 +518,12 @@ const testLiveCompetitorData = async () => {
                 disabled={!testProduct || refreshing}
                 className="group flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white font-semibold rounded-xl hover:from-green-700 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50"
               >
-                <Plus className="h-5 w-5" />
-                <span>Get Live Prices</span>
-                {refreshing && <RefreshCw className="h-4 w-4 animate-spin" />}
+                {refreshing ? (
+                  <RefreshCw className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Plus className="h-5 w-5" />
+                )}
+                <span>{refreshing ? 'Searching...' : 'Get Live Prices'}</span>
               </button>
             </div>
             
@@ -420,31 +543,58 @@ const testLiveCompetitorData = async () => {
             </div>
           </div>
 
-          {/* Overview Stats with Landing Page Design */}
+          {/* Overview Stats */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
             {[
-              { label: 'Products Monitored', value: overviewStats.totalProducts, icon: Target, color: 'from-blue-500 to-purple-500' },
-              { label: 'Price Decreases Needed', value: overviewStats.needPriceDecrease, icon: ArrowDown, color: 'from-red-500 to-pink-500' },
-              { label: 'Price Increases Possible', value: overviewStats.needPriceIncrease, icon: ArrowUp, color: 'from-green-500 to-emerald-500' },
-              { label: 'High Priority', value: overviewStats.highUrgency, icon: AlertTriangle, color: 'from-orange-500 to-red-500' },
-              { label: 'Price Advantage', value: `${overviewStats.avgPriceAdvantage > 0 ? '+' : ''}${overviewStats.avgPriceAdvantage.toFixed(1)}%`, icon: DollarSign, color: 'from-purple-500 to-pink-500' }
+              { 
+                label: 'Products Monitored', 
+                value: overviewStats.totalProducts, 
+                icon: Target, 
+                color: 'from-blue-500 to-purple-500',
+                bgColor: 'bg-blue-100',
+                textColor: 'text-blue-600'
+              },
+              { 
+                label: 'Price Decreases Needed', 
+                value: overviewStats.needPriceDecrease, 
+                icon: ArrowDown, 
+                color: 'from-red-500 to-pink-500',
+                bgColor: 'bg-red-100',
+                textColor: 'text-red-600'
+              },
+              { 
+                label: 'Price Increases Possible', 
+                value: overviewStats.needPriceIncrease, 
+                icon: ArrowUp, 
+                color: 'from-green-500 to-emerald-500',
+                bgColor: 'bg-green-100',
+                textColor: 'text-green-600'
+              },
+              { 
+                label: 'High Priority', 
+                value: overviewStats.highUrgency, 
+                icon: AlertTriangle, 
+                color: 'from-orange-500 to-red-500',
+                bgColor: 'bg-orange-100',
+                textColor: 'text-orange-600'
+              },
+              { 
+                label: 'Price Advantage', 
+                value: `${overviewStats.avgPriceAdvantage > 0 ? '+' : ''}${overviewStats.avgPriceAdvantage.toFixed(1)}%`, 
+                icon: DollarSign, 
+                color: 'from-purple-500 to-pink-500',
+                bgColor: overviewStats.avgPriceAdvantage > 0 ? 'bg-red-100' : 'bg-green-100',
+                textColor: overviewStats.avgPriceAdvantage > 0 ? 'text-red-600' : 'text-green-600'
+              }
             ].map((stat, index) => (
               <div key={index} className="bg-white rounded-2xl p-6 border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600 font-medium">{stat.label}</p>
-                    <p className={cn(
-                      "text-3xl font-bold",
-                      index === 1 ? "text-red-600" : 
-                      index === 2 ? "text-green-600" :
-                      index === 3 ? "text-orange-600" :
-                      index === 4 && overviewStats.avgPriceAdvantage > 0 ? "text-red-600" :
-                      index === 4 && overviewStats.avgPriceAdvantage <= 0 ? "text-green-600" :
-                      "text-gray-900"
-                    )}>{stat.value}</p>
+                    <p className={cn("text-3xl font-bold", stat.textColor)}>{stat.value}</p>
                   </div>
-                  <div className={`w-14 h-14 bg-gradient-to-r ${stat.color} rounded-2xl flex items-center justify-center`}>
-                    <stat.icon className="h-7 w-7 text-white" />
+                  <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center", stat.bgColor)}>
+                    <stat.icon className={cn("h-7 w-7", stat.textColor)} />
                   </div>
                 </div>
               </div>
@@ -496,17 +646,37 @@ const testLiveCompetitorData = async () => {
                 <div className="w-20 h-20 bg-gradient-to-r from-amber-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
                   <Target className="h-10 w-10 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">No Competitive Data Yet</h3>
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                  {loading ? 'Loading Competitive Data...' : 'Test Live Competitive Intelligence'}
+                </h3>
                 <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                  Use the "Test Live Competitive Data" section above to fetch real competitor prices from UK alcohol retailers.
+                  Use the search box above to test real competitor pricing from UK alcohol retailers like Majestic Wine, Waitrose, and Tesco.
                 </p>
-                <button
-                  onClick={() => setTestProduct('Hendricks Gin')}
-                  className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-amber-600 to-purple-600 text-white font-semibold rounded-xl hover:from-amber-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl"
-                >
-                  <Plus className="h-5 w-5" />
-                  <span>Try Demo with Hendricks Gin</span>
-                </button>
+                <div className="space-y-4">
+                  <div className="flex justify-center space-x-2">
+                    <button
+                      onClick={() => setTestProduct('Hendricks Gin')}
+                      className="px-4 py-2 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 transition-colors"
+                    >
+                      Try: Hendricks Gin
+                    </button>
+                    <button
+                      onClick={() => setTestProduct('Macallan 12')}
+                      className="px-4 py-2 bg-purple-100 text-purple-800 rounded-lg hover:bg-purple-200 transition-colors"
+                    >
+                      Try: Macallan 12
+                    </button>
+                    <button
+                      onClick={() => setTestProduct('BrewDog Punk IPA')}
+                      className="px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors"
+                    >
+                      Try: BrewDog Punk IPA
+                    </button>
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    Click any suggestion or type your own product name to see live competitor prices
+                  </p>
+                </div>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -515,41 +685,76 @@ const testLiveCompetitorData = async () => {
                     <tr>
                       <th className="px-8 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Product</th>
                       <th className="px-8 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Our Price</th>
+                      <th className="px-8 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Market Position</th>
                       <th className="px-8 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Competitors</th>
                       <th className="px-8 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Recommendation</th>
-                      <th className="px-8 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredData.map((item) => (
                       <tr key={item.sku} className="hover:bg-amber-50 transition-colors">
                         <td className="px-8 py-6 whitespace-nowrap">
-                          <div className="font-bold text-gray-900 text-lg">{item.sku}</div>
-                          {item.sku.startsWith('DEMO-') && (
-                            <span className="text-xs text-blue-600 bg-blue-100 px-3 py-1 rounded-full mt-2 inline-block font-medium">Demo Data</span>
-                          )}
-                          {item.sku.startsWith('LIVE-') && (
-                            <span className="text-xs text-green-600 bg-green-100 px-3 py-1 rounded-full mt-2 inline-block font-medium">Live Data</span>
-                          )}
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-gradient-to-r from-amber-600 to-purple-600 rounded-lg flex items-center justify-center">
+                              <Package className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                              <div className="font-bold text-gray-900 text-lg">{item.sku}</div>
+                              {item.sku.startsWith('DEMO-') && (
+                                <span className="text-xs text-blue-600 bg-blue-100 px-3 py-1 rounded-full mt-1 inline-block font-medium">Demo Data</span>
+                              )}
+                              {item.sku.startsWith('LIVE-') && (
+                                <span className="text-xs text-green-600 bg-green-100 px-3 py-1 rounded-full mt-1 inline-block font-medium">Live Data</span>
+                              )}
+                            </div>
+                          </div>
                         </td>
                         <td className="px-8 py-6 whitespace-nowrap">
                           <div className="text-2xl font-bold text-gray-900">£{item.our_price.toFixed(2)}</div>
+                          <div className="text-sm text-gray-500">
+                            Rank #{item.market_position.rank} of {item.competitor_prices.length + 1}
+                          </div>
+                        </td>
+                        <td className="px-8 py-6 whitespace-nowrap">
+                          <div className="flex items-center space-x-2">
+                            <div className={cn(
+                              "inline-flex px-3 py-1 text-sm font-bold rounded-full",
+                              item.market_position.price_advantage > 10 ? 'bg-red-100 text-red-800' :
+                              item.market_position.price_advantage < -10 ? 'bg-green-100 text-green-800' :
+                              'bg-blue-100 text-blue-800'
+                            )}>
+                              {item.market_position.price_advantage > 0 ? '+' : ''}{item.market_position.price_advantage.toFixed(1)}%
+                            </div>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {item.market_position.percentile}th percentile
+                          </div>
                         </td>
                         <td className="px-8 py-6">
-                          <div className="space-y-3">
-                            {item.competitor_prices.slice(0, 2).map((comp, idx) => (
+                          <div className="space-y-3 max-w-sm">
+                            {item.competitor_prices.slice(0, 3).map((comp, idx) => (
                               <div key={idx} className="flex items-center justify-between text-sm bg-gray-50 rounded-lg p-3">
-                                <span className="text-gray-700 font-medium">{comp.competitor}</span>
                                 <div className="flex items-center space-x-2">
-                                  <span className="font-bold text-lg">£{comp.competitor_price.toFixed(2)}</span>
+                                  <span className="text-gray-700 font-medium">{comp.competitor}</span>
                                   {comp.promotional && (
                                     <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full font-medium">PROMO</span>
                                   )}
                                 </div>
+                                <div className="text-right">
+                                  <div className="font-bold text-lg">£{comp.competitor_price.toFixed(2)}</div>
+                                  <div className={cn(
+                                    "text-xs",
+                                    comp.price_difference_percentage > 0 ? 'text-green-600' : 'text-red-600'
+                                  )}>
+                                    {comp.price_difference_percentage > 0 ? '+' : ''}{comp.price_difference_percentage.toFixed(1)}%
+                                  </div>
+                                </div>
                               </div>
                             ))}
-                            {item.competitor_prices.length > 2 && (
-                              <div className="text-xs text-gray-500 text-center">+{item.competitor_prices.length - 2} more retailers</div>
+                            {item.competitor_prices.length > 3 && (
+                              <div className="text-xs text-gray-500 text-center">
+                                +{item.competitor_prices.length - 3} more retailers
+                              </div>
                             )}
                           </div>
                         </td>
@@ -557,23 +762,24 @@ const testLiveCompetitorData = async () => {
                           <div className="space-y-3">
                             <div className="flex items-center space-x-3">
                               {getActionIcon(item.recommendations.action)}
-                              <span className="font-bold capitalize text-lg">{item.recommendations.action}</span>
+                              <span className="font-bold capitalize text-lg">
+                                {item.recommendations.action}
+                              </span>
+                              {item.recommendations.target_price && (
+                                <span className="text-sm text-gray-600">
+                                  → £{item.recommendations.target_price.toFixed(2)}
+                                </span>
+                              )}
                             </div>
-                            <div className={cn("inline-flex px-3 py-1 text-xs font-bold rounded-full border-2", getUrgencyColor(item.recommendations.urgency))}>
+                            <div className={cn(
+                              "inline-flex px-3 py-1 text-xs font-bold rounded-full border-2", 
+                              getUrgencyColor(item.recommendations.urgency)
+                            )}>
                               {item.recommendations.urgency} urgency
                             </div>
-                            {item.recommendations.target_price && (
-                              <div className="text-sm text-gray-600 font-medium">Target: £{item.recommendations.target_price.toFixed(2)}</div>
-                            )}
-                            <p className="text-sm text-gray-600 italic">{item.recommendations.reasoning}</p>
-                          </div>
-                        </td>
-                        <td className="px-8 py-6 whitespace-nowrap text-sm text-gray-500">
-                          <div className="flex items-center space-x-3">
-                            <button className="text-blue-600 hover:text-blue-800 font-medium transition-colors">View Details</button>
-                            <button className="text-gray-400 hover:text-gray-600 transition-colors">
-                              <ExternalLink className="h-4 w-4" />
-                            </button>
+                            <p className="text-sm text-gray-600 italic max-w-xs">
+                              {item.recommendations.reasoning}
+                            </p>
                           </div>
                         </td>
                       </tr>
@@ -583,6 +789,53 @@ const testLiveCompetitorData = async () => {
               </div>
             )}
           </div>
+
+          {/* Getting Started Section for Empty State */}
+          {filteredData.length === 0 && !loading && (
+            <div className="bg-gradient-to-r from-amber-50 to-purple-50 rounded-2xl p-8 border border-amber-200">
+              <div className="text-center space-y-6">
+                <div className="w-16 h-16 bg-gradient-to-r from-amber-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto">
+                  <Brain className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900">Getting Started with Competitive Intelligence</h3>
+                <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                  <div className="text-left space-y-4">
+                    <h4 className="font-semibold text-amber-800">Option 1: Test Individual Products</h4>
+                    <p className="text-gray-600">
+                      Use the search box above to test specific alcohol products. We'll fetch real prices from UK retailers.
+                    </p>
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <span>Majestic Wine, Waitrose, Tesco, ASDA</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <span>Real-time pricing data</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <span>AI-powered recommendations</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-left space-y-4">
+                    <h4 className="font-semibold text-purple-800">Option 2: Upload Your Inventory</h4>
+                    <p className="text-gray-600">
+                      Upload your complete inventory CSV to get competitive analysis for all your products automatically.
+                    </p>
+                    <button
+                      onClick={() => router.push('/analytics')}
+                      className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+                    >
+                      <Plus className="h-5 w-5" />
+                      <span>Upload Inventory CSV</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>

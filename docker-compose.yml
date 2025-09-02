@@ -1,0 +1,78 @@
+# docker-compose.yml
+# Local development environment for InventoryIQ
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: inventoryiq-postgres
+    environment:
+      POSTGRES_DB: inventoryiq_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: dev_password_123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for Caching (Essential for 500K SKU performance)
+  redis:
+    image: redis:7-alpine
+    container_name: inventoryiq-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+
+  # InventoryIQ Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: inventoryiq-app
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:dev_password_123@postgres:5432/inventoryiq_dev
+      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=development
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    command: npm run dev
+
+  # Database Admin Interface
+  adminer:
+    image: adminer:latest
+    container_name: inventoryiq-adminer
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  default:
+    name: inventoryiq-network
