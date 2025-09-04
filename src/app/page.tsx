@@ -250,7 +250,7 @@ export default function AlcoholIndustryLanding() {
                 <div className="w-3 h-3 bg-red-400 rounded-full"></div>
                 <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
                 <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                <span className="ml-4 text-sm text-gray-600 font-medium">InventoryIQ Analysis Dashboard</span>
+                <span className="ml-4 text-sm text-gray-600 font-medium">RolloAI Analysis Dashboard</span>
               </div>
             </div>
             <div className="p-8">
@@ -278,7 +278,7 @@ export default function AlcoholIndustryLanding() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            How InventoryIQ Works
+            How RolloAI Works
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Simple CSV upload to AI-powered insights in three steps
@@ -387,7 +387,7 @@ export default function AlcoholIndustryLanding() {
                   <div className="w-3 h-3 bg-red-400 rounded-full"></div>
                   <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
                   <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                  <span className="text-gray-400 ml-2">InventoryIQ Analysis Engine</span>
+                  <span className="text-gray-400 ml-2">RolloAI Analysis Engine</span>
                 </div>
                 
                 <div className="space-y-2">
@@ -784,7 +784,7 @@ export default function AlcoholIndustryLanding() {
                 <div className="w-8 h-8 bg-gradient-to-r from-amber-600 to-purple-600 rounded-lg flex items-center justify-center">
                   <Wine className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-xl font-bold">InventoryIQ</span>
+                <span className="text-xl font-bold">RolloAI</span>
                 <span className="px-3 py-1 bg-amber-600/20 text-amber-200 text-sm font-medium rounded-full">
                   Early Stage
                 </span>
@@ -842,7 +842,7 @@ export default function AlcoholIndustryLanding() {
             </div>
             <div className="text-center mt-6">
               <p className="text-gray-500 text-sm">
-                © 2025 InventoryIQ. All rights reserved. Early-stage product for UK alcohol market.
+                © 2025 RolloAI. All rights reserved. Early-stage product for UK alcohol market.
               </p>
             </div>
           </div>

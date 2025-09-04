@@ -1,12 +1,12 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { BarChart3, Menu, X, User, LogOut, History, Settings, ChevronDown, Bell, LineChart, Zap, Clock, Wine, Shield, Sparkles } from 'lucide-react'
+import { BarChart3, Menu, X, User, LogOut, History, Settings, ChevronDown, Bell, LineChart, Zap, Clock, Shield, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useUser } from '@/contexts/UserContext'
-import { Target } from 'lucide-react'
+import { Target, Grape, Wine } from 'lucide-react'
 
 interface NavbarProps {
   onLogin: () => void
@@ -81,18 +81,18 @@ export function Navbar({ onLogin, onSignup }: NavbarProps) {
           <div className="flex items-center space-x-4 shrink-0">
             <Link href="/" className="flex items-center space-x-3 group">
               <div className="relative">
-                <div className="w-10 h-10 bg-gradient-to-br from-amber-500 via-amber-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/25 transition-all duration-300 group-hover:scale-105 group-hover:shadow-xl group-hover:shadow-amber-500/30">
-                  <Wine className="h-6 w-6 text-white" />
+                <div className="w-10 h-10 bg-gradient-to-br from-amber-500 via-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/25 transition-all duration-300 group-hover:scale-105 group-hover:shadow-xl group-hover:shadow-purple-500/30">
+                  <Grape className="h-6 w-6 text-white" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-amber-400 to-amber-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
                   <Sparkles className="h-2 w-2 text-white" />
                 </div>
               </div>
               <div className="hidden sm:block">
                 <h1 className="text-xl font-bold bg-gradient-to-r from-slate-800 via-amber-600 to-purple-600 bg-clip-text text-transparent">
-                  InventoryIQ
+                  RolloAI
                 </h1>
-                <p className="text-xs text-amber-600 font-medium tracking-wide">Alcohol Commerce AI</p>
+                <p className="text-xs text-purple-600 font-medium tracking-wide">Alcohol Commerce AI</p>
               </div>
             </Link>
           </div>

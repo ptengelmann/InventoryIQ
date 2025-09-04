@@ -419,17 +419,19 @@ static async getAnalysisById(analysisId: string, userIdentifier: string): Promis
         orderBy: { last_updated: 'desc' }
       })
       
-      return competitorPrices.map((cp: any) => ({
-        sku: cp.sku_code,
-        competitor: cp.competitor,
-        competitor_price: cp.competitor_price,
-        our_price: cp.our_price,
-        price_difference: cp.price_difference,
-        price_difference_percentage: cp.price_difference_pct,
-        availability: cp.availability,
-        product_name: cp.product_name,
-        relevance_score: cp.relevance_score
-      }))
+return competitorPrices.map((cp: any) => ({
+  sku: cp.sku_code,
+  competitor: cp.competitor,
+  competitor_price: cp.competitor_price,
+  our_price: cp.our_price,
+  price_difference: cp.price_difference,
+  price_difference_percentage: cp.price_difference_pct,
+  availability: cp.availability,
+  product_name: cp.product_name,
+  relevance_score: cp.relevance_score,
+  last_updated: cp.last_updated || new Date(),  // Add this
+  source: cp.source || 'api'                    // Add this
+}))
       
     } catch (error) {
       console.error('Competitor data fetch failed:', error)
