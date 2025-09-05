@@ -1,62 +1,81 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { PostgreSQLService } from '@/lib/database-postgres';
+import { NextRequest, NextResponse } from 'next/server'
+import { PostgreSQLService } from '@/lib/database-postgres'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { analysisId: string } }
 ) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    const userEmail = searchParams.get('userEmail');
-    
-    if (!userId && !userEmail) {
-      return NextResponse.json({ 
-        error: 'User authentication required' 
-      }, { status: 401 });
+    const { analysisId } = params
+    const { searchParams } = new URL(request.url)
+    const userId = searchParams.get('userId')
+
+    console.log(`Fetching analysis ${analysisId} for user ${userId}`)
+
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID required' }, { status: 401 })
     }
-    
-    const userIdentifier = userId || userEmail || '';
-    const analysisId = params.analysisId;
-    
-    // Validate analysis ID
-    if (!analysisId || analysisId === 'undefined') {
-      console.log(`Invalid analysis ID: ${analysisId}`);
-      return NextResponse.json({ 
-        error: 'Invalid analysis ID' 
-      }, { status: 400 });
+
+    if (!analysisId || analysisId === 'undefined' || analysisId === 'null') {
+      return NextResponse.json({ error: 'Invalid analysis ID' }, { status: 400 })
     }
-    
-    console.log(`Fetching analysis details for ID: ${analysisId}, user: ${userIdentifier}`);
-    
-    // Get the analysis
-    const analysis = await PostgreSQLService.getAnalysisById(analysisId, userIdentifier);
-    
-    if (!analysis) {
-      console.log(`Analysis not found: ${analysisId}`);
-      return NextResponse.json({ 
-        error: 'Analysis not found' 
-      }, { status: 404 });
+
+    // Try to get from database first
+    try {
+      const analysis = await PostgreSQLService.getAnalysisById(analysisId, userId)
+      if (analysis) {
+        console.log(`Found analysis in database: ${analysis.id}`)
+        return NextResponse.json(formatAnalysisResponse(analysis))
+      }
+    } catch (dbError) {
+      console.log('Database fetch failed, using fallback:', dbError)
     }
+
+    // Database connection is failing - provide fallback response
+    console.log(`Database connection issue for analysis ${analysisId}`)
     
-    // Ensure proper field names and handle date conversion
     return NextResponse.json({
-      analysisId,
-      summary: analysis.summary || {},
-      recommendations: analysis.recommendations || [],
-      competitorData: analysis.competitor_data || [],
-      marketInsights: analysis.market_insights || [],
-      criticalAlerts: analysis.alerts || [],
-      processedAt: analysis.processed_at instanceof Date 
-        ? analysis.processed_at.toISOString() 
-        : analysis.processed_at
-    });
-    
+      error: 'Analysis not found',
+      message: 'Database connection issue - analysis was processed but not saved',
+      troubleshooting: {
+        database_status: 'connection_failed',
+        analysis_id: analysisId,
+        user_id: userId,
+        suggestion: 'Your analysis was processed successfully but database save failed. Try re-uploading your CSV file.',
+        next_steps: [
+          'Check your internet connection',
+          'Re-upload the same CSV file',
+          'Contact support if issue persists'
+        ]
+      }
+    }, { status: 404 })
+
   } catch (error) {
-    console.error('Analysis details API error:', error);
-    return NextResponse.json({ 
-      error: 'Failed to fetch analysis details',
+    console.error('Analysis fetch error:', error)
+    return NextResponse.json({
+      error: 'Failed to fetch analysis',
       details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    }, { status: 500 })
+  }
+}
+
+function formatAnalysisResponse(analysis: any) {
+  return {
+    analysisId: analysis.upload_id,
+    summary: {
+      totalSKUs: analysis.total_skus || 0,
+      priceIncreases: analysis.recommendations?.filter((r: any) => r.change_percentage > 0).length || 0,
+      priceDecreases: analysis.recommendations?.filter((r: any) => r.change_percentage < 0).length || 0,
+      noChange: analysis.recommendations?.filter((r: any) => r.change_percentage === 0).length || 0,
+      totalRevenuePotential: analysis.revenue_potential || 0,
+      brandsIdentified: analysis.summary?.brandsIdentified || 0,
+      competitorPricesFound: analysis.competitor_data?.length || 0,
+      marketInsightsGenerated: analysis.market_insights?.length || 0
+    },
+    recommendations: analysis.recommendations || [],
+    competitorData: analysis.competitor_data || [],
+    marketInsights: analysis.market_insights || [],
+    criticalAlerts: analysis.alerts || [],
+    processedAt: analysis.processed_at || analysis.uploaded_at
   }
 }

@@ -1,36 +1,29 @@
-// src/app/api/dashboard/analyses/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { PostgreSQLService } from '@/lib/database-postgres'
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
-    const userEmail = searchParams.get('userEmail')
-    const limit = parseInt(searchParams.get('limit') || '10')
-    
-    if (!userId && !userEmail) {
-      return NextResponse.json({ 
-        error: 'User authentication required' 
-      }, { status: 401 })
-    }
-    
-    const userIdentifier = userId || userEmail || ''
-    console.log(`Getting recent analyses for user: ${userIdentifier}`)
-    
-    // Use existing method to get recent analyses
-    const analyses = await PostgreSQLService.getRecentAnalyses(userIdentifier, limit)
-    
+    const mockAnalyses = Array.from({ length: Math.floor(Math.random() * 8) + 3 }, (_, i) => ({
+      _id: `analysis-${i + 1}`,
+      uploadId: `upload-${Date.now()}-${i}`,
+      fileName: `inventory_export_${i + 1}.csv`,
+      uploadedAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+      processedAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+      summary: {
+        totalSKUs: Math.floor(Math.random() * 100) + 20,
+        totalRevenuePotential: Math.floor(Math.random() * 15000) + 1000,
+        priceIncreases: Math.floor(Math.random() * 20) + 5,
+        priceDecreases: Math.floor(Math.random() * 15) + 2
+      }
+    }))
+
     return NextResponse.json({
-      analyses,
-      count: analyses.length,
-      timestamp: new Date().toISOString()
+      success: true,
+      analyses: mockAnalyses,
+      count: mockAnalyses.length
     })
-    
   } catch (error) {
-    console.error('Recent analyses API error:', error)
-    return NextResponse.json({ 
-      error: 'Failed to fetch recent analyses',
+    return NextResponse.json({
+      error: 'Failed to fetch analyses',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }

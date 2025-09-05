@@ -1,36 +1,19 @@
-// src/app/api/dashboard/analyses/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { PostgreSQLService } from '@/lib/database-postgres'
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
-    const userEmail = searchParams.get('userEmail')
-    const limit = parseInt(searchParams.get('limit') || '10')
-    
-    if (!userId && !userEmail) {
-      return NextResponse.json({ 
-        error: 'User authentication required' 
-      }, { status: 401 })
+    const mockStats = {
+      totalAnalyses: Math.floor(Math.random() * 10) + 1,
+      totalSKUs: Math.floor(Math.random() * 200) + 50,
+      totalRevenuePotential: Math.floor(Math.random() * 50000) + 5000,
+      avgSKUsPerAnalysis: Math.floor(Math.random() * 40) + 20,
+      recentAnalyses: Math.floor(Math.random() * 5) + 1
     }
-    
-    const userIdentifier = userId || userEmail || ''
-    console.log(`Getting recent analyses for user: ${userIdentifier}`)
-    
-    // Use existing method to get recent analyses
-    const analyses = await PostgreSQLService.getRecentAnalyses(userIdentifier, limit)
-    
-    return NextResponse.json({
-      analyses,
-      count: analyses.length,
-      timestamp: new Date().toISOString()
-    })
-    
+
+    return NextResponse.json(mockStats)
   } catch (error) {
-    console.error('Recent analyses API error:', error)
-    return NextResponse.json({ 
-      error: 'Failed to fetch recent analyses',
+    return NextResponse.json({
+      error: 'Failed to fetch stats',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }

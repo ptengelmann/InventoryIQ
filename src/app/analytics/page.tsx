@@ -1,4 +1,3 @@
-// src/app/analytics/page.tsx - UPDATED VERSION
 'use client'
 
 import React, { useState } from 'react'
@@ -14,7 +13,9 @@ import {
   Package,
   CheckCircle,
   Loader,
-  ArrowRight
+  ArrowRight,
+  FileText,
+  TrendingUp
 } from 'lucide-react'
 
 export default function AnalyticsPage() {
@@ -28,9 +29,19 @@ export default function AnalyticsPage() {
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login')
   const [analysisId, setAnalysisId] = useState<string | null>(null)
+  const [analysisResults, setAnalysisResults] = useState<any>(null)
+  const [debugInfo, setDebugInfo] = useState<any>(null)
 
   const handleFileUpload = async (file: File) => {
+    console.log('=== UPLOAD DEBUG START ===')
+    console.log('File details:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    })
+
     if (!user) {
+      console.log('❌ No user authenticated')
       setError('User not authenticated')
       return
     }
@@ -39,6 +50,7 @@ export default function AnalyticsPage() {
     setIsAnalyzing(true)
     setError(null)
     setUploadSuccess(false)
+    setDebugInfo(null)
     
     try {
       const formData = new FormData()
@@ -46,29 +58,58 @@ export default function AnalyticsPage() {
       formData.append('userId', user.email)
       formData.append('userEmail', user.email)
       
+      console.log('Sending to /api/upload...')
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData
       })
       
+      console.log('Upload response status:', response.status)
+      console.log('Upload response headers:', Object.fromEntries(response.headers.entries()))
+      
       const data = await response.json()
+      console.log('Upload response data:', data)
+      
+      // Store debug info regardless of success/failure
+      setDebugInfo({
+        status: response.status,
+        responseData: data,
+        timestamp: new Date().toISOString()
+      })
       
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to process file')
+        throw new Error(data.error || `Server error: ${response.status}`)
       }
       
+      // Store results
+      setAnalysisResults(data)
+      
       // Save analysis ID for redirect
-      setAnalysisId(data.analysisId)
+      const uploadId = data.uploadId || data.analysisId
+      setAnalysisId(uploadId)
       setUploadSuccess(true)
       
-      // Automatically redirect to dashboard after 3 seconds
+      // Automatically redirect to dashboard after 5 seconds
       setTimeout(() => {
-        router.push(`/dashboard?analysis=${data.analysisId}`)
-      }, 3000)
+        if (uploadId) {
+          router.push(`/dashboard?analysis=${uploadId}`)
+        } else {
+          router.push('/dashboard')
+        }
+      }, 5000)
       
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      console.error('=== UPLOAD ERROR ===', err)
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred'
+      setError(errorMessage)
       setUploadedFile(null)
+      
+      // Store error in debug info
+setDebugInfo((prev: any) => ({
+        ...prev,
+        error: errorMessage,
+        errorDetails: err
+      }))
     } finally {
       setIsAnalyzing(false)
     }
@@ -80,6 +121,8 @@ export default function AnalyticsPage() {
     setError(null)
     setIsAnalyzing(false)
     setAnalysisId(null)
+    setAnalysisResults(null)
+    setDebugInfo(null)
   }
 
   const handleLogin = () => {
@@ -167,6 +210,19 @@ export default function AnalyticsPage() {
               <h3 className="font-medium text-red-900">Error Processing File</h3>
             </div>
             <p className="text-red-700 mt-2">{error}</p>
+            
+            {/* Debug information for development */}
+            {debugInfo && (
+              <details className="mt-4">
+                <summary className="cursor-pointer text-sm text-red-600 hover:text-red-800">
+                  Show Debug Information
+                </summary>
+                <pre className="mt-2 p-3 bg-red-100 text-xs overflow-auto rounded text-red-800">
+                  {JSON.stringify(debugInfo, null, 2)}
+                </pre>
+              </details>
+            )}
+            
             <button 
               onClick={resetAnalysis}
               className="mt-3 text-red-600 hover:text-red-800 text-sm underline"
@@ -177,7 +233,7 @@ export default function AnalyticsPage() {
         )}
 
         {uploadSuccess ? (
-          <div className="bg-green-50 border-2 border-green-200 rounded-xl p-8 text-center max-w-3xl mx-auto">
+          <div className="bg-green-50 border-2 border-green-200 rounded-xl p-8 text-center max-w-4xl mx-auto">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="h-8 w-8 text-green-600" />
             </div>
@@ -185,13 +241,65 @@ export default function AnalyticsPage() {
             <p className="text-lg text-gray-600 mb-6">
               Your file was successfully analyzed. Redirecting you to the dashboard to view results...
             </p>
-            <button
-              onClick={navigateToDashboard}
-              className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-amber-600 to-purple-600 text-white font-medium rounded-xl hover:from-amber-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-            >
-              <span>View Results Now</span>
-              <ArrowRight className="h-5 w-5" />
-            </button>
+
+            {/* Show quick results preview if available */}
+            {analysisResults && (
+              <div className="bg-white rounded-lg p-6 mb-6 text-left">
+                <h3 className="font-semibold text-gray-900 mb-4">Quick Results Preview:</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                  <div className="bg-blue-50 rounded-lg p-3">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {analysisResults.summary?.totalSKUs || 0}
+                    </div>
+                    <div className="text-sm text-gray-600">Products Analyzed</div>
+                  </div>
+                  <div className="bg-green-50 rounded-lg p-3">
+                    <div className="text-2xl font-bold text-green-600">
+                      {analysisResults.summary?.priceIncreases || 0}
+                    </div>
+                    <div className="text-sm text-gray-600">Price Opportunities</div>
+                  </div>
+                  <div className="bg-amber-50 rounded-lg p-3">
+                    <div className="text-2xl font-bold text-amber-600">
+                      {analysisResults.summary?.criticalAlertsGenerated || 0}
+                    </div>
+                    <div className="text-sm text-gray-600">Critical Alerts</div>
+                  </div>
+                  <div className="bg-purple-50 rounded-lg p-3">
+                    <div className="text-2xl font-bold text-purple-600">
+                      £{Math.round(analysisResults.summary?.totalRevenuePotential || 0).toLocaleString()}
+                    </div>
+                    <div className="text-sm text-gray-600">Revenue Potential</div>
+                  </div>
+                </div>
+
+                {analysisResults.debug && (
+                  <div className="mt-4 text-sm text-gray-500">
+                    Processing time: {analysisResults.processingTimeMs || 0}ms | 
+                    SKUs processed: {analysisResults.debug.validSKUsFound || 0} | 
+                    Database: {analysisResults.savedToDatabase ? 'Saved' : 'Not saved'}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <button
+                onClick={navigateToDashboard}
+                className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-amber-600 to-purple-600 text-white font-medium rounded-xl hover:from-amber-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                <span>View Full Results</span>
+                <ArrowRight className="h-5 w-5" />
+              </button>
+              
+              <button
+                onClick={resetAnalysis}
+                className="inline-flex items-center space-x-2 px-6 py-3 text-gray-700 font-medium rounded-xl border-2 border-gray-300 hover:border-gray-400 transition-colors"
+              >
+                <Upload className="h-5 w-5" />
+                <span>Analyze Another File</span>
+              </button>
+            </div>
           </div>
         ) : isAnalyzing ? (
           <div className="text-center space-y-8">
@@ -204,6 +312,19 @@ export default function AnalyticsPage() {
                 <div className="space-y-2">
                   <p className="text-gray-600">Processing {uploadedFile?.name}...</p>
                   <p className="text-sm text-gray-500">Identifying alcohol brands and competitive pricing...</p>
+                  
+                  {/* Processing steps indicator */}
+                  <div className="max-w-md mx-auto mt-6">
+                    <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+                      <span>CSV Processing</span>
+                      <span>AI Analysis</span>
+                      <span>Market Data</span>
+                      <span>Complete</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-gradient-to-r from-amber-600 to-purple-600 h-2 rounded-full animate-pulse" style={{width: '60%'}}></div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -240,6 +361,36 @@ export default function AnalyticsPage() {
                 <p className="text-sm text-amber-700 mt-2">
                   Our AI will identify alcohol brands and provide competitive pricing from UK retailers.
                 </p>
+              </div>
+
+              {/* Additional CSV format examples */}
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <FileText className="h-5 w-5 text-blue-600" />
+                    <h5 className="font-medium text-gray-900">Alternative Formats</h5>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-2">We also accept these column names:</p>
+                  <ul className="text-xs text-gray-500 space-y-1">
+                    <li>• product_id, item_id, code</li>
+                    <li>• unit_price, retail_price, cost</li>
+                    <li>• sales, units_sold, weekly_units</li>
+                    <li>• stock, inventory, qty_on_hand</li>
+                  </ul>
+                </div>
+                
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <TrendingUp className="h-5 w-5 text-green-600" />
+                    <h5 className="font-medium text-gray-900">What You'll Get</h5>
+                  </div>
+                  <ul className="text-sm text-gray-600 space-y-2">
+                    <li>• Price optimization recommendations</li>
+                    <li>• Competitive pricing analysis</li>
+                    <li>• Inventory risk alerts</li>
+                    <li>• Market positioning insights</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
