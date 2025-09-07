@@ -54,16 +54,28 @@ export function AuthModal({ isOpen, onClose, mode, onSwitchMode, onSuccess }: Au
         throw new Error('Please enter a valid email')
       }
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // REAL API call to database
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          mode,
+          email: formData.email,
+          password: formData.password,
+          name: formData.name
+        })
+      })
 
-      // Mock successful auth
-      const user = {
-        name: mode === 'signup' ? formData.name : formData.email.split('@')[0],
-        email: formData.email
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Authentication failed')
       }
 
-      onSuccess(user)
+      // Success - user is now in database
+      onSuccess(data.user)
       onClose()
       
       // Reset form

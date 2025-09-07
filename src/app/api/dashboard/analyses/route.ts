@@ -1,26 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { PostgreSQLService } from '@/lib/database-postgres'
 
 export async function GET(request: NextRequest) {
   try {
-    const mockAnalyses = Array.from({ length: Math.floor(Math.random() * 8) + 3 }, (_, i) => ({
-      _id: `analysis-${i + 1}`,
-      uploadId: `upload-${Date.now()}-${i}`,
-      fileName: `inventory_export_${i + 1}.csv`,
-      uploadedAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-      processedAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-      summary: {
-        totalSKUs: Math.floor(Math.random() * 100) + 20,
-        totalRevenuePotential: Math.floor(Math.random() * 15000) + 1000,
-        priceIncreases: Math.floor(Math.random() * 20) + 5,
-        priceDecreases: Math.floor(Math.random() * 15) + 2
-      }
-    }))
-
+    const { searchParams } = new URL(request.url)
+    const userId = searchParams.get('userId')
+    
+    if (!userId) {
+      return NextResponse.json({ error: 'userId required' }, { status: 400 })
+    }
+    
+    const analyses = await PostgreSQLService.getRecentAnalyses(userId, 10)
+    
     return NextResponse.json({
       success: true,
-      analyses: mockAnalyses,
-      count: mockAnalyses.length
+      analyses,
+      count: analyses.length
     })
+    
   } catch (error) {
     return NextResponse.json({
       error: 'Failed to fetch analyses',

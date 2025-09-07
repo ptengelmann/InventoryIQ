@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { PostgreSQLService } from '@/lib/database-postgres'
 
 export async function GET(request: NextRequest) {
   try {
-    const mockStats = {
-      totalAnalyses: Math.floor(Math.random() * 10) + 1,
-      totalSKUs: Math.floor(Math.random() * 200) + 50,
-      totalRevenuePotential: Math.floor(Math.random() * 50000) + 5000,
-      avgSKUsPerAnalysis: Math.floor(Math.random() * 40) + 20,
-      recentAnalyses: Math.floor(Math.random() * 5) + 1
+    const { searchParams } = new URL(request.url)
+    const userId = searchParams.get('userId')
+    
+    if (!userId) {
+      return NextResponse.json({ error: 'userId required' }, { status: 400 })
     }
-
-    return NextResponse.json(mockStats)
+    
+    const stats = await PostgreSQLService.getDashboardStats(userId)
+    return NextResponse.json(stats)
+    
   } catch (error) {
     return NextResponse.json({
       error: 'Failed to fetch stats',
