@@ -32,8 +32,8 @@ export interface AnalysisData {
 // Proper type definition for inventory alerts
 export interface InventoryAlert {
   sku: string
-  riskLevel: 'low' | 'medium' | 'high'
-  riskType: 'stockout' | 'overstock' | 'expiration' | 'seasonal_shortage' | 'none'
+  riskLevel: 'low' | 'medium' | 'high' | 'critical'
+  riskType: 'stockout' | 'overstock' | 'price_opportunity' | 'competitor_threat' | 'seasonal_prep' | 'demand_spike' | 'compliance' | 'expiration_risk' | 'expiration' | 'seasonal_shortage' | 'none'
   weeksOfStock: number
   priority: number
   message: string
@@ -45,7 +45,6 @@ export interface InventoryAlert {
     seasonalPeak?: string
   }
 }
-
 
 
 export class PostgreSQLService {
@@ -217,8 +216,8 @@ static async getAnalysisById(analysisId: string, userIdentifier: string): Promis
   }
   
   // Save inventory alerts with proper typing
-  private static async saveAlerts(
-    userId: string, 
+public static async saveAlerts(    
+  userId: string, 
     analysisId: string, 
     alerts: InventoryAlert[]
   ): Promise<void> {

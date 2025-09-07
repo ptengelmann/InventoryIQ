@@ -42,43 +42,48 @@ export async function GET(
     console.log(`📊 Found ${alerts.length} alerts for analysis ${analysisId}`)
     
     // Convert to proper Alert format
-    const formattedAlerts = alerts.map((alert: any) => ({
-      id: alert.id,
-      rule_id: `rule-${alert.type}`,
-      sku: alert.sku_code || 'unknown',
-      category: alert.sku?.category || alert.type,
-      type: alert.type,
-      severity: alert.severity,
-      title: alert.title,
-      message: alert.message,
-      action_required: generateActionFromType(alert.type),
-      impact: {
-        revenue_at_risk: alert.revenue_at_risk || 0,
-        urgency: alert.urgency_score || 5
-      },
-      data: {
-        current_stock: alert.sku?.inventory_level || 0,
-        predicted_demand: alert.sku?.weekly_sales ? alert.sku.weekly_sales * 4 : 0,
-        weeks_of_stock: alert.sku?.inventory_level && alert.sku?.weekly_sales ? 
-          alert.sku.inventory_level / alert.sku.weekly_sales : 0,
-        confidence: 0.8,
-        trend: 'stable'
-      },
-      alcohol_context: {
-        abv: alert.sku?.abv,
-        shelf_life_days: alert.sku?.shelf_life_days,
-        seasonal_peak: getSeasonalPeak(alert.sku?.category || 'spirits'),
-        compliance_notes: getComplianceNotes(alert.sku)
-      },
-      created_at: alert.created_at.toISOString(),
-      acknowledged: alert.acknowledged,
-      resolved: alert.resolved,
-      delivered_via: ['dashboard'],
-      metadata: {
-        source: 'database',
-        analysis_id: analysisId
-      }
-    }))
+   const formattedAlerts = alerts.map((alert: any) => ({
+  id: alert.id,
+  rule_id: `rule-${alert.type}`,
+  sku: alert.sku_code || 'unknown',
+  category: alert.sku?.category || alert.type,
+  type: alert.type,
+  severity: alert.severity,
+  title: alert.title,
+  message: alert.message,
+  action_required: generateActionFromType(alert.type),
+  impact: {
+    revenue_at_risk: alert.revenue_at_risk || 0,
+    profit_opportunity: alert.profit_opportunity || 0,
+    time_to_critical: alert.time_to_critical || 0,
+    urgency: alert.urgency_score || 5  // Map urgency_score to urgency
+  },
+  data: {
+    current_stock: alert.sku?.inventory_level || 0,
+    predicted_demand: alert.sku?.weekly_sales ? alert.sku.weekly_sales * 4 : 0,
+    weeks_of_stock: alert.sku?.inventory_level && alert.sku?.weekly_sales ? 
+      alert.sku.inventory_level / alert.sku.weekly_sales : 0,
+    confidence: 0.8,
+    trend: 'stable'
+  },
+  alcohol_context: {
+    abv: alert.sku?.abv,
+    shelf_life_days: alert.sku?.shelf_life_days || 365,
+    seasonal_peak: getSeasonalPeak(alert.sku?.category || 'spirits'),
+    compliance_notes: getComplianceNotes(alert.sku),
+    category_risk: 'moderate'
+  },
+  created_at: new Date(alert.created_at),  // Convert to Date object
+  acknowledged: alert.acknowledged,
+  resolved: alert.resolved,
+  delivered_via: ['dashboard'],
+  metadata: {
+    source: 'database',
+    analysis_id: analysisId,
+    confidence_score: 0.8,
+    auto_generated: true
+  }
+}))
     
     return NextResponse.json({
       success: true,

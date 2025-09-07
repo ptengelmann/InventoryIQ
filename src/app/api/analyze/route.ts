@@ -6,6 +6,8 @@ import { PostgreSQLService } from '@/lib/database-postgres'
 import { GPTCommerceIntelligence } from '@/lib/gpt-commerce-intelligence'
 import { AlcoholSKU, CompetitorPrice } from '@/types'
 import { CompetitorIntelligenceService } from '@/lib/competitor-intelligence'
+import { AlertEngine } from '@/lib/alert-engine'
+
 
 interface AnalysisRequest {
   alcoholSKUs: AlcoholSKU[]
@@ -295,6 +297,42 @@ export async function POST(request: NextRequest) {
     console.log(`Generated ${creativeRecommendations.length} GPT-4 strategies`)
     console.log(`Created ${criticalAlerts.length} critical alerts`)
     console.log(`Found ${competitorData.length} competitor prices`)
+
+// Step 7: Generate and save sophisticated alerts using AlertEngine
+console.log('Generating sophisticated alerts using AlertEngine...')
+
+try {
+  const sophisticatedAlerts = AlertEngine.generateAlertsFromAnalysis(
+    alcoholSKUs,
+    standardRecommendations,
+    competitorData,
+    {
+      maxAlertsPerSKU: 2,
+      minSeverityLevel: 'medium',
+      includeOpportunities: true,
+      analysisId
+    }
+  )
+
+  // Convert AlertEngine alerts to database format
+  const dbAlerts = sophisticatedAlerts.map(alert => ({
+    sku: alert.sku,
+    riskLevel: alert.severity as 'low' | 'medium' | 'high' | 'critical',
+    riskType: alert.type,
+    weeksOfStock: alert.data?.weeks_of_stock || 0,
+    priority: alert.impact.urgency,
+    message: alert.message,
+    aiEnhanced: true,
+    revenueAtRisk: alert.impact.revenue_at_risk || 0
+  }))
+
+  // Save alerts to database
+  await PostgreSQLService.saveAlerts(userId, analysisId, dbAlerts)
+  console.log(`Saved ${dbAlerts.length} sophisticated alerts to database`)
+
+} catch (alertError) {
+  console.error('Alert generation failed:', alertError)
+}
 
     return NextResponse.json({
       success: true,
