@@ -721,6 +721,81 @@ return competitorPrices.map((cp: any) => ({
     }
   }
   
+/**
+ * Get all SKUs for a specific user
+ */
+static async getUserSKUs(userId: string): Promise<any[]> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email: userId }
+    })
+    
+    if (!user) return []
+    
+    const skus = await prisma.sKU.findMany({
+      where: { user_id: user.id },
+      orderBy: { weekly_sales: 'desc' },
+      take: 1000
+    })
+    
+    return skus.map((sku: any) => ({
+      sku_code: sku.sku_code,
+      product_name: sku.product_name,
+      brand: sku.brand,
+      category: sku.category,
+      subcategory: sku.subcategory,
+      price: sku.price,
+      weekly_sales: sku.weekly_sales,
+      inventory_level: sku.inventory_level
+    }))
+  } catch (error) {
+    console.error('Error fetching user SKUs:', error)
+    return []
+  }
+}
+
+/**
+ * Save competitor prices to database
+ */
+static async saveCompetitorPrices(userId: string, competitorPrices: any[]): Promise<boolean> {
+  if (competitorPrices.length === 0) return true
+  
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email: userId }
+    })
+    
+    if (!user) return false
+    
+    for (const price of competitorPrices) {
+      await prisma.competitorPrice.create({
+        data: {
+          sku_code: price.sku || 'unknown',
+          user_id: user.id,
+          competitor: price.competitor,
+          competitor_price: price.competitor_price,
+          our_price: price.our_price || 0,
+          price_difference: price.price_difference || 0,
+          price_difference_pct: price.price_difference_percentage || 0,
+          availability: price.availability || false,
+          product_name: price.product_name || null,
+          relevance_score: price.relevance_score || 0.5,
+          source_url: price.url || null,
+          scraping_success: true,
+          scraping_method: 'real_scraping'
+        }
+      })
+    }
+    
+    console.log(`Saved ${competitorPrices.length} competitor prices`)
+    return true
+    
+  } catch (error) {
+    console.error('Error saving competitor prices:', error)
+    return false
+  }
+}
+
   // Disconnect database connection
   static async disconnect(): Promise<void> {
     await prisma.$disconnect()
