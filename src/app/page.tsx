@@ -28,10 +28,23 @@ import {
   Globe,
   FileText,
   Truck,
-  Upload
+  Upload,
+  Building,
+  Store,
+  Eye,
+  LineChart,
+  PieChart,
+  Activity,
+  MapPin,
+  TrendingDown,
+  Award,
+  Briefcase,
+  MonitorSpeaker,
+  Gauge,
+  Scan
 } from 'lucide-react'
 
-export default function AlcoholIndustryLanding() {
+export default function BrandFocusedLanding() {
   const router = useRouter()
   const { user, login } = useUser()
   const [authModalOpen, setAuthModalOpen] = useState(false)
@@ -44,10 +57,10 @@ export default function AlcoholIndustryLanding() {
   // Animated counter effect
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (animatedNumber < 20) {
+      if (animatedNumber < 85) {
         setAnimatedNumber(prev => prev + 1)
       }
-    }, 100)
+    }, 50)
     return () => clearTimeout(timer)
   }, [animatedNumber])
 
@@ -96,46 +109,46 @@ export default function AlcoholIndustryLanding() {
 
   const testimonials = [
     {
-      quote: "The inventory analysis gave us insights we hadn't considered before. It's helping us think differently about our beer selection.",
-      author: "Mike Thompson",
-      title: "Operations Manager, Local Brewery",
-      avatar: "MT"
+      quote: "RolloAI gives us real-time visibility into how our premium gin performs across every major UK retailer. The competitive intelligence is invaluable for our pricing strategy.",
+      author: "Sarah Mitchell",
+      title: "Brand Manager, Premium Spirits Co.",
+      avatar: "SM"
     },
     {
-      quote: "Being able to upload our sales data and get immediate feedback on our wine category was useful for our planning.",
-      author: "Sarah Davies", 
-      title: "Buyer, Wine Retailer",
-      avatar: "SD"
+      quote: "Understanding our market positioning vs competitors like Diageo and Pernod Ricard used to take weeks. Now we get instant insights into pricing gaps and opportunities.",
+      author: "David Chen", 
+      title: "Head of Commercial Intelligence, Independent Whisky Distillery",
+      avatar: "DC"
     },
     {
-      quote: "The competitive pricing feature showed us where we stand against other retailers. That's valuable information.",
-      author: "James Wilson",
-      title: "Owner, Independent Off-License",
-      avatar: "JW"
+      quote: "The automated alerts when competitors change pricing or when our products go out of stock at key retailers have saved us countless lost sales opportunities.",
+      author: "Maria Rodriguez",
+      title: "UK Market Director, International Wine & Spirits",
+      avatar: "MR"
     }
   ]
 
   const features = [
     {
-      icon: Brain,
-      title: "Inventory Analysis",
-      description: "Upload your CSV data and get AI-powered insights into your alcohol inventory patterns",
+      icon: MonitorSpeaker,
+      title: "Real-Time Retail Monitoring",
+      description: "Track your brand performance across Majestic Wine, Waitrose, Tesco, ASDA and 20+ UK alcohol retailers in real-time",
       color: "from-purple-500 to-pink-500",
       bgColor: "bg-purple-100",
       textColor: "text-purple-600"
     },
     {
-      icon: DollarSign,
-      title: "Competitive Pricing Intelligence",
-      description: "See how your prices compare to major UK alcohol retailers like Majestic Wine and Waitrose",
+      icon: Target,
+      title: "Competitive Intelligence",
+      description: "Monitor competitor pricing strategies and identify opportunities vs Diageo, Pernod Ricard, and other major brands",
       color: "from-blue-500 to-cyan-500", 
       bgColor: "bg-blue-100",
       textColor: "text-blue-600"
     },
     {
-      icon: Shield,
-      title: "UK Alcohol Focus",
-      description: "Purpose-built for UK alcohol categories: beer, wine, spirits, and ready-to-drink products",
+      icon: Brain,
+      title: "AI Brand Insights",
+      description: "Get actionable recommendations on pricing, distribution gaps, and market share opportunities powered by alcohol industry AI",
       color: "from-orange-500 to-red-500",
       bgColor: "bg-orange-100", 
       textColor: "text-orange-600"
@@ -180,24 +193,24 @@ export default function AlcoholIndustryLanding() {
         <div className="text-center space-y-8">
           {/* Badge */}
           <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-amber-100 to-purple-100 px-4 py-2 rounded-full border border-amber-200">
-            <Sparkles className="h-4 w-4 text-amber-600" />
-            <span className="text-sm font-medium text-amber-800">Early-Stage AI for UK Alcohol Businesses</span>
+            <Building className="h-4 w-4 text-amber-600" />
+            <span className="text-sm font-medium text-amber-800">Enterprise AI for Alcohol Brands</span>
             <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
           </div>
 
           <div className="space-y-6">
             <h1 className="text-5xl md:text-7xl font-bold text-gray-900 leading-tight">
-              Analyze Your Alcohol
+              Monitor Your Brand
               <span className="block bg-gradient-to-r from-amber-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                Inventory Data
+                Across UK Retail
               </span>
             </h1>
             <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-              Upload your sales and inventory data to get <strong>AI-powered insights</strong> into your alcohol business. 
+              Real-time competitive intelligence for alcohol brands. Track your performance across 
               <br />
-              Built specifically for <span className="text-amber-600 font-semibold">UK beer, wine, spirits & RTD categories</span>
+              <span className="text-amber-600 font-semibold">Majestic Wine, Waitrose, Tesco, ASDA</span> and 20+ UK retailers.
               <br />
-              <span className="text-purple-600 font-semibold">See competitive pricing from major UK retailers</span>
+              <span className="text-purple-600 font-semibold">AI-powered insights to optimize pricing, distribution, and market share</span>
             </p>
           </div>
 
@@ -207,7 +220,8 @@ export default function AlcoholIndustryLanding() {
               onClick={() => !user ? handleSignup() : router.push('/analytics')}
               className="group relative inline-flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-amber-600 to-purple-600 text-white font-semibold text-lg rounded-xl hover:from-amber-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:scale-105"
             >
-              <span>Try It Now</span>
+              <Briefcase className="h-5 w-5" />
+              <span>Book Enterprise Demo</span>
               <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
               <div className="absolute inset-0 bg-gradient-to-r from-amber-600 to-purple-600 rounded-xl blur opacity-0 group-hover:opacity-50 transition-opacity duration-300 -z-10"></div>
             </button>
@@ -216,100 +230,163 @@ export default function AlcoholIndustryLanding() {
               onClick={() => router.push('/competitive')}
               className="group inline-flex items-center space-x-3 px-8 py-4 bg-white text-gray-700 font-semibold text-lg rounded-xl border-2 border-gray-300 hover:border-amber-400 hover:text-amber-600 transition-all duration-300 shadow-sm hover:shadow-lg"
             >
-              <Target className="h-5 w-5" />
-              <span>View Competitive Intel</span>
+              <Play className="h-5 w-5" />
+              <span>Watch Live Demo</span>
             </button>
           </div>
 
           {/* Trust Indicators */}
           <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-500">
             <div className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              <span>Free to try</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              <span>Upload CSV instantly</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              <span>UK alcohol focused</span>
-            </div>
-            <div className="flex items-center space-x-2">
               <Shield className="h-5 w-5 text-green-500" />
-              <span>Your data stays private</span>
+              <span>Enterprise-grade security</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Globe className="h-5 w-5 text-green-500" />
+              <span>Real-time UK retail data</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <CheckCircle className="h-5 w-5 text-green-500" />
+              <span>Trusted by leading brands</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Brain className="h-5 w-5 text-green-500" />
+              <span>AI-powered insights</span>
             </div>
           </div>
         </div>
 
-        {/* Interactive Demo Preview */}
+        {/* Interactive Demo Preview - Brand Dashboard */}
         <div className="mt-16 relative">
           <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden transform hover:scale-105 transition-transform duration-500">
             <div className="bg-gradient-to-r from-amber-50 to-purple-50 px-6 py-4 border-b border-gray-200">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-                <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                <span className="ml-4 text-sm text-gray-600 font-medium">RolloAI Analysis Dashboard</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                  <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                  <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                  <span className="ml-4 text-sm text-gray-600 font-medium">RolloAI Enterprise - AU Vodka Brand Intelligence</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-xs text-green-600 font-medium">Live Data</span>
+                </div>
               </div>
             </div>
             <div className="p-8">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {features.map((feature, index) => (
-                  <div 
-                    key={index}
-                    className="group p-6 rounded-xl border border-gray-100 hover:border-amber-200 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
-                    style={{ animationDelay: `${index * 0.2}s` }}
-                  >
-                    <div className={`w-12 h-12 ${feature.bgColor} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                      <feature.icon className={`h-6 w-6 ${feature.textColor}`} />
-                    </div>
-                    <h3 className="font-semibold text-gray-900 mb-2">{feature.title}</h3>
-                    <p className="text-gray-600 text-sm">{feature.description}</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-gray-900 font-semibold">Retail Coverage</h3>
+                    <Store className="h-6 w-6 text-blue-600" />
                   </div>
-                ))}
+                  <div className="text-3xl font-bold text-blue-600 mb-2">{animatedNumber}%</div>
+                  <div className="text-blue-700 text-sm">UK Premium Off-Trade</div>
+                  <div className="mt-3 flex items-center space-x-2 text-xs text-blue-600">
+                    <CheckCircle className="h-4 w-4" />
+                    <span>Majestic, Waitrose, Tesco, ASDA</span>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl border border-purple-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-gray-900 font-semibold">Price Position</h3>
+                    <Target className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div className="text-3xl font-bold text-purple-600 mb-2">+12%</div>
+                  <div className="text-purple-700 text-sm">vs Category Average</div>
+                  <div className="mt-3 flex items-center space-x-2 text-xs text-purple-600">
+                    <TrendingUp className="h-4 w-4" />
+                    <span>Premium positioning</span>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl border border-green-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-gray-900 font-semibold">Market Share</h3>
+                    <PieChart className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div className="text-3xl font-bold text-green-600 mb-2">15.2%</div>
+                  <div className="text-green-700 text-sm">Premium Vodka Segment</div>
+                  <div className="mt-3 flex items-center space-x-2 text-xs text-green-600">
+                    <ArrowRight className="h-4 w-4" />
+                    <span>+2.1% vs last quarter</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Live Competitive Intelligence Feed */}
+              <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                <h4 className="text-gray-900 font-semibold mb-4 flex items-center space-x-2">
+                  <Activity className="h-5 w-5 text-amber-600" />
+                  <span>Live Competitive Intelligence</span>
+                  <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">Real-time</span>
+                </h4>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+                    <div className="flex items-center space-x-3">
+                      <AlertTriangle className="h-5 w-5 text-red-600" />
+                      <span className="text-gray-900">Grey Goose increased price 8% at Waitrose</span>
+                    </div>
+                    <span className="text-red-600 text-sm font-medium">2 min ago</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center space-x-3">
+                      <TrendingUp className="h-5 w-5 text-blue-600" />
+                      <span className="text-gray-900">AU Vodka now #2 in premium vodka at Tesco</span>
+                    </div>
+                    <span className="text-blue-600 text-sm font-medium">1 hour ago</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                    <div className="flex items-center space-x-3">
+                      <Package className="h-5 w-5 text-green-600" />
+                      <span className="text-gray-900">Belvedere out of stock at 3 Majestic locations</span>
+                    </div>
+                    <span className="text-green-600 text-sm font-medium">3 hours ago</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* How It Works Section - Realistic */}
+      {/* How It Works Section - Brand-Focused */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            How RolloAI Works
+            How Leading Alcohol Brands Use RolloAI
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Simple CSV upload to AI-powered insights in three steps
+            From upload to insights in three simple steps - built for brand teams
           </p>
         </div>
 
         <div className="space-y-20">
-          {/* Step 1: Upload */}
+          {/* Step 1: Connect Your Brand Data */}
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-gradient-to-r from-amber-600 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
                   1
                 </div>
-                <span className="text-lg font-semibold text-amber-600">Upload Your Data</span>
+                <span className="text-lg font-semibold text-amber-600">Connect Your Brand Data</span>
               </div>
               <h3 className="text-3xl font-bold text-gray-900">
-                Start with Your Existing Data
+                Upload Your Product Portfolio
               </h3>
               <p className="text-lg text-gray-600 leading-relaxed">
-                Upload a CSV file with your inventory data. We work with standard formats that include product names, 
-                prices, stock levels, and sales data. The system automatically recognizes alcohol categories and starts 
-                the analysis immediately.
+                Simply upload a CSV with your product SKUs, current wholesale/RRP prices, and distribution data. 
+                Our AI instantly recognizes your alcohol brands and begins monitoring them across 20+ UK retailers. 
+                Perfect for brand managers tracking multiple product lines.
               </p>
               <div className="space-y-3">
                 {[
-                  "CSV format supported",
-                  "Works with POS system exports", 
-                  "Handles beer, wine, spirits, RTD products",
-                  "Processes data in seconds",
-                  "No complex setup required"
+                  "Works with existing distributor data exports",
+                  "Automatically identifies your brand portfolio", 
+                  "Instant setup - no complex integrations",
+                  "Handles spirits, wine, beer, RTD products",
+                  "Secure, enterprise-grade data handling"
                 ].map((feature, idx) => (
                   <div key={idx} className="flex items-center space-x-3">
                     <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
@@ -326,52 +403,56 @@ export default function AlcoholIndustryLanding() {
                     <Upload className="h-8 w-8 text-white" />
                   </div>
                   <div className="space-y-2">
-                    <h4 className="font-semibold text-gray-900">Drag & drop your CSV file</h4>
-                    <p className="text-gray-600 text-sm">SKU, Price, Stock, Weekly Sales</p>
+                    <h4 className="font-semibold text-gray-900">Upload your brand portfolio CSV</h4>
+                    <p className="text-gray-600 text-sm">SKU, Brand, RRP, Distribution Channels</p>
                   </div>
                   
-                  {/* Animated file preview */}
+                  {/* Brand-focused file preview */}
                   <div className="bg-white rounded-lg p-4 text-left font-mono text-sm shadow-sm">
-                    <div className="text-amber-600 mb-2">inventory_export.csv</div>
+                    <div className="text-amber-600 mb-2">brand_portfolio.csv</div>
                     <div className="space-y-1 text-gray-700">
-                      <div>SKU,Price,Stock,Weekly_Sales</div>
-                      <div className="animate-pulse">IPA-001,£4.50,89,23</div>
-                      <div className="animate-pulse" style={{animationDelay: '0.5s'}}>WINE-CH-2021,£12.99,45,8</div>
-                      <div className="animate-pulse" style={{animationDelay: '1s'}}>GIN-HENDRICKS,£32.00,12,4</div>
+                      <div>SKU,Brand,Category,RRP,Channels</div>
+                      <div className="animate-pulse">AU-VODKA-70CL,AU Vodka,Spirits,£32.99,Majestic</div>
+                      <div className="animate-pulse" style={{animationDelay: '0.5s'}}>AU-VODKA-35CL,AU Vodka,Spirits,£18.99,Tesco</div>
+                      <div className="animate-pulse" style={{animationDelay: '1s'}}>AU-GIN-70CL,AU Gin,Spirits,£29.99,Waitrose</div>
                     </div>
                   </div>
                 </div>
               </div>
               
-              {/* Floating elements */}
-              <div className="absolute -top-4 -right-4 w-8 h-8 bg-amber-400 rounded-full animate-bounce"></div>
-              <div className="absolute -bottom-4 -left-4 w-6 h-6 bg-green-400 rounded-full animate-pulse"></div>
+              {/* Floating brand elements */}
+              <div className="absolute -top-4 -right-4 w-12 h-12 bg-gradient-to-r from-amber-400 to-purple-400 rounded-full flex items-center justify-center animate-bounce">
+                <Building className="h-6 w-6 text-white" />
+              </div>
+              <div className="absolute -bottom-4 -left-4 w-8 h-8 bg-green-400 rounded-full flex items-center justify-center animate-pulse">
+                <CheckCircle className="h-4 w-4 text-white" />
+              </div>
             </div>
           </div>
 
-          {/* Step 2: AI Analysis */}
+          {/* Step 2: Real-Time Market Monitoring */}
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="lg:order-2 space-y-6">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center text-white font-bold">
                   2
                 </div>
-                <span className="text-lg font-semibold text-purple-600">AI Analysis</span>
+                <span className="text-lg font-semibold text-purple-600">Real-Time Market Monitoring</span>
               </div>
               <h3 className="text-3xl font-bold text-gray-900">
-                Get Instant Insights
+                Track Your Brand Across UK Retail
               </h3>
               <p className="text-lg text-gray-600 leading-relaxed">
-                Our AI analyzes your data to identify patterns, pricing opportunities, and inventory risks. 
-                It understands alcohol categories and provides recommendations specific to beer, wine, spirits, 
-                and RTD products.
+                Our AI continuously monitors your brand performance across Majestic Wine, Waitrose, Tesco, ASDA, 
+                and 20+ other UK retailers. Get instant alerts when competitors change pricing, your products go 
+                out of stock, or new distribution opportunities arise.
               </p>
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { label: "Category Recognition", value: "Automatic" },
-                  { label: "Risk Detection", value: "Instant alerts" },
-                  { label: "Price Analysis", value: "Optimization tips" },
-                  { label: "Inventory Health", value: "Stock warnings" }
+                  { label: "Retailers Monitored", value: "24/7" },
+                  { label: "Price Updates", value: "Real-time" },
+                  { label: "Stock Monitoring", value: "Live alerts" },
+                  { label: "Competitor Tracking", value: "Automatic" }
                 ].map((stat, idx) => (
                   <div key={idx} className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
                     <div className="text-lg font-bold text-purple-600">{stat.value}</div>
@@ -387,70 +468,74 @@ export default function AlcoholIndustryLanding() {
                   <div className="w-3 h-3 bg-red-400 rounded-full"></div>
                   <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
                   <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                  <span className="text-gray-400 ml-2">RolloAI Analysis Engine</span>
+                  <span className="text-gray-400 ml-2">RolloAI Market Intelligence</span>
                 </div>
                 
                 <div className="space-y-2">
                   <div className="animate-pulse">
-                    <span className="text-amber-400">{'>'}</span> Processing CSV data...
+                    <span className="text-amber-400">{'>'}</span> Scanning AU Vodka across retailers...
                   </div>
                   <div className="animate-pulse" style={{animationDelay: '1s'}}>
-                    <span className="text-amber-400">{'>'}</span> Categorizing alcohol products...
+                    <span className="text-amber-400">{'>'}</span> Monitoring competitor pricing...
                   </div>
                   <div className="animate-pulse" style={{animationDelay: '2s'}}>
-                    <span className="text-amber-400">{'>'}</span> Analyzing pricing patterns...
+                    <span className="text-amber-400">{'>'}</span> Tracking stock levels...
                   </div>
                   <div className="animate-pulse" style={{animationDelay: '3s'}}>
-                    <span className="text-amber-400">{'>'}</span> Checking inventory levels...
+                    <span className="text-amber-400">{'>'}</span> Analyzing market position...
                   </div>
                   <div className="animate-pulse" style={{animationDelay: '4s'}}>
-                    <span className="text-green-400">✓</span> Analysis complete!
+                    <span className="text-green-400">✓</span> Market scan complete!
                   </div>
                   <div className="animate-pulse" style={{animationDelay: '5s'}}>
-                    <span className="text-yellow-400">!</span> Found 3 pricing opportunities
+                    <span className="text-yellow-400">!</span> 2 competitor price changes detected
+                  </div>
+                  <div className="animate-pulse" style={{animationDelay: '6s'}}>
+                    <span className="text-blue-400">📊</span> Market share: +2.1% vs last quarter
                   </div>
                 </div>
               </div>
               
-              {/* AI brain visualization */}
+              {/* Market monitoring visualization */}
               <div className="absolute -top-6 -right-6 w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center animate-pulse">
-                <Brain className="h-6 w-6 text-white" />
+                <MonitorSpeaker className="h-6 w-6 text-white" />
               </div>
             </div>
           </div>
 
-          {/* Step 3: Results */}
+          {/* Step 3: Strategic Brand Insights */}
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-gradient-to-r from-green-600 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
                   3
                 </div>
-                <span className="text-lg font-semibold text-green-600">Actionable Insights</span>
+                <span className="text-lg font-semibold text-green-600">Strategic Brand Insights</span>
               </div>
               <h3 className="text-3xl font-bold text-gray-900">
-                Make Data-Driven Decisions
+                Optimize Your Market Strategy
               </h3>
               <p className="text-lg text-gray-600 leading-relaxed">
-                Get clear recommendations you can act on immediately. See competitive pricing from major UK retailers, 
-                identify slow-moving stock, and spot pricing opportunities across your alcohol categories.
+                Get AI-powered recommendations on pricing strategy, distribution gaps, and competitive positioning. 
+                Identify which retailers are driving growth, where competitors are vulnerable, and which markets 
+                offer the biggest opportunities for your brand.
               </p>
               <div className="space-y-4">
                 {[
                   { 
                     icon: Target,
-                    title: "Competitive Pricing",
-                    desc: "See how your prices compare to Majestic Wine, Waitrose, Tesco & ASDA"
+                    title: "Competitive Positioning",
+                    desc: "See exactly how your pricing compares vs Grey Goose, Belvedere, and other premium brands"
                   },
                   {
-                    icon: AlertTriangle, 
-                    title: "Stock Alerts",
-                    desc: "Identify overstocked items and products running low"
+                    icon: TrendingUp, 
+                    title: "Market Share Analysis",
+                    desc: "Track your performance by retailer, region, and category segment"
                   },
                   {
-                    icon: TrendingUp,
-                    title: "Pricing Opportunities", 
-                    desc: "Spot products where you could adjust pricing for better margins"
+                    icon: Brain,
+                    title: "Strategic Recommendations", 
+                    desc: "AI-powered insights on pricing opportunities, distribution gaps, and growth strategies"
                   }
                 ].map((insight, idx) => (
                   <div key={idx} className="flex items-start space-x-4 p-4 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
@@ -470,10 +555,10 @@ export default function AlcoholIndustryLanding() {
               <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden transform hover:scale-105 transition-transform">
                 <div className="bg-gradient-to-r from-green-500 to-blue-500 p-4 text-white">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-semibold">Inventory Analysis Results</h4>
+                    <h4 className="font-semibold">AU Vodka Brand Intelligence Report</h4>
                     <div className="flex items-center space-x-1">
                       <CheckCircle className="h-4 w-4" />
-                      <span className="text-sm">Ready to Review</span>
+                      <span className="text-sm">Live Data</span>
                     </div>
                   </div>
                 </div>
@@ -481,57 +566,58 @@ export default function AlcoholIndustryLanding() {
                 <div className="p-6 space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">{animatedNumber}</div>
-                      <div className="text-sm text-gray-600">Products Analyzed</div>
+                      <div className="text-2xl font-bold text-blue-600">15.2%</div>
+                      <div className="text-sm text-gray-600">Market Share</div>
                     </div>
                     <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">3</div>
-                      <div className="text-sm text-gray-600">Opportunities Found</div>
+                      <div className="text-2xl font-bold text-green-600">+12%</div>
+                      <div className="text-sm text-gray-600">Price Premium</div>
                     </div>
                   </div>
                   
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Analysis Status</span>
-                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm">Complete</span>
+                      <span className="text-gray-600">Competitive Position</span>
+                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm">#2 in Premium</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Categories Detected</span>
-                      <span className="text-gray-900 font-medium">Beer, Wine, Spirits</span>
+                      <span className="text-gray-600">Growth Opportunity</span>
+                      <span className="text-gray-900 font-medium">£2.5M potential</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Processing Time</span>
-                      <span className="text-gray-900 font-medium">2.3 seconds</span>
+                      <span className="text-gray-600">Next Action</span>
+                      <span className="text-blue-600 font-medium">Expand to Morrisons</span>
                     </div>
                   </div>
                   
                   <button className="w-full bg-gradient-to-r from-green-600 to-blue-600 text-white py-3 rounded-lg font-medium hover:from-green-700 hover:to-blue-700 transition-all">
-                    View Detailed Report
+                    View Strategic Recommendations
                   </button>
                 </div>
               </div>
               
               {/* Success indicators */}
               <div className="absolute -top-4 -left-4 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center animate-bounce">
-                <CheckCircle className="h-5 w-5 text-white" />
+                <Brain className="h-5 w-5 text-white" />
               </div>
             </div>
           </div>
         </div>
 
-        {/* CTA after story */}
+        {/* CTA after how it works */}
         <div className="text-center mt-16 pt-16 border-t border-gray-200">
           <h3 className="text-2xl font-bold text-gray-900 mb-4">
-            Ready to analyze your alcohol inventory?
+            Ready to optimize your brand performance?
           </h3>
           <p className="text-lg text-gray-600 mb-8">
-            Upload your data and get insights in minutes, not days
+            Join leading alcohol brands using RolloAI for competitive intelligence
           </p>
           <button 
             onClick={() => !user ? handleSignup() : router.push('/analytics')}
             className="group inline-flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-amber-600 to-purple-600 text-white font-semibold text-lg rounded-xl hover:from-amber-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:scale-105"
           >
-            <span>Start Analysis</span>
+            <Briefcase className="h-5 w-5" />
+            <span>Book Enterprise Demo</span>
             <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
           </button>
         </div>
@@ -540,12 +626,12 @@ export default function AlcoholIndustryLanding() {
       {/* Testimonials */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">What Users Are Saying</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">Trusted by Leading Alcohol Brands</h2>
           <div className="flex items-center justify-center space-x-1 mb-8">
             {[...Array(5)].map((_, i) => (
               <Star key={i} className="h-6 w-6 text-yellow-400 fill-current" />
             ))}
-            <span className="ml-2 text-gray-600 font-medium">Feedback from early testers</span>
+            <span className="ml-2 text-gray-600 font-medium">Feedback from brand teams</span>
           </div>
         </div>
 
@@ -593,38 +679,38 @@ export default function AlcoholIndustryLanding() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-white mb-4">
-              What's Available Now
+              Enterprise Features Available Now
             </h2>
             <p className="text-amber-100 text-xl max-w-2xl mx-auto">
-              Current features you can use today, plus our roadmap for future development
+              Full platform capabilities ready for your brand team
             </p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {[
               { 
-                icon: FileText, 
-                title: "CSV Upload & Analysis", 
-                desc: "Upload your inventory data and get instant AI-powered insights",
-                feature: "Available Now"
+                icon: MonitorSpeaker, 
+                title: "Real-Time Monitoring", 
+                desc: "24/7 tracking across 20+ UK alcohol retailers",
+                feature: "Live Now"
               },
               { 
                 icon: Target, 
                 title: "Competitive Intelligence", 
-                desc: "Compare prices with major UK alcohol retailers",
-                feature: "Available Now"
+                desc: "Monitor pricing vs all major alcohol brands",
+                feature: "Live Now"
               },
               { 
-                icon: BarChart3, 
-                title: "Inventory Analytics", 
-                desc: "Risk alerts and stock optimization recommendations",
-                feature: "Available Now"
+                icon: Brain, 
+                title: "AI Strategic Insights", 
+                desc: "Market positioning and growth recommendations",
+                feature: "Live Now"
               },
               { 
-                icon: Globe, 
-                title: "POS Integration", 
-                desc: "Direct connections with UK POS systems planned for future",
-                feature: "Development Roadmap"
+                icon: Briefcase, 
+                title: "Enterprise Integrations", 
+                desc: "Connect with your existing brand management tools",
+                feature: "Custom Setup"
               }
             ].map((integration, index) => (
               <div key={index} className="text-center group">
@@ -634,7 +720,7 @@ export default function AlcoholIndustryLanding() {
                 <div className="text-xl font-bold text-white mb-2">{integration.title}</div>
                 <div className="text-amber-100 text-sm mb-2">{integration.desc}</div>
                 <div className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                  integration.feature === 'Available Now' ? 'bg-green-500/20 text-green-200' :
+                  integration.feature === 'Live Now' ? 'bg-green-500/20 text-green-200' :
                   'bg-white/20 text-white'
                 }`}>
                   {integration.feature}
@@ -643,13 +729,13 @@ export default function AlcoholIndustryLanding() {
             ))}
           </div>
 
-          {/* Current Stats */}
+          {/* Enterprise Stats */}
           <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              { number: "CSV", label: "Upload Format" },
-              { number: "4", label: "UK Retailers Tracked" },
-              { number: "Instant", label: "Analysis Speed" },
-              { number: "Free", label: "To Try" }
+              { number: "20+", label: "UK Retailers Tracked" },
+              { number: "24/7", label: "Real-Time Monitoring" },
+              { number: "500+", label: "Alcohol Brands" },
+              { number: "99.9%", label: "Uptime SLA" }
             ].map((stat, index) => (
               <div key={index}>
                 <div className="text-3xl font-bold text-white mb-2">{stat.number}</div>
@@ -664,57 +750,57 @@ export default function AlcoholIndustryLanding() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            Built for UK Alcohol Categories
+            Built for Alcohol Brand Teams
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Our AI understands the unique characteristics of different alcohol categories
+            Specialized insights for spirits, wine, beer, and RTD brands
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {[
             {
-              category: "Beer & Cider",
-              icon: "🍺",
-              color: "from-yellow-400 to-orange-500",
-              benefits: [
-                "Recognizes craft vs mass market",
-                "Seasonal pattern detection", 
-                "ABV and style categorization",
-                "Stock rotation insights"
-              ]
-            },
-            {
-              category: "Wine",
-              icon: "🍷",
-              color: "from-purple-400 to-red-500",
-              benefits: [
-                "Vintage and varietal tracking",
-                "Price per bottle analysis",
-                "Region classification",
-                "Age-appropriate recommendations"
-              ]
-            },
-            {
-              category: "Spirits",
+              category: "Premium Spirits",
               icon: "🥃",
               color: "from-amber-400 to-brown-500",
               benefits: [
-                "Premium tier identification",
-                "Brand positioning analysis",
-                "Size variant optimization",
-                "Margin opportunity detection"
+                "Track vs Grey Goose, Belvedere pricing",
+                "Monitor premium positioning strategy", 
+                "Identify distribution gaps in key accounts",
+                "Seasonal gifting opportunity alerts"
               ]
             },
             {
-              category: "RTD & Seltzers",
+              category: "Wine Brands",
+              icon: "🍷",
+              color: "from-purple-400 to-red-500",
+              benefits: [
+                "Vintage and varietal performance tracking",
+                "Price positioning vs category leaders",
+                "Regional distribution optimization",
+                "Seasonal demand pattern analysis"
+              ]
+            },
+            {
+              category: "Craft Beer",
+              icon: "🍺",
+              color: "from-yellow-400 to-orange-500",
+              benefits: [
+                "Independent vs major brewery pricing",
+                "Seasonal release performance tracking",
+                "Craft segment market share monitoring",
+                "New distribution opportunity alerts"
+              ]
+            },
+            {
+              category: "RTD Brands",
               icon: "🥤",
               color: "from-blue-400 to-teal-500",
               benefits: [
-                "Trend momentum tracking",
-                "Flavor profile analysis",
-                "Target demographic insights",
-                "Seasonal demand patterns"
+                "Fast-moving category trend tracking",
+                "Flavor innovation competitive analysis",
+                "Target demographic purchase patterns",
+                "Promotional effectiveness measurement"
               ]
             }
           ].map((category, index) => (
@@ -736,7 +822,7 @@ export default function AlcoholIndustryLanding() {
         </div>
       </section>
 
-      {/* Final CTA Section */}
+      {/* Final Enterprise CTA Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="relative bg-gradient-to-br from-amber-50 to-purple-50 rounded-3xl p-12 text-center overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-r from-amber-400/20 to-purple-400/20 rounded-full blur-2xl"></div>
@@ -744,10 +830,10 @@ export default function AlcoholIndustryLanding() {
           
           <div className="relative z-10">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Ready to Analyze Your Alcohol Inventory?
+              Transform Your Brand Intelligence Today
             </h2>
             <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-              Upload your data and get insights in minutes. See competitive pricing and optimization opportunities.
+              Join leading alcohol brands using RolloAI for competitive intelligence, pricing optimization, and market share growth.
             </p>
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
@@ -755,21 +841,33 @@ export default function AlcoholIndustryLanding() {
                 onClick={() => !user ? handleSignup() : router.push('/analytics')}
                 className="group relative inline-flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-amber-600 to-purple-600 text-white font-semibold text-lg rounded-xl hover:from-amber-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:scale-105"
               >
-                <span>Start Analysis</span>
+                <Briefcase className="h-5 w-5" />
+                <span>Book Enterprise Demo</span>
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </button>
               <button 
                 onClick={() => router.push('/competitive')}
                 className="inline-flex items-center space-x-2 px-8 py-4 text-gray-700 font-semibold text-lg rounded-xl border-2 border-gray-300 hover:border-gray-400 transition-colors"
               >
-                <Target className="h-5 w-5" />
-                <span>View Live Demo</span>
+                <Download className="h-5 w-5" />
+                <span>Download Case Study</span>
               </button>
             </div>
 
-            <p className="text-sm text-gray-500">
-              Free to try • CSV upload • Instant results
-            </p>
+            <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-gray-500">
+              <div className="flex items-center space-x-2">
+                <Shield className="h-5 w-5 text-green-500" />
+                <span>Enterprise security & compliance</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Users className="h-5 w-5 text-blue-500" />
+                <span>Dedicated customer success</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Zap className="h-5 w-5 text-purple-500" />
+                <span>Custom integrations available</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -786,44 +884,44 @@ export default function AlcoholIndustryLanding() {
                 </div>
                 <span className="text-xl font-bold">RolloAI</span>
                 <span className="px-3 py-1 bg-amber-600/20 text-amber-200 text-sm font-medium rounded-full">
-                  Early Stage
+                  Enterprise
                 </span>
               </div>
               <p className="text-gray-400 mb-4 max-w-md">
-                AI-powered inventory analysis for UK alcohol retailers, distributors, and brands. 
-                Upload your data and get actionable insights in minutes.
+                Enterprise competitive intelligence for alcohol brands. Monitor your performance 
+                across UK retail, optimize pricing strategies, and maximize market share with AI-powered insights.
               </p>
               <div className="flex items-center space-x-4 text-sm text-gray-400">
                 <span className="flex items-center space-x-1">
                   <Shield className="h-4 w-4" />
-                  <span>Data Privacy Focused</span>
+                  <span>Enterprise Security</span>
                 </span>
                 <span className="flex items-center space-x-1">
-                  <CheckCircle className="h-4 w-4" />
-                  <span>UK Market Focused</span>
+                  <Globe className="h-4 w-4" />
+                  <span>UK Market Focus</span>
                 </span>
               </div>
             </div>
 
-            {/* Product */}
+            {/* Platform */}
             <div>
-              <h4 className="font-semibold text-white mb-4">Features</h4>
+              <h4 className="font-semibold text-white mb-4">Platform</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="/dashboard" className="hover:text-white transition-colors">Dashboard</a></li>
-                <li><a href="/analytics" className="hover:text-white transition-colors">Data Analysis</a></li>
-                <li><a href="/competitive" className="hover:text-white transition-colors">Competitive Intel</a></li>
-                <li><a href="/alerts" className="hover:text-white transition-colors">Inventory Alerts</a></li>
+                <li><a href="/dashboard" className="hover:text-white transition-colors">Brand Dashboard</a></li>
+                <li><a href="/analytics" className="hover:text-white transition-colors">Market Intelligence</a></li>
+                <li><a href="/competitive" className="hover:text-white transition-colors">Competitive Analysis</a></li>
+                <li><a href="/alerts" className="hover:text-white transition-colors">Real-Time Alerts</a></li>
               </ul>
             </div>
 
-            {/* Alcohol Categories */}
+            {/* Company */}
             <div>
-              <h4 className="font-semibold text-white mb-4">Categories</h4>
+              <h4 className="font-semibold text-white mb-4">Company</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li className="hover:text-white transition-colors">Beer & Craft</li>
-                <li className="hover:text-white transition-colors">Wine & Spirits</li>
-                <li className="hover:text-white transition-colors">RTD & Seltzers</li>
-                <li className="hover:text-white transition-colors">Cider & Other</li>
+                <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Case Studies</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Enterprise Sales</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Support</a></li>
               </ul>
             </div>
           </div>
@@ -834,15 +932,15 @@ export default function AlcoholIndustryLanding() {
               <div className="flex items-center space-x-8 text-sm text-gray-400">
                 <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
                 <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-                <a href="#" className="hover:text-white transition-colors">Support</a>
+                <a href="#" className="hover:text-white transition-colors">Security</a>
               </div>
               <div className="flex items-center space-x-4 text-sm text-gray-400">
-                <span>Built for UK alcohol businesses</span>
+                <span>Enterprise software for alcohol brands</span>
               </div>
             </div>
             <div className="text-center mt-6">
               <p className="text-gray-500 text-sm">
-                © 2025 RolloAI. All rights reserved. Early-stage product for UK alcohol market.
+                © 2025 RolloAI. All rights reserved. Enterprise competitive intelligence for the alcohol industry.
               </p>
             </div>
           </div>
