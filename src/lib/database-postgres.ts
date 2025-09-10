@@ -796,6 +796,239 @@ static async saveCompetitorPrices(userId: string, competitorPrices: any[]): Prom
   }
 }
 
+// Add these methods to the end of your PostgreSQLService class in src/lib/database-postgres.ts
+// Insert before the closing bracket of the class
+
+/**
+ * Real-time monitoring configuration methods
+ */
+static async saveMonitoringConfig(userId: string, config: {
+  products: string[]
+  intervalMinutes: number
+  maxRetailersPerCheck: number
+  startedAt: Date
+  isActive: boolean
+}): Promise<void> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email: userId }
+    })
+    
+    if (!user) {
+      throw new Error(`User not found: ${userId}`)
+    }
+    
+    // Save to system_metrics table for now (you can create a dedicated table later)
+    await prisma.systemMetric.create({
+      data: {
+        metric_name: 'monitoring_config',
+        metric_value: config.intervalMinutes,
+        metric_unit: 'minutes',
+        user_id: user.id,
+        collected_at: config.startedAt,
+        retention_days: 30
+      }
+    })
+    
+    console.log(`Saved monitoring config for user ${userId}: ${config.products.length} products, ${config.intervalMinutes}min intervals`)
+    
+  } catch (error) {
+    console.error('Error saving monitoring config:', error)
+    throw error
+  }
+}
+
+static async getMonitoringConfig(userId: string): Promise<any> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email: userId }
+    })
+    
+    if (!user) return null
+    
+    // Get latest monitoring config from system_metrics
+    const config = await prisma.systemMetric.findFirst({
+      where: {
+        metric_name: 'monitoring_config',
+        user_id: user.id
+      },
+      orderBy: { collected_at: 'desc' }
+    })
+    
+    if (!config) return null
+    
+    return {
+      userId,
+      products: [], // Would need to store this properly in a dedicated table
+      intervalMinutes: config.metric_value,
+      maxRetailersPerCheck: 3,
+      startedAt: config.collected_at,
+      isActive: true
+    }
+    
+  } catch (error) {
+    console.error('Error getting monitoring config:', error)
+    return null
+  }
+}
+
+static async updateMonitoringConfig(userId: string, updates: { isActive: boolean }): Promise<void> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email: userId }
+    })
+    
+    if (!user) {
+      throw new Error(`User not found: ${userId}`)
+    }
+    
+    // Create a new metric entry to track the status change
+    await prisma.systemMetric.create({
+      data: {
+        metric_name: 'monitoring_status',
+        metric_value: updates.isActive ? 1 : 0,
+        metric_unit: 'boolean',
+        user_id: user.id,
+        retention_days: 30
+      }
+    })
+    
+    console.log(`Updated monitoring config for user ${userId}: isActive=${updates.isActive}`)
+    
+  } catch (error) {
+    console.error('Error updating monitoring config:', error)
+    throw error
+  }
+}
+
+/**
+ * Price alert methods using existing tables
+ */
+static async getPriceAlerts(userId: string, hours: number): Promise<any[]> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email: userId }
+    })
+    
+    if (!user) return []
+    
+    const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000)
+    
+    // Get recent alerts that could be price-related
+    const alerts = await prisma.alert.findMany({
+      where: {
+        user_id: user.id,
+        created_at: { gte: cutoffTime },
+        type: {
+          in: ['pricing', 'competitive', 'price_opportunity', 'competitor_threat']
+        }
+      },
+      orderBy: { created_at: 'desc' },
+      take: 50
+    })
+    
+    return alerts.map(alert => ({
+      id: alert.id,
+      sku: alert.sku_code || 'unknown',
+      retailer: 'Various', // Would need to parse from alert message
+      oldPrice: 0, // Would need to store this in alert data
+      newPrice: 0, // Would need to store this in alert data  
+      changePercent: 0, // Would need to calculate
+      timestamp: alert.created_at
+    }))
+    
+  } catch (error) {
+    console.error('Error getting price alerts:', error)
+    return []
+  }
+}
+
+/**
+ * Enhanced competitor price caching using existing competitor_prices table
+ */
+static async getCachedCompetitorPrices(product: string, maxAgeHours: number): Promise<any[]> {
+  try {
+    const cutoffTime = new Date(Date.now() - maxAgeHours * 60 * 60 * 1000)
+    
+    const cachedPrices = await prisma.competitorPrice.findMany({
+      where: {
+        product_name: {
+          contains: product,
+          mode: 'insensitive'
+        },
+        last_updated: { gte: cutoffTime }
+      },
+      orderBy: { last_updated: 'desc' },
+      take: 20
+    })
+    
+    return cachedPrices.map(price => ({
+      retailer: price.competitor,
+      price: price.competitor_price,
+      availability: price.availability,
+      product_name: price.product_name,
+      url: price.source_url,
+      relevance_score: price.relevance_score,
+      last_updated: price.last_updated,
+      source: 'cached'
+    }))
+    
+  } catch (error) {
+    console.error('Error getting cached competitor prices:', error)
+    return []
+  }
+}
+
+/**
+ * Save competitor prices with product association
+ */
+static async saveCompetitorPricesWithProduct(
+  userId: string, 
+  product: string, 
+  competitorPrices: any[]
+): Promise<void> {
+  if (competitorPrices.length === 0) return
+  
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email: userId }
+    })
+    
+    if (!user) {
+      throw new Error(`User not found: ${userId}`)
+    }
+    
+    for (const price of competitorPrices) {
+      await prisma.competitorPrice.create({
+        data: {
+          sku_code: price.sku || product.replace(/\s+/g, '-').toUpperCase(),
+          user_id: user.id,
+          competitor: price.competitor,
+          competitor_price: price.competitor_price,
+          our_price: price.our_price || 0,
+          price_difference: price.price_difference || 0,
+          price_difference_pct: price.price_difference_percentage || 0,
+          availability: price.availability !== undefined ? price.availability : true,
+          product_name: price.product_name || product,
+          relevance_score: price.relevance_score || 0.5,
+          source_url: price.url,
+          scraping_success: true,
+          scraping_method: 'real_scraping',
+          last_updated: new Date()
+        }
+      })
+    }
+    
+    console.log(`Saved ${competitorPrices.length} competitor prices for product: ${product}`)
+    
+  } catch (error) {
+    console.error('Error saving competitor prices with product:', error)
+    throw error
+  }
+}
+
+
+
   // Disconnect database connection
   static async disconnect(): Promise<void> {
     await prisma.$disconnect()
