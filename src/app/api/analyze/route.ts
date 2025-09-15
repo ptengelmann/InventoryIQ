@@ -325,6 +325,10 @@ try {
     aiEnhanced: true,
     revenueAtRisk: alert.impact.revenue_at_risk || 0
   }))
+  
+console.log(`🔍 DEBUG: About to save ${competitorData.length} competitor prices`);
+console.log(`🔍 DEBUG: Sample competitor data:`, competitorData.slice(0, 1));
+
 
   // Save alerts to database
   await PostgreSQLService.saveAlerts(userId, analysisId, dbAlerts)
