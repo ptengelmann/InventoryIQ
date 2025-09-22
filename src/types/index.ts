@@ -122,6 +122,29 @@ export interface AlcoholInventoryAlert {
   }
 }
 
+
+export interface AlcoholBrand {
+  id: string
+  name: string
+  parent_company: string
+  category: string
+  subcategory: string
+  premium_tier: 'value' | 'mainstream' | 'premium' | 'super_premium' | 'ultra_premium'
+  typical_price_range: { min: number, max: number, currency: string }
+  market_share_uk: number
+  brand_strength: 'declining' | 'stable' | 'growing' | 'emerging'
+  seasonal_peaks: string[]
+  target_demographics: string[]
+  distribution_channels: string[]
+  key_competitors: string[]
+  usp: string
+  abv_range: { min: number, max: number }
+  volume_sizes: number[]
+  launch_year?: number
+  origin_country: string
+  keywords: string[]
+}
+
 // Compliance tracking
 export interface ComplianceRecord {
   id: string

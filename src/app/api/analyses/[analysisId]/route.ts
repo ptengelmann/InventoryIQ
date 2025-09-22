@@ -1,3 +1,6 @@
+// src/app/api/analyses/[analysisId]/route.ts
+// FIXED VERSION - Properly fetches and includes seasonal strategies
+
 import { NextRequest, NextResponse } from 'next/server'
 import { PostgreSQLService } from '@/lib/database-postgres'
 
@@ -26,13 +29,17 @@ export async function GET(
       if (analysis) {
         console.log(`Found analysis in database: ${analysis.id}`)
         
-        // Also fetch competitor data and market insights separately
-        const [competitorData, alerts] = await Promise.all([
+        // Fetch all related data including seasonal strategies
+        const [competitorData, alerts, seasonalStrategies] = await Promise.all([
           PostgreSQLService.getCompetitorData(userId, 30),
-          PostgreSQLService.getAlertsForAnalysisId(analysis.user_id, analysisId)
+          PostgreSQLService.getAlertsForAnalysisId(analysis.user_id, analysisId),
+          PostgreSQLService.getSeasonalStrategies(userId, analysisId) // Fetch seasonal strategies
         ])
         
-        return NextResponse.json(formatAnalysisResponse(analysis, competitorData, alerts))
+        console.log(`🎯 Found ${seasonalStrategies.length} seasonal strategies for analysis ${analysisId}`)
+        
+        // Pass all data to formatting function
+        return NextResponse.json(formatAnalysisResponse(analysis, competitorData, alerts, seasonalStrategies))
       }
     } catch (dbError) {
       console.log('Database fetch failed, using fallback:', dbError)
@@ -66,7 +73,7 @@ export async function GET(
   }
 }
 
-function formatAnalysisResponse(analysis: any, competitorData: any[] = [], alerts: any[] = []) {
+function formatAnalysisResponse(analysis: any, competitorData: any[] = [], alerts: any[] = [], seasonalStrategies: any[] = []) {
   // Transform recommendations from database format to dashboard format
   const recommendations = analysis.recommendations?.map((rec: any) => ({
     sku: rec.sku_code,
@@ -78,11 +85,11 @@ function formatAnalysisResponse(analysis: any, competitorData: any[] = [], alert
     weeklySales: rec.weekly_sales,
     inventoryLevel: rec.inventory_level,
     revenueImpact: rec.revenue_impact,
-    category: 'spirits', // Default - would need SKU join for actual category
-    brand: 'Unknown'    // Default - would need SKU join for actual brand
+    category: rec.category || 'spirits',
+    brand: rec.brand || 'Unknown'
   })) || []
 
-  // Filter competitor data to this analysis timeframe (rough approximation)
+  // Filter competitor data to this analysis timeframe
   const analysisCompetitorData = competitorData.filter(comp => {
     const compDate = new Date(comp.last_updated || comp.created_at)
     const analysisDate = new Date(analysis.processed_at || analysis.uploaded_at)
@@ -113,21 +120,31 @@ function formatAnalysisResponse(analysis: any, competitorData: any[] = [], alert
     created_at: alert.created_at
   }))
 
-  // Extract market insights from JSON field or generate some default ones
+  // Extract market insights from JSON field or generate default ones
   let marketInsights = []
   
   try {
-    marketInsights = analysis.market_insights || []
+    // Try to get stored insights first
+    if (analysis.market_insights && Array.isArray(analysis.market_insights)) {
+      marketInsights = analysis.market_insights
+    } else if (analysis.market_insights && typeof analysis.market_insights === 'object') {
+      // If it's stored as an object, convert to array
+      marketInsights = [analysis.market_insights]
+    }
     
     // If no market insights stored, generate some based on available data
     if (marketInsights.length === 0 && (recommendations.length > 0 || analysisCompetitorData.length > 0)) {
-      marketInsights = generateFallbackInsights(recommendations, analysisCompetitorData)
+      marketInsights = generateFallbackInsights(recommendations, analysisCompetitorData, seasonalStrategies)
     }
   } catch (error) {
     console.error('Error parsing market insights:', error)
-    marketInsights = generateFallbackInsights(recommendations, analysisCompetitorData)
+    marketInsights = generateFallbackInsights(recommendations, analysisCompetitorData, seasonalStrategies)
   }
 
+  // Calculate seasonal metrics
+  const seasonalRevenuePotential = seasonalStrategies.reduce((sum, s) => sum + (s.estimated_revenue_impact || 0), 0)
+
+  // FIXED: Ensure seasonal strategies are included in the response
   return {
     analysisId: analysis.upload_id,
     summary: {
@@ -138,18 +155,42 @@ function formatAnalysisResponse(analysis: any, competitorData: any[] = [], alert
       totalRevenuePotential: analysis.revenue_potential || 0,
       brandsIdentified: analysis.summary?.brandsIdentified || 0,
       competitorPricesFound: analysisCompetitorData.length,
-      marketInsightsGenerated: marketInsights.length
+      marketInsightsGenerated: marketInsights.length,
+      // Include seasonal strategy metrics
+      seasonalStrategiesGenerated: seasonalStrategies.length,
+      seasonalRevenuePotential: seasonalRevenuePotential
     },
     recommendations,
     competitorData: analysisCompetitorData,
     marketInsights,
     criticalAlerts,
+    // CRITICAL FIX: Include seasonal strategies in response
+    seasonalStrategies: seasonalStrategies.map(strategy => ({
+      id: strategy.id,
+      type: strategy.type,
+      title: strategy.title,
+      description: strategy.description,
+      reasoning: strategy.reasoning,
+      seasonal_trigger: strategy.seasonal_trigger,
+      estimated_revenue_impact: strategy.estimated_revenue_impact,
+      urgency: strategy.urgency,
+      implementation_timeline: strategy.implementation_timeline,
+      marketing_angle: strategy.marketing_angle,
+      target_customer: strategy.target_customer,
+      products_involved: strategy.products_involved || [],
+      execution_steps: strategy.execution_steps || [],
+      success_metrics: strategy.success_metrics || [],
+      risk_factors: strategy.risk_factors || [],
+      pricing_strategy: strategy.pricing_strategy || {},
+      status: strategy.status,
+      created_at: strategy.created_at
+    })),
     processedAt: analysis.processed_at || analysis.uploaded_at
   }
 }
 
 // Generate fallback market insights when none are stored
-function generateFallbackInsights(recommendations: any[], competitorData: any[]) {
+function generateFallbackInsights(recommendations: any[], competitorData: any[], seasonalStrategies: any[] = []) {
   const insights = []
   
   // Pricing opportunity insight
@@ -167,6 +208,19 @@ function generateFallbackInsights(recommendations: any[], competitorData: any[])
         'Monitor sales velocity after adjustments',
         'Focus on products with strong demand indicators'
       ]
+    })
+  }
+  
+  // Seasonal strategy insight
+  if (seasonalStrategies.length > 0) {
+    const urgentStrategies = seasonalStrategies.filter(s => s.urgency === 'high' || s.urgency === 'critical')
+    insights.push({
+      id: `fallback-seasonal-${Date.now()}`,
+      type: 'seasonal',
+      priority: 'high',
+      title: 'Seasonal Revenue Opportunities',
+      description: `${seasonalStrategies.length} seasonal strategies identified with £${seasonalStrategies.reduce((sum, s) => sum + s.estimated_revenue_impact, 0).toLocaleString()} total revenue potential. ${urgentStrategies.length} require immediate action.`,
+      actionable_steps: seasonalStrategies.slice(0, 3).map(s => s.title)
     })
   }
   

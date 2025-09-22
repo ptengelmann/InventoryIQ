@@ -1,9 +1,10 @@
-// src/app/api/upload/route.ts - FIXED with Alert Engine Integration
+// src/app/api/upload/route.ts - FIXED VERSION with Seasonal Strategies
 import { NextRequest, NextResponse } from 'next/server'
 import { parseCSVData, calculatePriceRecommendation, assessInventoryRisk, convertToAlcoholSKU } from '@/lib/utils'
 import { PostgreSQLService } from '@/lib/database-postgres'
 import { GPTCommerceIntelligence } from '@/lib/gpt-commerce-intelligence'
-import { AlertEngine } from '@/lib/alert-engine' // ADDED: Import AlertEngine
+import { EnhancedSeasonalRecommendations } from '@/lib/enhanced-seasonal-recommendations' // 🎯 ADD THIS
+import { AlertEngine } from '@/lib/alert-engine'
 import { AlcoholSKU, CompetitorPrice } from '@/types'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -28,6 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`🍺 Processing file: ${file.name} for user: ${userEmail}`)
+    console.log('🔧 TESTING: Upload route code has been updated') // ADD THIS LINE
 
     const content = await file.text()
     const { headers, data } = parseCSVData(content)
@@ -102,6 +104,9 @@ export async function POST(request: NextRequest) {
       console.log(`⚠️ ${processingErrors.length} rows had errors`)
     }
 
+    // Generate upload ID early so it can be used consistently
+    const uploadId = uuidv4()
+
     // STEP 1: Identify slow-moving products for GPT-4 creative recommendations
     const slowMovingProducts = alcoholSKUs
       .filter(sku => parseFloat(sku.weekly_sales) < 1 && parseInt(sku.inventory_level) > 10)
@@ -150,6 +155,78 @@ export async function POST(request: NextRequest) {
           details: gptError instanceof Error ? gptError.message : 'Unknown GPT-4 error'
         }
       }
+    }
+
+    // 🎯 STEP 2.5: Generate Enhanced Seasonal Recommendations (DEBUG VERSION)
+    console.log('🎄 Generating enhanced seasonal recommendations...')
+    let seasonalStrategies: any[] = []
+    let seasonalProcessingTime = 0
+
+    try {
+      const seasonalStartTime = Date.now()
+      
+      // DEBUG: Log the input data and conditions
+      console.log(`🔍 DEBUG: Checking seasonal conditions for ${alcoholSKUs.length} SKUs`)
+      
+      const slowMovingSKUs = alcoholSKUs.filter(sku => {
+        const weeklySales = parseFloat(sku.weekly_sales) || 0
+        const inventoryLevel = parseInt(sku.inventory_level) || 0
+        const weeksOfStock = weeklySales > 0 ? inventoryLevel / weeklySales : 999
+        return weeksOfStock > 8 && weeklySales < 2
+      })
+      
+      const premiumSKUs = alcoholSKUs.filter(sku => {
+        const price = parseFloat(sku.price) || 0
+        return price > 40 && (sku.category === 'spirits' || sku.category === 'wine')
+      })
+      
+      const beerCiderSKUs = alcoholSKUs.filter(sku => 
+        sku.category === 'beer' || sku.category === 'cider'
+      )
+      
+      console.log(`🔍 DEBUG CONDITIONS:`)
+      console.log(`- Slow-moving SKUs (>8 weeks stock, <2 weekly sales): ${slowMovingSKUs.length}`)
+      console.log(`- Premium SKUs (>£40 spirits/wine): ${premiumSKUs.length}`)
+      console.log(`- Beer/Cider SKUs: ${beerCiderSKUs.length}`)
+      console.log(`- Sample SKU categories:`, alcoholSKUs.slice(0, 5).map(s => `${s.sku}: ${s.category}, £${s.price}, ${s.weekly_sales} weekly sales`))
+
+      // Get current date info for seasonal context
+      const now = new Date()
+      const daysToChristmas = Math.ceil((new Date(now.getFullYear(), 11, 25).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      console.log(`🎄 Days to Christmas: ${daysToChristmas}`)
+      
+      // Generate seasonal recommendations using the enhanced engine
+      seasonalStrategies = await EnhancedSeasonalRecommendations.generateContextualRecommendations(
+        alcoholSKUs,
+        [], // Competitor data - would come from scraping
+        userEmail
+      )
+      
+      seasonalProcessingTime = Date.now() - seasonalStartTime
+      console.log(`🎄 Generated ${seasonalStrategies.length} seasonal strategies in ${seasonalProcessingTime}ms`)
+      
+      if (seasonalStrategies.length === 0) {
+        console.log(`⚠️ NO SEASONAL STRATEGIES GENERATED - POSSIBLE REASONS:`)
+        console.log(`- Need 3+ slow-moving products for clearance/mystery box (have ${slowMovingSKUs.length})`)
+        console.log(`- Need premium products >£40 for premium strategies (have ${premiumSKUs.length})`)
+        console.log(`- Need beer/cider for summer bundles (have ${beerCiderSKUs.length})`)
+        console.log(`- Seasonal timing may not be optimal (${daysToChristmas} days to Christmas)`)
+      }
+      
+      // Save seasonal strategies to database immediately
+      if (seasonalStrategies.length > 0) {
+        try {
+          await PostgreSQLService.saveSeasonalStrategies(userEmail, uploadId, seasonalStrategies)
+          console.log(`✅ Saved ${seasonalStrategies.length} seasonal strategies to database`)
+        } catch (saveError) {
+          console.error('❌ Failed to save seasonal strategies:', saveError)
+        }
+      }
+      
+    } catch (seasonalError) {
+      console.error('❌ Seasonal recommendation generation failed:', seasonalError)
+      console.error('Full error:', seasonalError)
+      seasonalStrategies = []
     }
 
     // STEP 3: Generate standard price and inventory recommendations
@@ -207,9 +284,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // STEP 4: CRITICAL - Generate AI-powered alerts using AlertEngine
-    const uploadId = uuidv4()
-    
+    // STEP 4: Generate AI-powered alerts using AlertEngine
     console.log('🚨 Generating AI-powered alerts using AlertEngine...')
     const smartAlerts = AlertEngine.generateAlertsFromAnalysis(
       alcoholSKUs,
@@ -227,12 +302,21 @@ export async function POST(request: NextRequest) {
     
     console.log(`🎯 Generated ${smartAlerts.length} AI-powered alerts`)
 
-    // STEP 5: Generate comprehensive summary
+    // 🎯 STEP 5: Calculate seasonal revenue potential
+    const seasonalRevenuePotential = seasonalStrategies.reduce((sum, strategy) => 
+      sum + (strategy.estimated_revenue_impact || 0), 0
+    )
+
+    // STEP 6: Generate comprehensive summary with seasonal metrics
     const summary = {
       totalSKUs: alcoholSKUs.length,
       slowMovingProducts: slowMovingProducts.length,
       creativeStrategiesGenerated: creativeRecommendations.length,
-      alertsGenerated: smartAlerts.length, // ADDED: Track alerts generated
+      alertsGenerated: smartAlerts.length,
+      
+      // 🎯 ADD SEASONAL METRICS
+      seasonalStrategiesGenerated: seasonalStrategies.length,
+      seasonalRevenuePotential: seasonalRevenuePotential,
       
       priceIncreases: priceRecommendations.filter(r => r.changePercentage > 0).length,
       priceDecreases: priceRecommendations.filter(r => r.changePercentage < 0).length,
@@ -246,6 +330,7 @@ export async function POST(request: NextRequest) {
       // GPT-4 specific metrics
       aiPowered: creativeRecommendations.length > 0,
       gptProcessingTimeMs: gptProcessingTime,
+      seasonalProcessingTimeMs: seasonalProcessingTime, // 🎯 ADD THIS
       
       // Category breakdown
       categoryBreakdown: generateCategoryBreakdown(priceRecommendations),
@@ -258,7 +343,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // STEP 6: Save to PostgreSQL with SMART ALERTS
+    // STEP 7: Save to PostgreSQL with SEASONAL STRATEGIES
     const processingTime = Date.now() - startTime
     
     const analysisData = {
@@ -269,10 +354,11 @@ export async function POST(request: NextRequest) {
       summary,
       priceRecommendations,
       inventoryAlerts: inventoryAlerts.slice(0, 20),
-      smartAlerts: smartAlerts.slice(0, 50), // ADDED: Save smart alerts
+      smartAlerts: smartAlerts.slice(0, 50),
       competitorData: [], // Will be populated by real scraping
       marketInsights: Object.keys(portfolioInsights).length > 0 ? [portfolioInsights] : [],
-      processingTimeMs: processingTime
+      processingTimeMs: processingTime,
+      seasonalStrategies: seasonalStrategies // 🎯 ADD THIS TO SAVE
     }
 
     let savedId: string | null = null
@@ -282,6 +368,7 @@ export async function POST(request: NextRequest) {
       savedId = await PostgreSQLService.saveAnalysis(analysisData)
       console.log(`✅ Analysis saved to PostgreSQL with ID: ${savedId}`)
       console.log(`🚨 Saved ${smartAlerts.length} smart alerts to database`)
+      console.log(`🎄 Saved ${seasonalStrategies.length} seasonal strategies to database`)
     } catch (dbError) {
       console.error('❌ PostgreSQL save failed:', dbError)
       databaseError = dbError instanceof Error ? dbError.message : 'Database save failed'
@@ -291,6 +378,7 @@ export async function POST(request: NextRequest) {
     console.log(`📊 Generated ${priceRecommendations.length} recommendations`)
     console.log(`🤖 Created ${creativeRecommendations.length} GPT-4 strategies`)
     console.log(`🚨 Generated ${smartAlerts.length} AI-powered alerts`)
+    console.log(`🎄 Generated ${seasonalStrategies.length} seasonal strategies`)
 
     return NextResponse.json({
       success: true,
@@ -307,13 +395,17 @@ export async function POST(request: NextRequest) {
       creativeStrategies: creativeRecommendations,
       portfolioInsights,
       
-      // ADDED: Return smart alerts
+      // AI-powered alerts
       smartAlerts: smartAlerts.slice(0, 10), // Preview for UI
+      
+      // 🎯 ADD SEASONAL STRATEGIES TO RESPONSE
+      seasonalStrategies: seasonalStrategies,
       
       // Metadata
       processedAt: new Date().toISOString(),
       processingTimeMs: processingTime,
       gptProcessingTimeMs: gptProcessingTime,
+      seasonalProcessingTimeMs: seasonalProcessingTime, // 🎯 ADD THIS
       userId,
       userEmail,
       columnMapping: actualColumns,
@@ -325,7 +417,8 @@ export async function POST(request: NextRequest) {
         processingErrors: processingErrors.length,
         slowMovingProductsFound: slowMovingProducts.length,
         gptStrategiesGenerated: creativeRecommendations.length,
-        smartAlertsGenerated: smartAlerts.length, // ADDED
+        smartAlertsGenerated: smartAlerts.length,
+        seasonalStrategiesGenerated: seasonalStrategies.length, // 🎯 ADD THIS
         databaseUsed: 'PostgreSQL'
       }
     })
@@ -340,7 +433,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Helper function for category breakdown
+// Helper function for category breakdown - unchanged
 function generateCategoryBreakdown(recommendations: any[]) {
   const breakdown = recommendations.reduce((acc, rec) => {
     const category = rec.category || 'unknown'

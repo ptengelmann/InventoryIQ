@@ -1,6 +1,3 @@
-// prisma/schema.prisma
-// Production-grade schema optimized for 500K+ SKUs with full functionality
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,625 +8,490 @@ datasource db {
 }
 
 model User {
-  id                String    @id @default(cuid())
-  email             String    @unique
-  name              String?
-  company           String?
-  phone             String?
-  location          String?
-  subscription_tier String    @default("free") // free, pro, enterprise
-  
-  // Business settings
-  default_currency  String    @default("GBP")
-  timezone          String    @default("Europe/London")
-  industry_focus    String?   // retail, distribution, hospitality
-  
-  created_at        DateTime  @default(now())
-  updated_at        DateTime  @updatedAt
-
-  // Relations
-  analyses          Analysis[]
-  skus              SKU[]
-  alerts            Alert[]
-  shopify_stores    ShopifyStore[]
-  sku_histories     SKUHistory[]
-  user_settings     UserSettings?
+  id                  String             @id @default(cuid())
+  email               String             @unique
+  name                String?
+  company             String?
+  created_at          DateTime           @default(now())
+  updated_at          DateTime           @updatedAt
+  default_currency    String             @default("GBP")
+  industry_focus      String?
+  location            String?
+  phone               String?
+  subscription_tier   String             @default("free")
+  timezone            String             @default("Europe/London")
+  alerts              Alert[]
+  analyses            Analysis[]
+  seasonal_strategies SeasonalStrategy[]
+  shopify_stores      ShopifyStore[]
+  sku_histories       SKUHistory[]
+  skus                SKU[]
+  user_settings       UserSettings?
 
   @@map("users")
 }
 
-// User preferences and settings
 model UserSettings {
-  id                    String  @id @default(cuid())
-  user_id               String  @unique
-  
-  // Analysis preferences
-  default_analysis_depth String  @default("standard") // quick, standard, deep
-  alert_frequency       String  @default("immediate") // immediate, daily, weekly
+  id                     String  @id @default(cuid())
+  user_id                String  @unique
+  default_analysis_depth String  @default("standard")
+  alert_frequency        String  @default("immediate")
   competitive_monitoring Boolean @default(true)
-  
-  // Notification preferences
-  email_alerts          Boolean @default(true)
-  stock_alert_threshold Int     @default(2) // weeks
-  price_change_threshold Float  @default(10.0) // percentage
-  
-  user                  User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  
+  email_alerts           Boolean @default(true)
+  stock_alert_threshold  Int     @default(2)
+  price_change_threshold Float   @default(10.0)
+  user                   User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
   @@map("user_settings")
 }
 
-// Core SKU table - partitioned and optimized for 500K records
 model SKU {
-  id                String   @id @default(cuid())
-  sku_code          String   
+  id                String                @id @default(cuid())
+  sku_code          String
   user_id           String
-  
-  // Core product data
   product_name      String?
-  category          String   // beer, wine, spirits, rtd, cider, sake, mead
-  subcategory       String?  // IPA, Bourbon, Chardonnay, Hard Seltzer
+  category          String
+  subcategory       String?
   brand             String?
   price             Float
   cost_price        Float?
-  weekly_sales      Float    @default(0)
-  inventory_level   Int      @default(0)
-  
-  // Alcohol-specific attributes
-  abv               Float?   // Alcohol by volume
-  volume_ml         Int?     // Container volume
-  container_type    String?  // bottle, can, keg, box, pouch
-  vintage_year      Int?     // For wine/spirits
+  weekly_sales      Float                 @default(0)
+  inventory_level   Int                   @default(0)
+  abv               Float?
+  volume_ml         Int?
+  container_type    String?
+  vintage_year      Int?
   origin_country    String?
-  origin_region     String?  // Bordeaux, Speyside, etc.
-  
-  // Product characteristics
-  organic           Boolean  @default(false)
-  gluten_free       Boolean  @default(false)
-  craft             Boolean  @default(false)
-  limited_edition   Boolean  @default(false)
+  origin_region     String?
+  organic           Boolean               @default(false)
+  gluten_free       Boolean               @default(false)
+  craft             Boolean               @default(false)
+  limited_edition   Boolean               @default(false)
   shelf_life_days   Int?
-  storage_temp      String?  // room, chilled, frozen
-  
-  // Business data
+  storage_temp      String?
   distributor       String?
   vendor_code       String?
-  barcode           String?  // EAN/UPC
+  barcode           String?
   supplier_sku      String?
   minimum_order_qty Int?
   lead_time_days    Int?
-  
-  // Performance tracking
   last_sold_date    DateTime?
   last_ordered_date DateTime?
-  days_since_sale   Int?     // Calculated field
-  velocity_score    Float?   // Sales velocity indicator
-  margin_percentage Float?   // Calculated profit margin
-  
-  // Seasonal patterns
-  seasonal_peak     String?  // spring, summer, fall, winter, holiday
-  seasonal_factor   Float    @default(1.0)
-  
-  // Timestamps
-  created_at        DateTime @default(now())
-  updated_at        DateTime @updatedAt
-  
-  // Relations
-  user              User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  price_history     PriceHistory[]
-  competitor_prices CompetitorPrice[]
-  recommendations   PriceRecommendation[]
+  days_since_sale   Int?
+  velocity_score    Float?
+  margin_percentage Float?
+  seasonal_peak     String?
+  seasonal_factor   Float                 @default(1.0)
+  created_at        DateTime              @default(now())
+  updated_at        DateTime              @updatedAt
   alerts            Alert[]
+  competitor_prices CompetitorPrice[]
   inventory_events  InventoryEvent[]
-  
-  // High-performance indexes for 500K records
+  price_history     PriceHistory[]
+  recommendations   PriceRecommendation[]
+  user              User                  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, sku_code])
   @@index([user_id, category, weekly_sales])
   @@index([user_id, brand, category])
   @@index([user_id, inventory_level, days_since_sale])
   @@index([user_id, price, weekly_sales])
   @@index([last_sold_date, user_id])
   @@index([velocity_score, user_id])
-  @@unique([user_id, sku_code])
   @@map("skus")
 }
 
-// Analysis records with comprehensive tracking
 model Analysis {
-  id                 String   @id @default(cuid())
-  upload_id          String   @unique
-  file_name          String
-  uploaded_at        DateTime @default(now())
-  processed_at       DateTime
-  
-  // User isolation
-  user_id            String
-  user               User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  
-  // Analysis metrics
-  total_skus         Int
-  revenue_potential  Float    @default(0)
-  processing_time_ms Int?
-  analysis_type      String   @default("standard") // quick, standard, deep, gpt_enhanced
-  
-  // Data quality metrics
-  data_quality_score Float?   // 0-1 score for uploaded data quality
-  missing_fields     Json?    // Track which fields were missing
-  data_anomalies     Json?    // Unusual data points detected
-  
-  // Analysis results (JSON for flexibility)
-  summary            Json     // Basic summary stats
-  column_mapping     Json     // CSV column mapping used
-  market_insights    Json?    // GPT-4 generated insights
-  competitive_intel  Json?    // Competitor analysis results
-  seasonal_analysis  Json?    // Seasonal pattern analysis
-  
-  // File metadata
-  file_size_bytes    Int?
-  rows_processed     Int?
-  rows_skipped       Int?
-  user_agent         String?
-  ip_address         String?
-  
-  // Relations
-  recommendations    PriceRecommendation[]
-  alerts            Alert[]
-  competitor_data   CompetitorPrice[]
-  smart_alerts      SmartAlert[]
-  
+  id                  String                @id @default(cuid())
+  upload_id           String                @unique
+  file_name           String
+  processed_at        DateTime
+  user_id             String
+  total_skus          Int
+  summary             Json
+  analysis_type       String                @default("standard")
+  column_mapping      Json
+  competitive_intel   Json?
+  data_anomalies      Json?
+  data_quality_score  Float?
+  file_size_bytes     Int?
+  ip_address          String?
+  market_insights     Json?
+  missing_fields      Json?
+  processing_time_ms  Int?
+  revenue_potential   Float                 @default(0)
+  rows_processed      Int?
+  rows_skipped        Int?
+  seasonal_analysis   Json?
+  uploaded_at         DateTime              @default(now())
+  user_agent          String?
+  alerts              Alert[]
+  user                User                  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  competitor_data     CompetitorPrice[]
+  recommendations     PriceRecommendation[]
+  seasonal_strategies SeasonalStrategy[]
+  smart_alerts        SmartAlert[]
+
   @@index([user_id, processed_at(sort: Desc)])
   @@index([analysis_type, processed_at(sort: Desc)])
   @@map("analyses")
 }
 
-// Enhanced price recommendations with GPT-4 creativity
 model PriceRecommendation {
-  id                    String   @id @default(cuid())
-  analysis_id           String
-  sku_code              String
-  user_id               String
-  
-  // Core pricing data
-  current_price         Float
-  recommended_price     Float
-  change_percentage     Float
-  confidence_score      Float    // 0-1 AI confidence
-  
-  // Context and reasoning
-  reason                String
-  weekly_sales          Float
-  inventory_level       Int
-  revenue_impact        Float?
-  risk_level            String   @default("medium") // low, medium, high, critical
-  
-  // GPT-4 enhanced recommendations
-  creative_strategies   Json?    // Mystery boxes, bundles, etc.
-  marketing_angles      Json?    // GPT-4 suggested marketing approaches
-  seasonal_timing       String?  // Optimal timing for price changes
-  competitive_context   Json?    // How competitors influence this recommendation
-  implementation_plan   Json?    // Step-by-step action plan
-  
-  // Advanced analytics
-  price_elasticity      Float?   // Calculated demand sensitivity
-  optimal_price_range   Json?    // Min/max pricing boundaries
-  cannibalization_risk  Float?   // Risk to other products
-  
-  created_at            DateTime @default(now())
-  
-  // Relations
-  analysis              Analysis @relation(fields: [analysis_id], references: [upload_id], onDelete: Cascade)
-  sku                   SKU      @relation(fields: [sku_code, user_id], references: [sku_code, user_id], onDelete: Cascade)
-  
+  id                   String   @id @default(cuid())
+  analysis_id          String
+  sku_code             String
+  user_id              String
+  current_price        Float
+  recommended_price    Float
+  change_percentage    Float
+  confidence_score     Float
+  reason               String
+  weekly_sales         Float
+  inventory_level      Int
+  revenue_impact       Float?
+  risk_level           String   @default("medium")
+  creative_strategies  Json?
+  marketing_angles     Json?
+  seasonal_timing      String?
+  competitive_context  Json?
+  implementation_plan  Json?
+  price_elasticity     Float?
+  optimal_price_range  Json?
+  cannibalization_risk Float?
+  created_at           DateTime @default(now())
+  analysis             Analysis @relation(fields: [analysis_id], references: [upload_id], onDelete: Cascade)
+  sku                  SKU      @relation(fields: [sku_code, user_id], references: [sku_code, user_id], onDelete: Cascade)
+
   @@index([user_id, sku_code])
   @@index([analysis_id, confidence_score(sort: Desc)])
   @@index([revenue_impact(sort: Desc)])
   @@map("price_recommendations")
 }
 
-// Real-time competitor pricing with scraping metadata
 model CompetitorPrice {
-  id                    String   @id @default(cuid())
-  sku_code              String
-  user_id               String
-  analysis_id           String?
-  
-  // Competitor data
-  competitor            String   // majestic, waitrose, tesco, asda
-  competitor_sku        String?  // Their internal SKU
-  competitor_price      Float
-  our_price             Float
-  price_difference      Float
-  price_difference_pct  Float
-  availability          Boolean  @default(true)
-  stock_level           String?  // in_stock, low_stock, out_of_stock
-  
-  // Product matching
-  product_name          String?
-  product_description   String?
-  relevance_score       Float?   // How well this matches our product (0-1)
-  match_confidence      Float?   // AI confidence in product match
-  
-  // Scraping metadata
-  source_url            String?
-  scraping_success      Boolean  @default(false)
-  scraping_method       String?  // api, web_scrape, manual
-  scraping_duration_ms  Int?
-  last_updated          DateTime @default(now())
-  next_check_due        DateTime?
-  
-  // Promotional data
-  promotional           Boolean  @default(false)
-  promotion_type        String?  // sale, clearance, bogo, etc.
-  promotion_details     String?
-  promotion_start_date  DateTime?
-  promotion_end_date    DateTime?
-  original_price        Float?   // Price before promotion
-  
-  // Data validation
-  price_history_trend   String?  // increasing, decreasing, stable
-  data_anomaly_flags    Json?    // Unusual price patterns detected
-  
-  // Relations
-  analysis              Analysis? @relation(fields: [analysis_id], references: [upload_id], onDelete: SetNull)
-  sku                   SKU       @relation(fields: [sku_code, user_id], references: [sku_code, user_id], onDelete: Cascade)
-  
+  id                   String    @id @default(cuid())
+  sku_code             String
+  user_id              String
+  analysis_id          String?
+  competitor           String
+  competitor_sku       String?
+  competitor_price     Float
+  our_price            Float
+  price_difference     Float
+  price_difference_pct Float
+  availability         Boolean   @default(true)
+  stock_level          String?
+  product_name         String?
+  product_description  String?
+  relevance_score      Float?
+  match_confidence     Float?
+  source_url           String?
+  scraping_success     Boolean   @default(false)
+  scraping_method      String?
+  scraping_duration_ms Int?
+  last_updated         DateTime  @default(now())
+  next_check_due       DateTime?
+  promotional          Boolean   @default(false)
+  promotion_type       String?
+  promotion_details    String?
+  promotion_start_date DateTime?
+  promotion_end_date   DateTime?
+  original_price       Float?
+  price_history_trend  String?
+  data_anomaly_flags   Json?
+  analysis             Analysis? @relation(fields: [analysis_id], references: [upload_id])
+  sku                  SKU       @relation(fields: [sku_code, user_id], references: [sku_code, user_id], onDelete: Cascade)
+
+  @@unique([sku_code, user_id, competitor, last_updated])
   @@index([user_id, sku_code, last_updated(sort: Desc)])
   @@index([competitor, availability, last_updated])
   @@index([promotional, promotion_end_date])
-  @@unique([sku_code, user_id, competitor, last_updated])
   @@map("competitor_prices")
 }
 
-// Detailed price history for trend analysis
 model PriceHistory {
   id              String   @id @default(cuid())
   sku_code        String
   user_id         String
-  
-  // Price data
   date            DateTime
   price           Float
   cost_price      Float?
   margin          Float?
-  
-  // Sales context
   sales_volume    Float?
   inventory_level Int?
-  demand_factor   Float?   // External demand influences
-  
-  // Data source tracking
-  source          String   @default("csv_upload") // csv_upload, shopify, manual, api
-  change_reason   String?  // price_increase, promotion, competitor_match, etc.
-  
-  // Market context
-  competitor_avg  Float?   // Average competitor price at this time
-  market_position String?  // leading, competitive, lagging
-  
-  // Relations
+  demand_factor   Float?
+  source          String   @default("csv_upload")
+  change_reason   String?
+  competitor_avg  Float?
+  market_position String?
   sku             SKU      @relation(fields: [sku_code, user_id], references: [sku_code, user_id], onDelete: Cascade)
-  
+
   @@index([user_id, sku_code, date(sort: Desc)])
   @@index([date, user_id])
   @@map("price_history")
 }
 
-// Enhanced alert system with AI recommendations
 model Alert {
-  id                String   @id @default(cuid())
-  user_id           String
-  analysis_id       String?
-  sku_code          String?
-  
-  // Alert classification
-  type              String   // stockout, overstock, pricing, competitive, seasonal, compliance
-  severity          String   // low, medium, high, critical
-  category          String?  // operational, financial, strategic, regulatory
-  
-  // Alert content
-  title             String
-  message           String
-  short_description String?  // For mobile/dashboard previews
-  
-  // AI-powered recommendations
-  ai_recommendation Json?    // GPT-4 generated action plans
-  alternative_actions Json?  // Multiple solution options
-  estimated_impact  Float?   // Revenue/cost impact in GBP
-  confidence_level  Float?   // AI confidence in recommendation (0-1)
-  urgency_score     Int      @default(5) // 1-10 urgency scale
-  
-  // Business impact assessment
-  revenue_at_risk   Float?   // Potential revenue loss if not addressed
-  cost_to_resolve   Float?   // Estimated cost to implement solution
-  time_to_resolve   Int?     // Estimated hours to resolve
-  
-  // Status tracking
-  acknowledged      Boolean  @default(false)
-  resolved          Boolean  @default(false)
-  snoozed           Boolean  @default(false)
-  assigned_to       String?  // User responsible for resolution
-  
-  // Timestamps
-  created_at        DateTime @default(now())
-  acknowledged_at   DateTime?
-  resolved_at       DateTime?
-  snooze_until      DateTime?
-  escalated_at      DateTime?
-  
-  // Follow-up tracking
-  resolution_notes  String?
-  actual_outcome    String?
-  lessons_learned   String?
-  
-  // Relations
-  user              User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  analysis          Analysis? @relation(fields: [analysis_id], references: [upload_id], onDelete: SetNull)
-  sku               SKU?      @relation(fields: [sku_code, user_id], references: [sku_code, user_id], onDelete: SetNull)
-  
+  id                  String    @id @default(cuid())
+  user_id             String
+  analysis_id         String?
+  sku_code            String?
+  type                String
+  severity            String
+  category            String?
+  title               String
+  message             String
+  short_description   String?
+  ai_recommendation   Json?
+  alternative_actions Json?
+  estimated_impact    Float?
+  confidence_level    Float?
+  urgency_score       Int       @default(5)
+  revenue_at_risk     Float?
+  cost_to_resolve     Float?
+  time_to_resolve     Int?
+  acknowledged        Boolean   @default(false)
+  resolved            Boolean   @default(false)
+  snoozed             Boolean   @default(false)
+  assigned_to         String?
+  created_at          DateTime  @default(now())
+  acknowledged_at     DateTime?
+  resolved_at         DateTime?
+  snooze_until        DateTime?
+  escalated_at        DateTime?
+  resolution_notes    String?
+  actual_outcome      String?
+  lessons_learned     String?
+  analysis            Analysis? @relation(fields: [analysis_id], references: [upload_id])
+  sku                 SKU?      @relation(fields: [sku_code, user_id], references: [sku_code, user_id], onDelete: SetNull)
+  user                User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
   @@index([user_id, severity, acknowledged])
   @@index([created_at(sort: Desc), user_id])
   @@index([urgency_score(sort: Desc), resolved])
   @@map("alerts")
 }
 
-// Smart alerts with GPT-4 enhancement
 model SmartAlert {
-  id                String   @id @default(cuid())
-  analysis_id       String
-  
-  // Alert details
-  type              String
-  severity          String
-  message           String
-  recommendation    Json     // GPT-4 generated structured actions
-  
-  // Advanced features
-  auto_generated    Boolean  @default(true)
-  requires_human    Boolean  @default(false)
-  escalation_path   Json?    // Who to notify if unresolved
-  
-  // Tracking
-  acknowledged      Boolean  @default(false)
-  resolved          Boolean  @default(false)
-  auto_resolved     Boolean  @default(false)
-  
-  created_at        DateTime @default(now())
-  resolved_at       DateTime?
-  
-  // Relations
-  analysis          Analysis @relation(fields: [analysis_id], references: [upload_id], onDelete: Cascade)
-  
+  id              String    @id @default(cuid())
+  analysis_id     String
+  type            String
+  severity        String
+  message         String
+  recommendation  Json
+  auto_generated  Boolean   @default(true)
+  requires_human  Boolean   @default(false)
+  escalation_path Json?
+  acknowledged    Boolean   @default(false)
+  resolved        Boolean   @default(false)
+  auto_resolved   Boolean   @default(false)
+  created_at      DateTime  @default(now())
+  resolved_at     DateTime?
+  analysis        Analysis  @relation(fields: [analysis_id], references: [upload_id], onDelete: Cascade)
+
   @@index([analysis_id, severity])
   @@map("smart_alerts")
 }
 
-// SKU performance tracking and history
 model SKUHistory {
-  id           String   @id @default(cuid())
-  sku_code     String
-  user_id      String
-  
-  // Historical performance data (JSON for flexibility)
-  analyses     Json     // Array of analysis results over time
-  
-  // Calculated performance metrics
-  avg_weekly_sales      Float?
-  sales_trend           String?  // improving, declining, stable
-  price_trend           String?  // increasing, decreasing, stable
-  inventory_turnover    Float?   // Times per year
-  profit_contribution   Float?   // Total profit contribution
-  
-  // Lifecycle tracking
-  first_seen            DateTime @default(now())
-  last_analysis         DateTime?
-  total_analyses        Int      @default(0)
-  
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
-  
-  // Relations
-  user         User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  
+  id                  String    @id @default(cuid())
+  sku_code            String
+  user_id             String
+  analyses            Json
+  avg_weekly_sales    Float?
+  sales_trend         String?
+  price_trend         String?
+  inventory_turnover  Float?
+  profit_contribution Float?
+  first_seen          DateTime  @default(now())
+  last_analysis       DateTime?
+  total_analyses      Int       @default(0)
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+  user                User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
   @@unique([user_id, sku_code])
   @@index([user_id, sales_trend])
   @@index([avg_weekly_sales(sort: Desc), user_id])
   @@map("sku_history")
 }
 
-// Shopify integration with webhook tracking
 model ShopifyStore {
-  id                String   @id @default(cuid())
+  id                String           @id @default(cuid())
   user_id           String
-  shop_domain       String   // mystore.myshopify.com
-  access_token      String   // Encrypted in production
-  
-  // Store details
+  shop_domain       String
+  access_token      String
   store_name        String
-  store_currency    String   @default("GBP")
+  store_currency    String           @default("GBP")
   store_timezone    String?
-  
-  // Sync configuration
-  auto_sync_enabled Boolean  @default(true)
-  sync_frequency    String   @default("daily") // real_time, hourly, daily, weekly
+  auto_sync_enabled Boolean          @default(true)
+  sync_frequency    String           @default("daily")
   last_sync         DateTime?
-  last_sync_status  String?  // success, failed, partial
+  last_sync_status  String?
   total_products    Int?
   synced_products   Int?
-  
-  // Webhook management
   webhook_id        String?
-  webhook_verified  Boolean  @default(false)
+  webhook_verified  Boolean          @default(false)
   webhook_secret    String?
-  
-  // Error tracking
-  sync_errors       Json?    // Array of recent sync errors
-  error_count       Int      @default(0)
+  sync_errors       Json?
+  error_count       Int              @default(0)
   last_error        DateTime?
-  
-  created_at        DateTime @default(now())
-  updated_at        DateTime @updatedAt
-  
-  // Relations
-  user              User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  created_at        DateTime         @default(now())
+  updated_at        DateTime         @updatedAt
   inventory_events  InventoryEvent[]
-  
+  user              User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
   @@unique([user_id, shop_domain])
   @@index([auto_sync_enabled, sync_frequency])
   @@map("shopify_stores")
 }
 
-// Track inventory movements and events
 model InventoryEvent {
-  id                String   @id @default(cuid())
-  sku_code          String
-  user_id           String
-  shopify_store_id  String?
-  
-  // Event details
-  event_type        String   // restock, sale, adjustment, transfer, damaged
-  quantity_change   Int      // Positive for additions, negative for reductions
-  previous_level    Int
-  new_level         Int
-  
-  // Event context
-  reason            String?  // Manual entry for why this happened
-  cost_impact       Float?   // Financial impact of this event
-  supplier_batch    String?  // Batch/lot number from supplier
-  
-  // Timestamps
-  event_date        DateTime @default(now())
-  recorded_at       DateTime @default(now())
-  
-  // Relations
-  sku               SKU           @relation(fields: [sku_code, user_id], references: [sku_code, user_id], onDelete: Cascade)
-  shopify_store     ShopifyStore? @relation(fields: [shopify_store_id], references: [id], onDelete: SetNull)
-  
+  id               String        @id @default(cuid())
+  sku_code         String
+  user_id          String
+  shopify_store_id String?
+  event_type       String
+  quantity_change  Int
+  previous_level   Int
+  new_level        Int
+  reason           String?
+  cost_impact      Float?
+  supplier_batch   String?
+  event_date       DateTime      @default(now())
+  recorded_at      DateTime      @default(now())
+  shopify_store    ShopifyStore? @relation(fields: [shopify_store_id], references: [id])
+  sku              SKU           @relation(fields: [sku_code, user_id], references: [sku_code, user_id], onDelete: Cascade)
+
   @@index([user_id, sku_code, event_date(sort: Desc)])
   @@index([event_type, event_date])
   @@map("inventory_events")
 }
 
-// Market trends and intelligence
 model MarketTrend {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   category        String
   subcategory     String?
-  region          String   @default("UK")
-  
-  // Trend data
-  trend_type      String   // price, volume, new_entrants, seasonal
-  direction       String   // increasing, decreasing, stable
-  magnitude       Float    // Percentage change
-  confidence      Float    // Data confidence (0-1)
-  time_period     String   // weekly, monthly, quarterly, yearly
-  
-  // Data source
-  data_source     String   // nielsen, ibis, scraping, internal
-  source_quality  String   @default("medium") // low, medium, high, authoritative
-  
-  // Market context
-  market_size_gbp Float?   // Total market size in GBP
-  growth_rate     Float?   // Annual growth rate
-  key_drivers     Json?    // Factors driving this trend
-  
-  detected_at     DateTime @default(now())
-  expires_at      DateTime? // When this trend data becomes stale
-  
+  region          String    @default("UK")
+  trend_type      String
+  direction       String
+  magnitude       Float
+  confidence      Float
+  time_period     String
+  data_source     String
+  source_quality  String    @default("medium")
+  market_size_gbp Float?
+  growth_rate     Float?
+  key_drivers     Json?
+  detected_at     DateTime  @default(now())
+  expires_at      DateTime?
+
   @@index([category, region, detected_at(sort: Desc)])
   @@index([trend_type, direction])
   @@map("market_trends")
 }
 
-// Competitor source configuration
 model CompetitorSource {
-  id              String   @id @default(cuid())
-  name            String   @unique
-  display_name    String   // User-friendly name
-  type            String   // retailer, distributor, marketplace, api
-  base_url        String
-  enabled         Boolean  @default(true)
-  
-  // Scraping configuration
-  scraping_config Json?    // Selectors, rate limits, etc.
-  rate_limit_ms   Int      @default(2000)
-  max_concurrent  Int      @default(1)
-  
-  // API configuration (if applicable)
-  api_endpoint    String?
-  requires_auth   Boolean  @default(false)
-  auth_type       String?  // api_key, oauth, basic
-  
-  // Performance tracking
-  success_rate    Float?   // Percentage of successful scrapes
-  avg_response_ms Int?     // Average response time
-  last_error      String?
-  error_count     Int      @default(0)
-  
-  // Geographic/market focus
-  supported_regions Json?  // Countries/regions this source covers
-  categories        Json?  // Product categories available
-  
-  created_at      DateTime @default(now())
-  last_updated    DateTime @default(now())
-  
+  id                String   @id @default(cuid())
+  name              String   @unique
+  display_name      String
+  type              String
+  base_url          String
+  enabled           Boolean  @default(true)
+  scraping_config   Json?
+  rate_limit_ms     Int      @default(2000)
+  max_concurrent    Int      @default(1)
+  api_endpoint      String?
+  requires_auth     Boolean  @default(false)
+  auth_type         String?
+  success_rate      Float?
+  avg_response_ms   Int?
+  last_error        String?
+  error_count       Int      @default(0)
+  supported_regions Json?
+  categories        Json?
+  created_at        DateTime @default(now())
+  last_updated      DateTime @default(now())
+
   @@map("competitor_sources")
 }
 
-// Campaign and promotion tracking
 model PromotionCampaign {
-  id                String   @id @default(cuid())
+  id                String    @id @default(cuid())
   user_id           String
   name              String
   description       String?
-  
-  // Campaign details
-  campaign_type     String   // clearance, seasonal, bundle, mystery_box
-  status            String   @default("planned") // planned, active, paused, completed
-  
-  // Targeting
-  target_skus       Json     // Array of SKU codes
-  target_categories Json?    // Categories to include
-  
-  // Pricing strategy
-  discount_type     String?  // percentage, fixed_amount, bundle_price
+  campaign_type     String
+  status            String    @default("planned")
+  target_skus       Json
+  target_categories Json?
+  discount_type     String?
   discount_value    Float?
   minimum_quantity  Int?
-  
-  // Timeline
   start_date        DateTime
   end_date          DateTime?
-  
-  // Performance tracking
-  units_sold        Int      @default(0)
-  revenue_generated Float    @default(0)
+  units_sold        Int       @default(0)
+  revenue_generated Float     @default(0)
   cost_of_campaign  Float?
   roi_percentage    Float?
-  
-  // GPT-4 generated content
-  marketing_copy    Json?    // Generated marketing messages
-  target_audience   String?  // AI-identified target customer
-  success_metrics   Json?    // KPIs to track
-  
-  created_at        DateTime @default(now())
-  updated_at        DateTime @updatedAt
-  
+  marketing_copy    Json?
+  target_audience   String?
+  success_metrics   Json?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
   @@index([user_id, status, start_date])
   @@map("promotion_campaigns")
 }
 
-// System performance and monitoring
 model SystemMetric {
-  id                String   @id @default(cuid())
-  metric_name       String
-  metric_value      Float
-  metric_unit       String   // ms, count, percentage, gbp
-  
-  // Context
-  user_id           String?  // Null for system-wide metrics
-  analysis_id       String?
-  
-  // Metadata
-  collected_at      DateTime @default(now())
-  retention_days    Int      @default(30)
-  
+  id             String   @id @default(cuid())
+  metric_name    String
+  metric_value   Float
+  metric_unit    String
+  user_id        String?
+  analysis_id    String?
+  collected_at   DateTime @default(now())
+  retention_days Int      @default(30)
+
   @@index([metric_name, collected_at(sort: Desc)])
   @@index([user_id, metric_name])
   @@map("system_metrics")
+}
+
+model SeasonalStrategy {
+  id                       String    @id @default(cuid())
+  analysis_id              String
+  user_id                  String
+  type                     String
+  title                    String
+  description              String
+  reasoning                String
+  seasonal_trigger         String
+  estimated_revenue_impact Float
+  urgency                  String
+  implementation_timeline  String
+  marketing_angle          String?
+  target_customer          String?
+  products_involved        Json
+  execution_steps          Json
+  success_metrics          Json
+  risk_factors             Json
+  pricing_strategy         Json
+  status                   String    @default("generated")
+  implemented_at           DateTime?
+  completed_at             DateTime?
+  actual_revenue_impact    Float?
+  ai_confidence            Float?
+  generated_by             String    @default("enhanced_seasonal_engine")
+  created_at               DateTime  @default(now())
+  updated_at               DateTime  @updatedAt
+  analysis                 Analysis  @relation(fields: [analysis_id], references: [upload_id], onDelete: Cascade)
+  user                     User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, analysis_id])
+  @@index([urgency, estimated_revenue_impact(sort: Desc)])
+  @@index([type, created_at(sort: Desc)])
+  @@map("seasonal_strategies")
 }
