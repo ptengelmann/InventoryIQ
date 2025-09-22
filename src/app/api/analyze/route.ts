@@ -1,8 +1,9 @@
-// src/app/api/analyze/route.ts - COMPLETE REWRITTEN VERSION
-// Claude-powered analysis with pricing, seasonal, and market insights
+// src/app/api/analyze/route.ts - FIXED VERSION
+// Real competitive scraping integration + database saves
 
 import { NextRequest, NextResponse } from 'next/server'
 import { PostgreSQLService } from '@/lib/database-postgres'
+import { RealCompetitiveScraping } from '@/lib/real-competitive-scraping' // FIXED: Real scraping
 import { EnhancedSeasonalRecommendations } from '@/lib/enhanced-seasonal-recommendations'
 import { AlcoholSKU } from '@/types'
 import { AlertEngine } from '@/lib/alert-engine'
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User email required' }, { status: 401 })
     }
 
-    console.log(`🎯 Starting ENHANCED analysis for ${userEmail}`)
+    console.log(`🎯 Starting ENHANCED analysis with REAL competitive intelligence for ${userEmail}`)
     console.log(`📊 Processing ${csvData.length} rows from ${fileName}`)
 
     const uploadId = `analysis-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
@@ -80,16 +81,15 @@ export async function POST(request: NextRequest) {
         else if (normalizedCategory.includes('mead')) category = 'mead'
         else category = 'spirits' // Default fallback
 
-        // Map container type to valid AlcoholSKU values
-        const rawContainerType = row.container_type || row['Container Type'] || 'bottle'
         let container_type: "bottle" | "can" | "keg" | "box" | "pouch"
+        const rawContainerType = row.container_type || row['Container Type'] || 'bottle'
         const normalizedContainer = rawContainerType.toLowerCase()
         
         if (normalizedContainer.includes('can')) container_type = 'can'
         else if (normalizedContainer.includes('keg')) container_type = 'keg'
         else if (normalizedContainer.includes('box')) container_type = 'box'
         else if (normalizedContainer.includes('pouch')) container_type = 'pouch'
-        else container_type = 'bottle' // Default fallback
+        else container_type = 'bottle'
 
         return {
           sku,
@@ -116,27 +116,67 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Step 2: Generate mock competitor data
-    const competitorData = alcoholSKUs
-      .slice(0, Math.min(10, alcoholSKUs.length))
-      .map(sku => ({
-        sku: sku.sku,
-        our_price: parseFloat(sku.price),
-        competitor: ['Tesco', 'Sainsbury\'s', 'ASDA', 'Morrisons'][Math.floor(Math.random() * 4)],
-        competitor_price: parseFloat(sku.price) * (0.9 + Math.random() * 0.2),
-        price_difference: 0,
-        price_difference_percentage: 0,
-        availability: Math.random() > 0.2,
-        product_name: `${sku.brand} ${sku.category}`,
-        relevance_score: 0.8 + Math.random() * 0.2,
-        last_updated: new Date(),
-        source: 'api' as const
-      }))
-
-    competitorData.forEach(comp => {
-      comp.price_difference = comp.our_price - comp.competitor_price
-      comp.price_difference_percentage = (comp.price_difference / comp.competitor_price) * 100
-    })
+    // Step 2: REAL COMPETITIVE INTELLIGENCE - High-value products only
+    console.log('🕷️ Starting REAL competitive intelligence scraping...')
+    let competitorData: any[] = []
+    let competitiveScrapeTime = 0
+    
+    try {
+      const competitiveStartTime = Date.now()
+      
+      // Select high-value products for competitive analysis (limit API costs)
+      const highValueProducts = alcoholSKUs
+        .filter(sku => parseFloat(sku.price) > 20) // Only products over £20
+        .sort((a, b) => parseFloat(b.price) - parseFloat(a.price)) // Sort by price desc
+        .slice(0, 5) // Top 5 most expensive products
+      
+      console.log(`🎯 Selected ${highValueProducts.length} high-value products for competitive analysis`)
+      
+      for (const sku of highValueProducts) {
+        try {
+          console.log(`🔍 Scraping competitors for: ${sku.brand} ${sku.sku}`)
+          
+          // REAL COMPETITIVE SCRAPING with AI insights
+          const competitorPrices = await RealCompetitiveScraping.scrapeRealCompetitorPrices(
+            `${sku.brand} ${sku.subcategory || ''}`.trim(),
+            sku.category,
+            3, // Max 3 retailers per product to control costs
+            true // Include AI insights
+          )
+          
+          if (competitorPrices.length > 0) {
+            // Set our price and calculate differences
+            const ourPrice = parseFloat(sku.price)
+            competitorPrices.forEach(comp => {
+              comp.our_price = ourPrice
+              comp.price_difference = comp.competitor_price - ourPrice
+              comp.price_difference_percentage = ((comp.competitor_price - ourPrice) / ourPrice) * 100
+              comp.sku = sku.sku // Set to our SKU code
+            })
+            
+            competitorData.push(...competitorPrices)
+            console.log(`✅ Found ${competitorPrices.length} real competitor prices for ${sku.sku}`)
+          } else {
+            console.log(`⚠️ No competitor data found for ${sku.sku}`)
+          }
+          
+          // Rate limiting - be respectful to SERP API
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          
+        } catch (skuError) {
+          console.error(`❌ Competitive scraping failed for ${sku.sku}:`, skuError)
+          continue // Don't fail entire analysis for one SKU
+        }
+      }
+      
+      competitiveScrapeTime = Date.now() - competitiveStartTime
+      console.log(`🎯 REAL competitive intelligence complete: ${competitorData.length} prices in ${competitiveScrapeTime}ms`)
+      
+    } catch (competitiveError) {
+      console.error('❌ REAL competitive scraping failed:', competitiveError)
+      console.log('📊 Continuing analysis without competitive data')
+      competitorData = []
+    }
 
     // Step 3: Generate Claude-powered price recommendations
     console.log('💰 Generating AI-powered price recommendations...')
@@ -275,14 +315,14 @@ export async function POST(request: NextRequest) {
       
       marketInsights = [{
         id: `fallback-insight-${Date.now()}`,
-        type: 'pricing',
+        type: 'competitive',
         priority: 'high',
-        title: 'Pricing Optimization Opportunities',
-        description: `Analysis identified pricing adjustment opportunities across your portfolio.`,
+        title: 'Real Competitive Intelligence Available',
+        description: `Analysis found ${competitorData.length} real competitor prices from UK alcohol retailers.`,
         actionable_steps: [
-          'Review high-impact price recommendations',
-          'Implement gradual price adjustments',
-          'Monitor sales performance after changes'
+          'Review competitor pricing above',
+          'Monitor price changes in real-time',
+          'Consider automated repricing strategies'
         ]
       }]
     }
@@ -299,7 +339,13 @@ export async function POST(request: NextRequest) {
       urgentSeasonalActions: seasonalRecommendations.filter(s => s.urgency === 'high' || s.urgency === 'critical').length,
       criticalAlertsGenerated: inventoryAlerts.filter(a => a.riskLevel === 'critical').length,
       brandsIdentified: alcoholSKUs.filter(sku => sku.brand && sku.brand !== 'Unknown').length,
+      
+      // REAL COMPETITIVE INTELLIGENCE METRICS
       competitorPricesFound: competitorData.length,
+      realCompetitorData: true, // Flag to indicate real data
+      competitiveScrapeTimeMs: competitiveScrapeTime,
+      retailersCovered: [...new Set(competitorData.map(c => c.competitor))].length,
+      
       portfolioHealth: {
         fastMovers: priceRecommendations.filter(r => r.weeklySales > 5).length,
         slowMovers: priceRecommendations.filter(r => r.weeklySales < 1).length,
@@ -310,7 +356,7 @@ export async function POST(request: NextRequest) {
 
     const processingTime = Date.now() - startTime
 
-    // Step 8: Save to database
+    // Step 8: Save to database - INCLUDING REAL COMPETITOR DATA
     try {
       await PostgreSQLService.saveAnalysis({
         uploadId,
@@ -321,21 +367,29 @@ export async function POST(request: NextRequest) {
         priceRecommendations,
         inventoryAlerts,
         smartAlerts: [],
-        competitorData,
+        competitorData, // FIXED: Real competitor data saved here
         marketInsights,
         processingTimeMs: processingTime,
         seasonalStrategies: seasonalRecommendations
       })
       
-      console.log('💾 Analysis saved to database')
+      console.log('💾 Analysis saved to database with REAL competitive intelligence')
+      
+      // CRITICAL: Save competitor prices separately to ensure they persist
+      if (competitorData.length > 0) {
+        const saved = await PostgreSQLService.saveCompetitorPrices(userEmail, competitorData)
+        console.log(`✅ SEPARATELY SAVED ${competitorData.length} real competitor prices to database: ${saved}`)
+      }
+      
     } catch (saveError) {
       console.error('❌ Database save failed:', saveError)
     }
 
     console.log(`✅ Analysis completed in ${processingTime}ms`)
     console.log(`📊 Generated: ${priceRecommendations.length} price recs, ${seasonalRecommendations.length} seasonal strategies, ${marketInsights.length} insights`)
+    console.log(`🎯 REAL COMPETITIVE DATA: ${competitorData.length} competitor prices from ${summary.retailersCovered} UK retailers`)
 
-    // Step 9: Return results
+    // Step 9: Return results with real competitive intelligence
     return NextResponse.json({
       success: true,
       analysisId: uploadId,
@@ -344,12 +398,24 @@ export async function POST(request: NextRequest) {
       
       recommendations: priceRecommendations.slice(0, 100),
       seasonalStrategies: seasonalRecommendations,
-      competitorData,
+      competitorData, // REAL competitor prices returned to UI
       marketInsights,
       criticalAlerts: inventoryAlerts.filter(alert => alert.riskLevel === 'critical' || alert.riskLevel === 'high'),
       
+      // COMPETITIVE INTELLIGENCE METADATA
+      competitiveIntelligence: {
+        realData: true,
+        retailersCovered: summary.retailersCovered,
+        pricesFound: competitorData.length,
+        processingTimeMs: competitiveScrapeTime,
+        dataQuality: competitorData.length > 0 ? 'excellent' : 'no_data',
+        costApproximate: `$${(competitorData.length * 0.01).toFixed(2)}`, // SERP API costs ~$0.01 per search
+        nextUpdate: 'Real-time via /api/competitors/live'
+      },
+      
       metadata: {
         aiPowered: true,
+        realCompetitiveData: true, // Flag for premium feature
         seasonallyEnhanced: seasonalRecommendations.length > 0,
         processedAt: new Date().toISOString(),
         fileName,
@@ -358,7 +424,8 @@ export async function POST(request: NextRequest) {
           validPrices: alcoholSKUs.filter(sku => parseFloat(sku.price) > 0).length,
           withSalesData: alcoholSKUs.filter(sku => parseFloat(sku.weekly_sales) > 0).length,
           withInventoryData: alcoholSKUs.filter(sku => parseInt(sku.inventory_level) > 0).length,
-          seasonalStrategiesGenerated: seasonalRecommendations.length
+          seasonalStrategiesGenerated: seasonalRecommendations.length,
+          realCompetitorPrices: competitorData.length
         }
       }
     })
@@ -373,63 +440,5 @@ export async function POST(request: NextRequest) {
       processingTimeMs: processingTime,
       timestamp: new Date().toISOString()
     }, { status: 500 })
-  }
-}
-
-// Helper functions
-function generateCategoryBreakdown(recommendations: any[]) {
-  return recommendations.reduce((acc, rec) => {
-    const category = rec.category || 'unknown'
-    if (!acc[category]) {
-      acc[category] = {
-        count: 0,
-        totalRevenuePotential: 0,
-        slowMovers: 0,
-        fastMovers: 0
-      }
-    }
-    
-    acc[category].count++
-    acc[category].totalRevenuePotential += rec.revenueImpact || 0
-    
-    if (rec.weeklySales < 1) {
-      acc[category].slowMovers++
-    } else if (rec.weeklySales > 5) {
-      acc[category].fastMovers++
-    }
-    
-    return acc
-  }, {} as Record<string, any>)
-}
-
-function generateSeasonalInsights(seasonalRecommendations: any[]) {
-  if (seasonalRecommendations.length === 0) {
-    return {
-      seasonal_context: 'No seasonal strategies generated',
-      top_opportunities: [],
-      urgency_breakdown: { critical: 0, high: 0, medium: 0, low: 0 }
-    }
-  }
-
-  const urgencyBreakdown = seasonalRecommendations.reduce((acc, rec) => {
-    acc[rec.urgency] = (acc[rec.urgency] || 0) + 1
-    return acc
-  }, {} as Record<string, number>)
-
-  const topOpportunities = seasonalRecommendations
-    .sort((a, b) => b.estimated_revenue_impact - a.estimated_revenue_impact)
-    .slice(0, 3)
-    .map(rec => ({
-      title: rec.title,
-      revenue_potential: rec.estimated_revenue_impact,
-      urgency: rec.urgency,
-      timeline: rec.implementation_timeline
-    }))
-
-  return {
-    seasonal_context: `Generated ${seasonalRecommendations.length} contextual strategies`,
-    top_opportunities: topOpportunities,
-    urgency_breakdown: urgencyBreakdown,
-    total_seasonal_revenue_potential: seasonalRecommendations.reduce((sum, r) => sum + r.estimated_revenue_impact, 0)
   }
 }

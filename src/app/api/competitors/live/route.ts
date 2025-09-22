@@ -1,8 +1,9 @@
 // src/app/api/competitors/live/route.ts
-// CORRECTED VERSION - Fixed TypeScript errors
+// FIXED VERSION - Real database saving + increased retailer limit
 
 import { NextRequest, NextResponse } from 'next/server'
 import { RealCompetitiveScraping } from '@/lib/real-competitive-scraping'
+import { PostgreSQLService } from '@/lib/database-postgres'
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now()
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
     const product = searchParams.get('product')
     const category = searchParams.get('category') || 'spirits'
     const userId = searchParams.get('userId')
-    const maxRetailers = parseInt(searchParams.get('maxRetailers') || '5')
+    const maxRetailers = parseInt(searchParams.get('maxRetailers') || '10') // INCREASED FROM 5 TO 10
     
     if (!product) {
       return NextResponse.json({ 
@@ -28,11 +29,12 @@ export async function GET(request: NextRequest) {
     try {
       console.log(`🕷️ Scraping live competitor data from ${maxRetailers} retailers...`)
       
-      // Get real competitor prices
+      // Get real competitor prices with INCREASED retailer limit
       const scrapedPrices = await RealCompetitiveScraping.scrapeRealCompetitorPrices(
         product,
         category,
-        maxRetailers
+        maxRetailers, // Now 10 instead of 5
+        true // Include AI insights
       )
       
       console.log(`✅ Scraped ${scrapedPrices.length} live competitor prices`)
@@ -52,11 +54,49 @@ export async function GET(request: NextRequest) {
         url: price.url || '#',
         relevance_score: price.relevance_score || 0,
         last_updated: price.last_updated || new Date(),
-        source: price.source || 'live_scraping'
+        source: price.source || 'live_scraping',
+        promotional: price.promotional || false,
+        promotion_details: price.promotion_details
       }))
       
-      // Skip database saving for demo to avoid foreign key constraints
-      console.log(`💾 Skipping database save for demo - found ${competitors.length} live prices`)
+      // FIXED: Actually save to database instead of skipping
+      if (competitors.length > 0 && userId && userId !== 'demo-user') {
+        try {
+          console.log(`💾 SAVING ${competitors.length} competitor prices to database...`)
+          
+          // Transform competitors to the format expected by saveCompetitorPricesWithProduct
+          const competitorPricesForDB = competitors.map(comp => ({
+            sku: product.replace(/\s+/g, '-').toUpperCase(),
+            competitor: comp.retailer,
+            competitor_price: comp.price,
+            our_price: 0, // Will be set when user has inventory data
+            price_difference: 0,
+            price_difference_percentage: 0,
+            availability: comp.availability,
+            product_name: comp.product_name,
+            relevance_score: comp.relevance_score,
+            url: comp.url,
+            promotional: comp.promotional,
+            promotion_details: comp.promotion_details,
+            last_updated: new Date(),
+            source: 'serp_api'
+          }))
+          
+          await PostgreSQLService.saveCompetitorPricesWithProduct(
+            userIdentifier, 
+            product, 
+            competitorPricesForDB
+          )
+          
+          console.log(`✅ SUCCESSFULLY SAVED ${competitors.length} real competitor prices to database`)
+          
+        } catch (saveError) {
+          console.error('❌ Failed to save competitor prices:', saveError)
+          // Don't fail the entire request, just log the error
+        }
+      } else {
+        console.log(`💾 Skipping database save: ${competitors.length} competitors, userId: ${userId}`)
+      }
       
     } catch (scrapingError) {
       console.error('❌ Live scraping failed:', scrapingError)
@@ -72,9 +112,9 @@ export async function GET(request: NextRequest) {
         competitors: [],
         message: `No competitor prices found for "${product}". Try a different product name or check if it's available in UK retailers.`,
         suggestions: [
-          'Try "Hendricks Gin" or "Macallan 12"',
-          'Check spelling and try again',
-          'Product may not be widely available'
+          'Try "Grey Goose Vodka" or "Macallan 12 Whisky"',
+          'Include brand name and product type',
+          'Check spelling and try variations'
         ],
         metadata: {
           processing_time_ms: Date.now() - startTime,
@@ -107,12 +147,14 @@ export async function GET(request: NextRequest) {
           Math.round((competitors.filter(c => c.availability).length / competitors.length) * 100) : 0
       },
       insights: marketInsights,
+      database_saved: competitors.length > 0 && userId && userId !== 'demo-user',
       metadata: {
         processing_time_ms: processingTime,
         from_cache: false,
         scraped_at: new Date().toISOString(),
         retailers_searched: maxRetailers,
-        scraping_method: 'real_scraping_with_serpapi'
+        scraping_method: 'serp_api_with_ai_insights',
+        retailers_found: competitors.length
       }
     })
 
@@ -124,6 +166,7 @@ export async function GET(request: NextRequest) {
       product: request.nextUrl.searchParams.get('product'),
       suggestions: [
         'Check your internet connection',
+        'Verify SERP API key is configured',
         'Try a different product name',
         'Contact support if the issue persists'
       ]
@@ -139,9 +182,11 @@ function generateMarketInsights(competitors: any[], product: string, category: s
       recommendations: [
         `No competitor data found for "${product}"`,
         'Try searching for a more common product name',
+        'Include brand name in search (e.g., "Grey Goose Vodka")',
         'Check if the product is available in UK retailers'
       ],
       opportunities: [],
+      threats: [],
       data_quality: 'insufficient'
     }
   }
@@ -152,6 +197,7 @@ function generateMarketInsights(competitors: any[], product: string, category: s
       market_position: 'no_pricing_data',
       recommendations: ['Competitor products found but no valid prices extracted'],
       opportunities: [],
+      threats: [],
       data_quality: 'poor'
     }
   }
@@ -162,44 +208,75 @@ function generateMarketInsights(competitors: any[], product: string, category: s
   const priceRange = maxPrice - minPrice
   const priceVariance = (priceRange / avgPrice) * 100
   
+  const promotionalCount = competitors.filter(c => c.promotional).length
+  const availabilityRate = (competitors.filter(c => c.availability).length / competitors.length) * 100
+  
   const insights = {
     market_position: competitors.length >= 3 ? 'competitive_data_available' : 'limited_data',
-    price_volatility: priceVariance > 15 ? 'high' : 'low',
+    price_volatility: priceVariance > 15 ? 'high' : priceVariance > 8 ? 'medium' : 'low',
     recommendations: [] as string[],
     opportunities: [] as string[],
     threats: [] as string[],
-    data_quality: competitors.length >= 3 ? 'good' : 'limited'
+    data_quality: competitors.length >= 3 ? 'good' : competitors.length >= 1 ? 'fair' : 'poor'
   }
   
   // Generate actionable recommendations based on real data
-  insights.recommendations.push(`Average market price: £${avgPrice.toFixed(2)} across ${competitors.length} retailers`)
+  insights.recommendations.push(`Market average: £${avgPrice.toFixed(2)} across ${competitors.length} retailers`)
   insights.recommendations.push(`Price range: £${minPrice.toFixed(2)} - £${maxPrice.toFixed(2)} (${priceVariance.toFixed(1)}% variance)`)
   
   if (priceVariance > 20) {
-    insights.opportunities.push(`High price variance (${priceVariance.toFixed(1)}%) suggests pricing flexibility`)
-    insights.recommendations.push('Consider positioning in the middle-to-upper price range')
+    insights.opportunities.push(`High price variance (${priceVariance.toFixed(1)}%) indicates pricing flexibility`)
+    insights.recommendations.push('Consider positioning in middle-to-upper price range for optimal margins')
+  } else if (priceVariance < 5) {
+    insights.recommendations.push('Very stable pricing - compete on value proposition rather than price')
+    insights.threats.push('Limited pricing flexibility due to market standardization')
   } else {
-    insights.recommendations.push('Stable pricing environment - focus on value differentiation')
+    insights.recommendations.push('Moderate price variance allows for strategic positioning')
+  }
+  
+  // Promotional activity analysis
+  if (promotionalCount > 0) {
+    insights.threats.push(`${promotionalCount} retailers running promotions - competitive pressure detected`)
+    insights.recommendations.push('Monitor promotional activity and consider defensive pricing')
+  } else {
+    insights.opportunities.push('No active promotions detected - pricing opportunity available')
+  }
+  
+  // Availability analysis
+  if (availabilityRate < 80) {
+    insights.opportunities.push(`${(100-availabilityRate).toFixed(0)}% of retailers out of stock - supply opportunity`)
   }
   
   // Retailer insights
   const retailers = competitors.map(c => c.retailer)
   const uniqueRetailers = [...new Set(retailers)]
   
-  if (uniqueRetailers.length >= 3) {
-    insights.recommendations.push(`Product available across ${uniqueRetailers.length} major retailers`)
-    insights.opportunities.push('Strong distribution network')
+  if (uniqueRetailers.length >= 5) {
+    insights.opportunities.push(`Strong market presence across ${uniqueRetailers.length} major retailers`)
+    insights.recommendations.push('Product has established distribution network')
+  } else if (uniqueRetailers.length >= 3) {
+    insights.recommendations.push(`Available at ${uniqueRetailers.length} retailers - moderate market presence`)
+    insights.opportunities.push('Potential for expanded distribution')
   } else {
-    insights.opportunities.push('Limited retail presence - potential for expansion')
+    insights.opportunities.push('Limited retail presence - significant expansion opportunity')
+    insights.recommendations.push('Focus on securing additional retail partnerships')
   }
   
-  // Best price opportunities
+  // Price positioning insights
   const lowestPriceRetailer = competitors.find(c => c.price === minPrice)
   const highestPriceRetailer = competitors.find(c => c.price === maxPrice)
   
-  if (lowestPriceRetailer && highestPriceRetailer) {
-    insights.recommendations.push(`Lowest: ${lowestPriceRetailer.retailer} (£${minPrice.toFixed(2)})`)
-    insights.recommendations.push(`Highest: ${highestPriceRetailer.retailer} (£${maxPrice.toFixed(2)})`)
+  if (lowestPriceRetailer && highestPriceRetailer && lowestPriceRetailer.retailer !== highestPriceRetailer.retailer) {
+    insights.recommendations.push(`Price leader: ${lowestPriceRetailer.retailer} (£${minPrice.toFixed(2)})`)
+    insights.recommendations.push(`Premium positioning: ${highestPriceRetailer.retailer} (£${maxPrice.toFixed(2)})`)
+    
+    // Strategic recommendations based on retailer positioning
+    if (uniqueRetailers.includes('Waitrose') || uniqueRetailers.includes('Majestic Wine')) {
+      insights.opportunities.push('Premium retailers present - opportunity for premium positioning')
+    }
+    if (uniqueRetailers.includes('ASDA') || uniqueRetailers.includes('Tesco')) {
+      insights.opportunities.push('Value retailers present - opportunity for volume-based pricing')
+    }
   }
   
   return insights
