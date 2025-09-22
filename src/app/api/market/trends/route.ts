@@ -4,9 +4,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CompetitorIntelligenceService } from '@/lib/competitor-intelligence'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const runtime = 'nodejs'
+
+
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = request.nextUrl
     const category = searchParams.get('category') || 'all'
     const timePeriod = (searchParams.get('period') || 'weekly') as 'daily' | 'weekly' | 'monthly'
     

@@ -5,6 +5,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { RealCompetitiveScraping } from '@/lib/real-competitive-scraping'
 import { PostgreSQLService } from '@/lib/database-postgres'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const runtime = 'nodejs'
+
+
 interface UserSKU {
   sku_code: string
   product_name?: string
@@ -19,7 +24,7 @@ export async function GET(request: NextRequest) {
   const startTime = Date.now()
   
   try {
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = request.nextUrl
     const product = searchParams.get('product')
     const category = searchParams.get('category') || 'spirits'
     const userId = searchParams.get('userId')

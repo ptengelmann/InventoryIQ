@@ -1,7 +1,7 @@
-// src/app/dashboard/page.tsx - COMPLETE FIXED VERSION
+// src/app/dashboard/page.tsx - COMPLETE FIXED VERSION WITH SUSPENSE
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { Suspense, useState, useEffect, useMemo } from 'react'
 import { Navbar } from '@/components/ui/navbar'
 import { AuthModal } from '@/components/ui/auth-modals'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -152,7 +152,8 @@ function safeParseArray(data: any): any[] {
   return []
 }
 
-export default function DashboardPage() {
+// Component that uses useSearchParams - wrapped in Suspense
+function DashboardContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, login, isLoading } = useUser()
@@ -426,7 +427,6 @@ export default function DashboardPage() {
             <div>Selected Analysis: {selectedAnalysisId || 'none'}</div>
             <div>Seasonal Strategies Count: {seasonalStrategies.length}</div>
             <div>Analysis Details: {analysisDetails ? 'Loaded' : 'Not loaded'}</div>
-            <div>ANTHROPIC_API_KEY: {process.env.ANTHROPIC_API_KEY ? 'Present' : 'Missing'}</div>
             {analysisDetails && (
               <details className="mt-2">
                 <summary className="cursor-pointer text-yellow-400">Analysis Data Structure</summary>
@@ -1180,5 +1180,28 @@ export default function DashboardPage() {
         )}
       </main>
     </div>
+  )
+}
+
+// Loading component for Suspense fallback
+function DashboardLoading() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Main export with Suspense wrapper - THIS IS THE KEY FIX
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardLoading />}>
+      <DashboardContent />
+    </Suspense>
   )
 }

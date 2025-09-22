@@ -1,19 +1,22 @@
-// =================================================================
-// 3. UPDATE: /src/app/api/history/route.ts - Add user filtering
-// =================================================================
-
+// src/app/api/history/route.ts - COMPLETE FIXED VERSION
 import { NextRequest, NextResponse } from 'next/server'
 import { DatabaseService } from '@/lib/models'
 
+// ✅ CRITICAL: Add these exports to fix dynamic server usage error
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const runtime = 'nodejs'
+
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
+    // ✅ FIXED: Use request.nextUrl instead of request.url
+    const { searchParams } = request.nextUrl
     const limit = parseInt(searchParams.get('limit') || '10')
-    const userId = searchParams.get('userId')  // ✅ Get user ID from query
-    const userEmail = searchParams.get('userEmail')  // ✅ Get user email
+    const userId = searchParams.get('userId')
+    const userEmail = searchParams.get('userEmail')
     
     if (!userId || !userEmail) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'User authentication required',
         hasHistory: false,
         stats: null,
@@ -58,7 +61,7 @@ export async function GET(request: NextRequest) {
     
   } catch (error) {
     console.error('History API error:', error)
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: 'Failed to fetch history',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })

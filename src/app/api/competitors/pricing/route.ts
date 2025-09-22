@@ -5,6 +5,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PostgreSQLService } from '@/lib/database-postgres'
 import Anthropic from '@anthropic-ai/sdk'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const runtime = 'nodejs'
+
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
 })
@@ -35,7 +39,7 @@ interface PriceComparisonResult {
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = request.nextUrl
     const userId = searchParams.get('userId')
     const userEmail = searchParams.get('userEmail')
     const days = parseInt(searchParams.get('days') || '7')
