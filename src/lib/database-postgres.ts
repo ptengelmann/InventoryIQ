@@ -1047,97 +1047,102 @@ export class PostgreSQLService {
   /**
    * CRITICAL FIX: Save seasonal strategies with proper user ID handling
    */
-  static async saveSeasonalStrategies(
-    userIdOrEmail: string, 
-    analysisId: string, 
-    seasonalStrategies: any[]
-  ): Promise<void> {
-    try {
-      console.log(`🎯 SAVING ${seasonalStrategies.length} seasonal strategies`)
-      console.log(`Input: userIdOrEmail=${userIdOrEmail}, analysisId=${analysisId}`)
+static async saveSeasonalStrategies(
+  userIdOrEmail: string, 
+  analysisId: string, 
+  seasonalStrategies: any[]
+): Promise<void> {
+  try {
+    console.log(`🎯 SAVING ${seasonalStrategies.length} seasonal strategies`)
+    console.log(`Input: userIdOrEmail=${userIdOrEmail}, analysisId=${analysisId}`)
+    
+    if (!seasonalStrategies || seasonalStrategies.length === 0) {
+      console.log('⚠️ No strategies to save')
+      return
+    }
+    
+    // Get the actual user ID - IMPROVED LOGIC
+    let userId: string
+    
+    if (userIdOrEmail.includes('@')) {
+      const user = await prisma.user.findUnique({
+        where: { email: userIdOrEmail }
+      })
       
-      if (!seasonalStrategies || seasonalStrategies.length === 0) {
-        console.log('⚠️ No strategies to save')
-        return
+      if (!user) {
+        console.error(`❌ User not found for email: ${userIdOrEmail}`)
+        throw new Error(`User not found: ${userIdOrEmail}`)
       }
       
-      // Get the actual user ID
-      let userId: string
-      
-      // Check if it's an email or already a user ID
-      if (userIdOrEmail.includes('@')) {
-        // It's an email, get the user
-        const user = await prisma.user.findUnique({
-          where: { email: userIdOrEmail }
+      userId = user.id
+      console.log(`✅ Found user ID ${userId} for email ${userIdOrEmail}`)
+    } else {
+      userId = userIdOrEmail
+      console.log(`Using provided user ID: ${userId}`)
+    }
+    
+    // Save each strategy with CORRECTED FIELD MAPPING
+    let savedCount = 0
+    let failedCount = 0
+    
+    for (const strategy of seasonalStrategies) {
+      try {
+        console.log(`💾 Saving strategy: ${strategy.title || 'Unnamed'}`)
+        
+        // FIXED: Proper field mapping to match Prisma schema
+        const saved = await prisma.seasonalStrategy.create({
+          data: {
+            analysis_id: analysisId,
+            user_id: userId,
+            type: strategy.type || 'seasonal_promotion',
+            title: strategy.title || 'Seasonal Strategy',
+            description: strategy.description || '',
+            reasoning: strategy.reasoning || '',
+            seasonal_trigger: strategy.seasonal_trigger || '',
+            estimated_revenue_impact: parseFloat(strategy.estimated_revenue_impact) || 0,
+            urgency: strategy.urgency || 'medium',
+            implementation_timeline: strategy.implementation_timeline || '',
+            marketing_angle: strategy.marketing_angle || '',
+            target_customer: strategy.target_customer || '',
+            // FIXED: Ensure arrays are properly handled
+            products_involved: Array.isArray(strategy.products_involved) ? strategy.products_involved : [],
+            execution_steps: Array.isArray(strategy.execution_steps) ? strategy.execution_steps : [],
+            success_metrics: Array.isArray(strategy.success_metrics) ? strategy.success_metrics : [],
+            risk_factors: Array.isArray(strategy.risk_factors) ? strategy.risk_factors : [],
+            // FIXED: Handle pricing_strategy object
+            pricing_strategy: typeof strategy.pricing_strategy === 'object' ? strategy.pricing_strategy : {},
+            ai_confidence: parseFloat(strategy.confidence_score) || 0.8,
+            generated_by: 'enhanced_seasonal_engine',
+            status: 'pending'
+          }
         })
         
-        if (!user) {
-          console.error(`❌ User not found for email: ${userIdOrEmail}`)
-          throw new Error(`User not found: ${userIdOrEmail}`)
-        }
+        console.log(`✅ Saved strategy with ID: ${saved.id}`)
+        savedCount++
         
-        userId = user.id
-        console.log(`✅ Found user ID ${userId} for email ${userIdOrEmail}`)
-      } else {
-        // It's already a user ID
-        userId = userIdOrEmail
-        console.log(`Using provided user ID: ${userId}`)
-      }
-      
-      // Save each strategy
-      let savedCount = 0
-      let failedCount = 0
-      
-      for (const strategy of seasonalStrategies) {
-        try {
-          console.log(`💾 Saving strategy: ${strategy.title || 'Unnamed'}`)
-          
-          const saved = await prisma.seasonalStrategy.create({
-            data: {
-              analysis_id: analysisId,
-              user_id: userId,
-              type: strategy.type || 'seasonal_promotion',
-              title: strategy.title || 'Seasonal Strategy',
-              description: strategy.description || '',
-              reasoning: strategy.reasoning || '',
-              seasonal_trigger: strategy.seasonal_trigger || '',
-              estimated_revenue_impact: parseFloat(strategy.estimated_revenue_impact) || 0,
-              urgency: strategy.urgency || 'medium',
-              implementation_timeline: strategy.implementation_timeline || '',
-              marketing_angle: strategy.marketing_angle || '',
-              target_customer: strategy.target_customer || '',
-              products_involved: Array.isArray(strategy.products_involved) ? strategy.products_involved : [],
-              execution_steps: Array.isArray(strategy.execution_steps) ? strategy.execution_steps : [],
-              success_metrics: Array.isArray(strategy.success_metrics) ? strategy.success_metrics : [],
-              risk_factors: Array.isArray(strategy.risk_factors) ? strategy.risk_factors : [],
-              pricing_strategy: strategy.pricing_strategy || {},
-              ai_confidence: 0.85,
-              generated_by: 'enhanced_seasonal_engine',
-              status: 'pending'
-            }
-          })
-          
-          console.log(`✅ Saved strategy with ID: ${saved.id}`)
-          savedCount++
-          
-        } catch (strategyError) {
-          console.error(`❌ Failed to save strategy "${strategy.title}":`, strategyError)
-          failedCount++
+      } catch (strategyError) {
+        console.error(`❌ Failed to save strategy "${strategy.title}":`, strategyError)
+        // LOG THE SPECIFIC ERROR
+        if (strategyError instanceof Error) {
+          console.error(`Error details: ${strategyError.message}`)
         }
+        failedCount++
       }
-      
-      console.log(`📊 SEASONAL SAVE COMPLETE: ${savedCount} saved, ${failedCount} failed`)
-      
-      if (savedCount === 0) {
-        throw new Error(`All ${failedCount} strategies failed to save`)
-      }
-      
-    } catch (error) {
-      console.error('❌ CRITICAL ERROR in saveSeasonalStrategies:', error)
-      // Don't throw - log but continue
-      console.error('Full error details:', error)
     }
+    
+    console.log(`📊 SEASONAL SAVE COMPLETE: ${savedCount} saved, ${failedCount} failed`)
+    
+    // IMPROVED: Only throw if ALL strategies failed
+    if (savedCount === 0 && failedCount > 0) {
+      throw new Error(`All ${failedCount} seasonal strategies failed to save`)
+    }
+    
+  } catch (error) {
+    console.error('❌ CRITICAL ERROR in saveSeasonalStrategies:', error)
+    // IMPROVED: Re-throw with context so calling code knows it failed
+    throw new Error(`Failed to save seasonal strategies: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
+}
 
   /**
    * Get seasonal strategies - handles both email and user ID

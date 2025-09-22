@@ -109,7 +109,7 @@ export default function BrandFocusedLanding() {
 
   const testimonials = [
     {
-      quote: "RolloAI gives us real-time visibility into how our premium gin performs across every major UK retailer. The competitive intelligence is invaluable for our pricing strategy.",
+      quote: "OscarAI gives us real-time visibility into how our premium gin performs across every major UK retailer. The competitive intelligence is invaluable for our pricing strategy.",
       author: "Sarah Mitchell",
       title: "Brand Manager, Premium Spirits Co.",
       avatar: "SM"
@@ -133,45 +133,45 @@ export default function BrandFocusedLanding() {
       icon: MonitorSpeaker,
       title: "Real-Time Retail Monitoring",
       description: "Track your brand performance across Majestic Wine, Waitrose, Tesco, ASDA and 20+ UK alcohol retailers in real-time",
-      color: "from-purple-500 to-pink-500",
-      bgColor: "bg-purple-100",
-      textColor: "text-purple-600"
+      color: "from-gray-500 to-black",
+      bgColor: "bg-gray-50",
+      textColor: "text-gray-900"
     },
     {
       icon: Target,
       title: "Competitive Intelligence",
       description: "Monitor competitor pricing strategies and identify opportunities vs Diageo, Pernod Ricard, and other major brands",
-      color: "from-blue-500 to-cyan-500", 
-      bgColor: "bg-blue-100",
-      textColor: "text-blue-600"
+      color: "from-gray-600 to-gray-900", 
+      bgColor: "bg-gray-50",
+      textColor: "text-gray-900"
     },
     {
       icon: Brain,
       title: "AI Brand Insights",
       description: "Get actionable recommendations on pricing, distribution gaps, and market share opportunities powered by alcohol industry AI",
-      color: "from-orange-500 to-red-500",
-      bgColor: "bg-orange-100", 
-      textColor: "text-orange-600"
+      color: "from-gray-700 to-black",
+      bgColor: "bg-gray-50", 
+      textColor: "text-gray-900"
     }
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-purple-50 relative overflow-hidden">
-      {/* Animated background elements */}
+    <div className="min-h-screen bg-white relative overflow-hidden">
+      {/* Minimalist geometric background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div 
-          className="absolute w-96 h-96 bg-gradient-to-r from-amber-400/20 to-purple-400/20 rounded-full blur-3xl"
+          className="absolute w-96 h-96 bg-gray-100/40 rounded-full blur-3xl"
           style={{
-            transform: `translate(${mousePosition.x * 0.02}px, ${mousePosition.y * 0.02}px)`,
-            left: '10%',
-            top: '20%'
+            transform: `translate(${mousePosition.x * 0.01}px, ${mousePosition.y * 0.01}px)`,
+            left: '5%',
+            top: '15%'
           }}
         />
         <div 
-          className="absolute w-64 h-64 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full blur-3xl"
+          className="absolute w-64 h-64 bg-gray-200/30 rounded-full blur-3xl"
           style={{
-            transform: `translate(${mousePosition.x * -0.01}px, ${mousePosition.y * -0.01}px)`,
-            right: '10%',
+            transform: `translate(${mousePosition.x * -0.008}px, ${mousePosition.y * -0.008}px)`,
+            right: '8%',
             top: '60%'
           }}
         />
@@ -192,25 +192,25 @@ export default function BrandFocusedLanding() {
       <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
         <div className="text-center space-y-8">
           {/* Badge */}
-          <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-amber-100 to-purple-100 px-4 py-2 rounded-full border border-amber-200">
-            <Building className="h-4 w-4 text-amber-600" />
-            <span className="text-sm font-medium text-amber-800">Enterprise AI for Alcohol Brands</span>
-            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+          <div className="inline-flex items-center space-x-2 bg-gray-100 px-4 py-2 rounded-full border border-gray-200">
+            <Building className="h-4 w-4 text-gray-700" />
+            <span className="text-sm font-medium text-gray-800">Enterprise AI for Alcohol Brands</span>
+            <div className="w-2 h-2 bg-black rounded-full animate-pulse"></div>
           </div>
 
           <div className="space-y-6">
             <h1 className="text-5xl md:text-7xl font-bold text-gray-900 leading-tight">
               Monitor Your Brand
-              <span className="block bg-gradient-to-r from-amber-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <span className="block text-black">
                 Across UK Retail
               </span>
             </h1>
             <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
               Real-time competitive intelligence for alcohol brands. Track your performance across 
               <br />
-              <span className="text-amber-600 font-semibold">Majestic Wine, Waitrose, Tesco, ASDA</span> and 20+ UK retailers.
+              <span className="text-black font-semibold">Majestic Wine, Waitrose, Tesco, ASDA</span> and 20+ UK retailers.
               <br />
-              <span className="text-purple-600 font-semibold">AI-powered insights to optimize pricing, distribution, and market share</span>
+              <span className="text-gray-900 font-semibold">AI-powered insights to optimize pricing, distribution, and market share</span>
             </p>
           </div>
 
@@ -218,17 +218,16 @@ export default function BrandFocusedLanding() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button 
               onClick={() => !user ? handleSignup() : router.push('/analytics')}
-              className="group relative inline-flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-amber-600 to-purple-600 text-white font-semibold text-lg rounded-xl hover:from-amber-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:scale-105"
+              className="group relative inline-flex items-center space-x-3 px-8 py-4 bg-black text-white font-semibold text-lg rounded-xl hover:bg-gray-800 transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:scale-105"
             >
               <Briefcase className="h-5 w-5" />
               <span>Book Enterprise Demo</span>
               <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              <div className="absolute inset-0 bg-gradient-to-r from-amber-600 to-purple-600 rounded-xl blur opacity-0 group-hover:opacity-50 transition-opacity duration-300 -z-10"></div>
             </button>
             
             <button 
               onClick={() => router.push('/competitive')}
-              className="group inline-flex items-center space-x-3 px-8 py-4 bg-white text-gray-700 font-semibold text-lg rounded-xl border-2 border-gray-300 hover:border-amber-400 hover:text-amber-600 transition-all duration-300 shadow-sm hover:shadow-lg"
+              className="group inline-flex items-center space-x-3 px-8 py-4 bg-white text-gray-700 font-semibold text-lg rounded-xl border-2 border-gray-300 hover:border-black hover:text-black transition-all duration-300 shadow-sm hover:shadow-lg"
             >
               <Play className="h-5 w-5" />
               <span>Watch Live Demo</span>
@@ -238,19 +237,19 @@ export default function BrandFocusedLanding() {
           {/* Trust Indicators */}
           <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-500">
             <div className="flex items-center space-x-2">
-              <Shield className="h-5 w-5 text-green-500" />
+              <Shield className="h-5 w-5 text-gray-700" />
               <span>Enterprise-grade security</span>
             </div>
             <div className="flex items-center space-x-2">
-              <Globe className="h-5 w-5 text-green-500" />
+              <Globe className="h-5 w-5 text-gray-700" />
               <span>Real-time UK retail data</span>
             </div>
             <div className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
+              <CheckCircle className="h-5 w-5 text-gray-700" />
               <span>Trusted by leading brands</span>
             </div>
             <div className="flex items-center space-x-2">
-              <Brain className="h-5 w-5 text-green-500" />
+              <Brain className="h-5 w-5 text-gray-700" />
               <span>AI-powered insights</span>
             </div>
           </div>
@@ -259,56 +258,56 @@ export default function BrandFocusedLanding() {
         {/* Interactive Demo Preview - Brand Dashboard */}
         <div className="mt-16 relative">
           <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden transform hover:scale-105 transition-transform duration-500">
-            <div className="bg-gradient-to-r from-amber-50 to-purple-50 px-6 py-4 border-b border-gray-200">
+            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-red-400 rounded-full"></div>
                   <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
                   <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                  <span className="ml-4 text-sm text-gray-600 font-medium">RolloAI Enterprise - AU Vodka Brand Intelligence</span>
+                  <span className="ml-4 text-sm text-gray-600 font-medium">OscarAI Enterprise - AU Vodka Brand Intelligence</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-xs text-green-600 font-medium">Live Data</span>
+                  <div className="w-2 h-2 bg-black rounded-full animate-pulse"></div>
+                  <span className="text-xs text-gray-900 font-medium">Live Data</span>
                 </div>
               </div>
             </div>
             <div className="p-8">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
+                <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-gray-900 font-semibold">Retail Coverage</h3>
-                    <Store className="h-6 w-6 text-blue-600" />
+                    <Store className="h-6 w-6 text-gray-700" />
                   </div>
-                  <div className="text-3xl font-bold text-blue-600 mb-2">{animatedNumber}%</div>
-                  <div className="text-blue-700 text-sm">UK Premium Off-Trade</div>
-                  <div className="mt-3 flex items-center space-x-2 text-xs text-blue-600">
+                  <div className="text-3xl font-bold text-black mb-2">{animatedNumber}%</div>
+                  <div className="text-gray-700 text-sm">UK Premium Off-Trade</div>
+                  <div className="mt-3 flex items-center space-x-2 text-xs text-gray-600">
                     <CheckCircle className="h-4 w-4" />
                     <span>Majestic, Waitrose, Tesco, ASDA</span>
                   </div>
                 </div>
                 
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl border border-purple-200">
+                <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-gray-900 font-semibold">Price Position</h3>
-                    <Target className="h-6 w-6 text-purple-600" />
+                    <Target className="h-6 w-6 text-gray-700" />
                   </div>
-                  <div className="text-3xl font-bold text-purple-600 mb-2">+12%</div>
-                  <div className="text-purple-700 text-sm">vs Category Average</div>
-                  <div className="mt-3 flex items-center space-x-2 text-xs text-purple-600">
+                  <div className="text-3xl font-bold text-black mb-2">+12%</div>
+                  <div className="text-gray-700 text-sm">vs Category Average</div>
+                  <div className="mt-3 flex items-center space-x-2 text-xs text-gray-600">
                     <TrendingUp className="h-4 w-4" />
                     <span>Premium positioning</span>
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl border border-green-200">
+                <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-gray-900 font-semibold">Market Share</h3>
-                    <PieChart className="h-6 w-6 text-green-600" />
+                    <PieChart className="h-6 w-6 text-gray-700" />
                   </div>
-                  <div className="text-3xl font-bold text-green-600 mb-2">15.2%</div>
-                  <div className="text-green-700 text-sm">Premium Vodka Segment</div>
-                  <div className="mt-3 flex items-center space-x-2 text-xs text-green-600">
+                  <div className="text-3xl font-bold text-black mb-2">15.2%</div>
+                  <div className="text-gray-700 text-sm">Premium Vodka Segment</div>
+                  <div className="mt-3 flex items-center space-x-2 text-xs text-gray-600">
                     <ArrowRight className="h-4 w-4" />
                     <span>+2.1% vs last quarter</span>
                   </div>
@@ -318,9 +317,9 @@ export default function BrandFocusedLanding() {
               {/* Live Competitive Intelligence Feed */}
               <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                 <h4 className="text-gray-900 font-semibold mb-4 flex items-center space-x-2">
-                  <Activity className="h-5 w-5 text-amber-600" />
+                  <Activity className="h-5 w-5 text-gray-700" />
                   <span>Live Competitive Intelligence</span>
-                  <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">Real-time</span>
+                  <span className="px-2 py-1 bg-black text-white text-xs rounded-full font-medium">Real-time</span>
                 </h4>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
@@ -330,12 +329,12 @@ export default function BrandFocusedLanding() {
                     </div>
                     <span className="text-red-600 text-sm font-medium">2 min ago</span>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg border border-gray-200">
                     <div className="flex items-center space-x-3">
-                      <TrendingUp className="h-5 w-5 text-blue-600" />
+                      <TrendingUp className="h-5 w-5 text-gray-700" />
                       <span className="text-gray-900">AU Vodka now #2 in premium vodka at Tesco</span>
                     </div>
-                    <span className="text-blue-600 text-sm font-medium">1 hour ago</span>
+                    <span className="text-gray-600 text-sm font-medium">1 hour ago</span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
                     <div className="flex items-center space-x-3">
@@ -355,7 +354,7 @@ export default function BrandFocusedLanding() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            How Leading Alcohol Brands Use RolloAI
+            How Leading Alcohol Brands Use OscarAI
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             From upload to insights in three simple steps - built for brand teams
@@ -367,10 +366,10 @@ export default function BrandFocusedLanding() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-amber-600 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white font-bold">
                   1
                 </div>
-                <span className="text-lg font-semibold text-amber-600">Connect Your Brand Data</span>
+                <span className="text-lg font-semibold text-gray-900">Connect Your Brand Data</span>
               </div>
               <h3 className="text-3xl font-bold text-gray-900">
                 Upload Your Product Portfolio
@@ -389,7 +388,7 @@ export default function BrandFocusedLanding() {
                   "Secure, enterprise-grade data handling"
                 ].map((feature, idx) => (
                   <div key={idx} className="flex items-center space-x-3">
-                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                    <CheckCircle className="h-5 w-5 text-gray-700 flex-shrink-0" />
                     <span className="text-gray-700">{feature}</span>
                   </div>
                 ))}
@@ -397,9 +396,9 @@ export default function BrandFocusedLanding() {
             </div>
             
             <div className="relative">
-              <div className="bg-gradient-to-br from-amber-50 to-purple-50 rounded-2xl p-8 border-2 border-dashed border-amber-300 hover:border-amber-500 transition-all duration-300 transform hover:scale-105">
+              <div className="bg-gray-50 rounded-2xl p-8 border-2 border-dashed border-gray-300 hover:border-gray-400 transition-all duration-300 transform hover:scale-105">
                 <div className="text-center space-y-4">
-                  <div className="w-16 h-16 bg-gradient-to-r from-amber-600 to-purple-600 rounded-xl flex items-center justify-center mx-auto">
+                  <div className="w-16 h-16 bg-black rounded-xl flex items-center justify-center mx-auto">
                     <Upload className="h-8 w-8 text-white" />
                   </div>
                   <div className="space-y-2">
@@ -409,7 +408,7 @@ export default function BrandFocusedLanding() {
                   
                   {/* Brand-focused file preview */}
                   <div className="bg-white rounded-lg p-4 text-left font-mono text-sm shadow-sm">
-                    <div className="text-amber-600 mb-2">brand_portfolio.csv</div>
+                    <div className="text-gray-900 mb-2">brand_portfolio.csv</div>
                     <div className="space-y-1 text-gray-700">
                       <div>SKU,Brand,Category,RRP,Channels</div>
                       <div className="animate-pulse">AU-VODKA-70CL,AU Vodka,Spirits,£32.99,Majestic</div>
@@ -421,10 +420,10 @@ export default function BrandFocusedLanding() {
               </div>
               
               {/* Floating brand elements */}
-              <div className="absolute -top-4 -right-4 w-12 h-12 bg-gradient-to-r from-amber-400 to-purple-400 rounded-full flex items-center justify-center animate-bounce">
+              <div className="absolute -top-4 -right-4 w-12 h-12 bg-gray-900 rounded-full flex items-center justify-center animate-bounce">
                 <Building className="h-6 w-6 text-white" />
               </div>
-              <div className="absolute -bottom-4 -left-4 w-8 h-8 bg-green-400 rounded-full flex items-center justify-center animate-pulse">
+              <div className="absolute -bottom-4 -left-4 w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center animate-pulse">
                 <CheckCircle className="h-4 w-4 text-white" />
               </div>
             </div>
@@ -434,10 +433,10 @@ export default function BrandFocusedLanding() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="lg:order-2 space-y-6">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center text-white font-bold">
+                <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white font-bold">
                   2
                 </div>
-                <span className="text-lg font-semibold text-purple-600">Real-Time Market Monitoring</span>
+                <span className="text-lg font-semibold text-gray-900">Real-Time Market Monitoring</span>
               </div>
               <h3 className="text-3xl font-bold text-gray-900">
                 Track Your Brand Across UK Retail
@@ -455,7 +454,7 @@ export default function BrandFocusedLanding() {
                   { label: "Competitor Tracking", value: "Automatic" }
                 ].map((stat, idx) => (
                   <div key={idx} className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-                    <div className="text-lg font-bold text-purple-600">{stat.value}</div>
+                    <div className="text-lg font-bold text-black">{stat.value}</div>
                     <div className="text-sm text-gray-600">{stat.label}</div>
                   </div>
                 ))}
@@ -468,21 +467,21 @@ export default function BrandFocusedLanding() {
                   <div className="w-3 h-3 bg-red-400 rounded-full"></div>
                   <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
                   <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                  <span className="text-gray-400 ml-2">RolloAI Market Intelligence</span>
+                  <span className="text-gray-400 ml-2">OscarAI Market Intelligence</span>
                 </div>
                 
                 <div className="space-y-2">
                   <div className="animate-pulse">
-                    <span className="text-amber-400">{'>'}</span> Scanning AU Vodka across retailers...
+                    <span className="text-white">{'>'}</span> Scanning AU Vodka across retailers...
                   </div>
                   <div className="animate-pulse" style={{animationDelay: '1s'}}>
-                    <span className="text-amber-400">{'>'}</span> Monitoring competitor pricing...
+                    <span className="text-white">{'>'}</span> Monitoring competitor pricing...
                   </div>
                   <div className="animate-pulse" style={{animationDelay: '2s'}}>
-                    <span className="text-amber-400">{'>'}</span> Tracking stock levels...
+                    <span className="text-white">{'>'}</span> Tracking stock levels...
                   </div>
                   <div className="animate-pulse" style={{animationDelay: '3s'}}>
-                    <span className="text-amber-400">{'>'}</span> Analyzing market position...
+                    <span className="text-white">{'>'}</span> Analyzing market position...
                   </div>
                   <div className="animate-pulse" style={{animationDelay: '4s'}}>
                     <span className="text-green-400">✓</span> Market scan complete!
@@ -491,13 +490,13 @@ export default function BrandFocusedLanding() {
                     <span className="text-yellow-400">!</span> 2 competitor price changes detected
                   </div>
                   <div className="animate-pulse" style={{animationDelay: '6s'}}>
-                    <span className="text-blue-400">📊</span> Market share: +2.1% vs last quarter
+                    <span className="text-gray-300">📊</span> Market share: +2.1% vs last quarter
                   </div>
                 </div>
               </div>
               
               {/* Market monitoring visualization */}
-              <div className="absolute -top-6 -right-6 w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center animate-pulse">
+              <div className="absolute -top-6 -right-6 w-12 h-12 bg-black rounded-full flex items-center justify-center animate-pulse">
                 <MonitorSpeaker className="h-6 w-6 text-white" />
               </div>
             </div>
@@ -507,10 +506,10 @@ export default function BrandFocusedLanding() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-green-600 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+                <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white font-bold">
                   3
                 </div>
-                <span className="text-lg font-semibold text-green-600">Strategic Brand Insights</span>
+                <span className="text-lg font-semibold text-gray-900">Strategic Brand Insights</span>
               </div>
               <h3 className="text-3xl font-bold text-gray-900">
                 Optimize Your Market Strategy
@@ -539,8 +538,8 @@ export default function BrandFocusedLanding() {
                   }
                 ].map((insight, idx) => (
                   <div key={idx} className="flex items-start space-x-4 p-4 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <insight.icon className="h-5 w-5 text-green-600" />
+                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <insight.icon className="h-5 w-5 text-gray-700" />
                     </div>
                     <div>
                       <h4 className="font-semibold text-gray-900">{insight.title}</h4>
@@ -553,7 +552,7 @@ export default function BrandFocusedLanding() {
             
             <div className="relative">
               <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden transform hover:scale-105 transition-transform">
-                <div className="bg-gradient-to-r from-green-500 to-blue-500 p-4 text-white">
+                <div className="bg-black p-4 text-white">
                   <div className="flex items-center justify-between">
                     <h4 className="font-semibold">AU Vodka Brand Intelligence Report</h4>
                     <div className="flex items-center space-x-1">
@@ -565,12 +564,12 @@ export default function BrandFocusedLanding() {
                 
                 <div className="p-6 space-y-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">15.2%</div>
+                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                      <div className="text-2xl font-bold text-black">15.2%</div>
                       <div className="text-sm text-gray-600">Market Share</div>
                     </div>
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">+12%</div>
+                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                      <div className="text-2xl font-bold text-black">+12%</div>
                       <div className="text-sm text-gray-600">Price Premium</div>
                     </div>
                   </div>
@@ -578,7 +577,7 @@ export default function BrandFocusedLanding() {
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Competitive Position</span>
-                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm">#2 in Premium</span>
+                      <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-sm">#2 in Premium</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Growth Opportunity</span>
@@ -586,18 +585,18 @@ export default function BrandFocusedLanding() {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Next Action</span>
-                      <span className="text-blue-600 font-medium">Expand to Morrisons</span>
+                      <span className="text-black font-medium">Expand to Morrisons</span>
                     </div>
                   </div>
                   
-                  <button className="w-full bg-gradient-to-r from-green-600 to-blue-600 text-white py-3 rounded-lg font-medium hover:from-green-700 hover:to-blue-700 transition-all">
+                  <button className="w-full bg-black text-white py-3 rounded-lg font-medium hover:bg-gray-800 transition-all">
                     View Strategic Recommendations
                   </button>
                 </div>
               </div>
               
               {/* Success indicators */}
-              <div className="absolute -top-4 -left-4 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center animate-bounce">
+              <div className="absolute -top-4 -left-4 w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center animate-bounce">
                 <Brain className="h-5 w-5 text-white" />
               </div>
             </div>
@@ -610,11 +609,11 @@ export default function BrandFocusedLanding() {
             Ready to optimize your brand performance?
           </h3>
           <p className="text-lg text-gray-600 mb-8">
-            Join leading alcohol brands using RolloAI for competitive intelligence
+            Join leading alcohol brands using OscarAI for competitive intelligence
           </p>
           <button 
             onClick={() => !user ? handleSignup() : router.push('/analytics')}
-            className="group inline-flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-amber-600 to-purple-600 text-white font-semibold text-lg rounded-xl hover:from-amber-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:scale-105"
+            className="group inline-flex items-center space-x-3 px-8 py-4 bg-black text-white font-semibold text-lg rounded-xl hover:bg-gray-800 transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:scale-105"
           >
             <Briefcase className="h-5 w-5" />
             <span>Book Enterprise Demo</span>
@@ -629,7 +628,7 @@ export default function BrandFocusedLanding() {
           <h2 className="text-3xl font-bold text-gray-900 mb-4">Trusted by Leading Alcohol Brands</h2>
           <div className="flex items-center justify-center space-x-1 mb-8">
             {[...Array(5)].map((_, i) => (
-              <Star key={i} className="h-6 w-6 text-yellow-400 fill-current" />
+              <Star key={i} className="h-6 w-6 text-gray-400 fill-current" />
             ))}
             <span className="ml-2 text-gray-600 font-medium">Feedback from brand teams</span>
           </div>
@@ -637,7 +636,7 @@ export default function BrandFocusedLanding() {
 
         <div className="relative bg-white rounded-2xl shadow-xl border border-gray-200 p-8 max-w-4xl mx-auto">
           <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-            <div className="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center">
+            <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
               <span className="text-white text-lg">"</span>
             </div>
           </div>
@@ -648,7 +647,7 @@ export default function BrandFocusedLanding() {
             </p>
             
             <div className="flex items-center justify-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-amber-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
+              <div className="w-12 h-12 bg-gray-900 rounded-full flex items-center justify-center text-white font-semibold">
                 {testimonials[currentTestimonial].avatar}
               </div>
               <div className="text-left">
@@ -665,7 +664,7 @@ export default function BrandFocusedLanding() {
                 key={index}
                 onClick={() => setCurrentTestimonial(index)}
                 className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                  index === currentTestimonial ? 'bg-amber-600 scale-125' : 'bg-gray-300'
+                  index === currentTestimonial ? 'bg-black scale-125' : 'bg-gray-300'
                 }`}
               />
             ))}
@@ -674,14 +673,13 @@ export default function BrandFocusedLanding() {
       </section>
 
       {/* Current Capabilities */}
-      <section className="bg-gradient-to-r from-amber-600 via-purple-600 to-pink-600 py-20 relative overflow-hidden">
-        <div className="absolute inset-0 bg-black/10"></div>
+      <section className="bg-black py-20 relative overflow-hidden">
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-white mb-4">
               Enterprise Features Available Now
             </h2>
-            <p className="text-amber-100 text-xl max-w-2xl mx-auto">
+            <p className="text-gray-300 text-xl max-w-2xl mx-auto">
               Full platform capabilities ready for your brand team
             </p>
           </div>
@@ -714,14 +712,14 @@ export default function BrandFocusedLanding() {
               }
             ].map((integration, index) => (
               <div key={index} className="text-center group">
-                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                   <integration.icon className="h-8 w-8 text-white" />
                 </div>
                 <div className="text-xl font-bold text-white mb-2">{integration.title}</div>
-                <div className="text-amber-100 text-sm mb-2">{integration.desc}</div>
+                <div className="text-gray-300 text-sm mb-2">{integration.desc}</div>
                 <div className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                  integration.feature === 'Live Now' ? 'bg-green-500/20 text-green-200' :
-                  'bg-white/20 text-white'
+                  integration.feature === 'Live Now' ? 'bg-white/20 text-gray-200' :
+                  'bg-white/10 text-white'
                 }`}>
                   {integration.feature}
                 </div>
@@ -739,7 +737,7 @@ export default function BrandFocusedLanding() {
             ].map((stat, index) => (
               <div key={index}>
                 <div className="text-3xl font-bold text-white mb-2">{stat.number}</div>
-                <div className="text-amber-100 text-sm">{stat.label}</div>
+                <div className="text-gray-300 text-sm">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -762,7 +760,7 @@ export default function BrandFocusedLanding() {
             {
               category: "Premium Spirits",
               icon: "🥃",
-              color: "from-amber-400 to-brown-500",
+              color: "from-gray-400 to-gray-700",
               benefits: [
                 "Track vs Grey Goose, Belvedere pricing",
                 "Monitor premium positioning strategy", 
@@ -773,7 +771,7 @@ export default function BrandFocusedLanding() {
             {
               category: "Wine Brands",
               icon: "🍷",
-              color: "from-purple-400 to-red-500",
+              color: "from-gray-500 to-gray-800",
               benefits: [
                 "Vintage and varietal performance tracking",
                 "Price positioning vs category leaders",
@@ -784,7 +782,7 @@ export default function BrandFocusedLanding() {
             {
               category: "Craft Beer",
               icon: "🍺",
-              color: "from-yellow-400 to-orange-500",
+              color: "from-gray-400 to-gray-700",
               benefits: [
                 "Independent vs major brewery pricing",
                 "Seasonal release performance tracking",
@@ -795,7 +793,7 @@ export default function BrandFocusedLanding() {
             {
               category: "RTD Brands",
               icon: "🥤",
-              color: "from-blue-400 to-teal-500",
+              color: "from-gray-500 to-gray-900",
               benefits: [
                 "Fast-moving category trend tracking",
                 "Flavor innovation competitive analysis",
@@ -812,7 +810,7 @@ export default function BrandFocusedLanding() {
               <ul className="space-y-3">
                 {category.benefits.map((benefit, idx) => (
                   <li key={idx} className="flex items-center space-x-3">
-                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                    <CheckCircle className="h-5 w-5 text-gray-700 flex-shrink-0" />
                     <span className="text-gray-600 text-sm">{benefit}</span>
                   </li>
                 ))}
@@ -824,22 +822,22 @@ export default function BrandFocusedLanding() {
 
       {/* Final Enterprise CTA Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="relative bg-gradient-to-br from-amber-50 to-purple-50 rounded-3xl p-12 text-center overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-r from-amber-400/20 to-purple-400/20 rounded-full blur-2xl"></div>
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full blur-2xl"></div>
+        <div className="relative bg-gray-50 rounded-3xl p-12 text-center overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gray-200/40 rounded-full blur-2xl"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-gray-300/40 rounded-full blur-2xl"></div>
           
           <div className="relative z-10">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
               Transform Your Brand Intelligence Today
             </h2>
             <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-              Join leading alcohol brands using RolloAI for competitive intelligence, pricing optimization, and market share growth.
+              Join leading alcohol brands using OscarAI for competitive intelligence, pricing optimization, and market share growth.
             </p>
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
               <button 
                 onClick={() => !user ? handleSignup() : router.push('/analytics')}
-                className="group relative inline-flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-amber-600 to-purple-600 text-white font-semibold text-lg rounded-xl hover:from-amber-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:scale-105"
+                className="group relative inline-flex items-center space-x-3 px-8 py-4 bg-black text-white font-semibold text-lg rounded-xl hover:bg-gray-800 transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:scale-105"
               >
                 <Briefcase className="h-5 w-5" />
                 <span>Book Enterprise Demo</span>
@@ -856,15 +854,15 @@ export default function BrandFocusedLanding() {
 
             <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-gray-500">
               <div className="flex items-center space-x-2">
-                <Shield className="h-5 w-5 text-green-500" />
+                <Shield className="h-5 w-5 text-gray-700" />
                 <span>Enterprise security & compliance</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Users className="h-5 w-5 text-blue-500" />
+                <Users className="h-5 w-5 text-gray-700" />
                 <span>Dedicated customer success</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Zap className="h-5 w-5 text-purple-500" />
+                <Zap className="h-5 w-5 text-gray-700" />
                 <span>Custom integrations available</span>
               </div>
             </div>
@@ -879,11 +877,11 @@ export default function BrandFocusedLanding() {
             {/* Company Info */}
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center space-x-3 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-r from-amber-600 to-purple-600 rounded-lg flex items-center justify-center">
-                  <Wine className="h-5 w-5 text-white" />
+                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+                  <Wine className="h-5 w-5 text-black" />
                 </div>
-                <span className="text-xl font-bold">RolloAI</span>
-                <span className="px-3 py-1 bg-amber-600/20 text-amber-200 text-sm font-medium rounded-full">
+                <span className="text-xl font-bold">OscarAI</span>
+                <span className="px-3 py-1 bg-white/10 text-gray-300 text-sm font-medium rounded-full">
                   Enterprise
                 </span>
               </div>
@@ -940,7 +938,7 @@ export default function BrandFocusedLanding() {
             </div>
             <div className="text-center mt-6">
               <p className="text-gray-500 text-sm">
-                © 2025 RolloAI. All rights reserved. Enterprise competitive intelligence for the alcohol industry.
+                © 2025 OscarAI. All rights reserved. Enterprise competitive intelligence for the alcohol industry.
               </p>
             </div>
           </div>
@@ -948,4 +946,4 @@ export default function BrandFocusedLanding() {
       </footer>
     </div>
   )
-} 
+}
