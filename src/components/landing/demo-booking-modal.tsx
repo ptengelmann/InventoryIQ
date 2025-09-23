@@ -35,41 +35,41 @@ export const DemoBookingModal: React.FC<DemoBookingModalProps> = ({ isOpen, onCl
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={onClose} />
-      <div className="relative bg-white/10 backdrop-blur-2xl border-2 border-white/20 rounded-3xl p-12 max-w-3xl w-full shadow-2xl">
+      <div className="relative bg-black border border-white/20 rounded-lg p-8 max-w-lg w-full">
         <button 
           onClick={onClose}
-          className="absolute top-8 right-8 text-white/70 hover:text-white transition-colors"
+          className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors"
         >
-          <X className="h-8 w-8" />
+          <X className="h-5 w-5" />
         </button>
         
-        <div className="mb-12">
-          <h3 className="text-4xl md:text-5xl font-bold text-white mb-6">Book Enterprise Demo</h3>
-          <p className="text-xl text-white/80 font-medium">
-            Get a personalized demonstration of OscarAI's competitive intelligence platform
+        <div className="mb-8">
+          <h3 className="text-2xl font-light text-white mb-2">Book demo</h3>
+          <p className="text-sm text-white/60">
+            Get a personalized demonstration of pricing monitoring
           </p>
         </div>
 
-        <div onSubmit={handleSubmit} className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-white font-bold text-lg mb-3">Name *</label>
+              <label className="block text-white/70 text-xs mb-2">Name</label>
               <input
                 type="text"
                 required
-                className="w-full px-6 py-4 bg-white/10 border-2 border-white/20 rounded-2xl text-white placeholder-white/50 focus:border-white/50 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all text-lg font-medium backdrop-blur-sm"
-                placeholder="Your full name"
+                className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white placeholder-white/40 focus:border-white/40 focus:outline-none text-sm transition-colors"
+                placeholder="Your name"
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
               />
             </div>
             
             <div>
-              <label className="block text-white font-bold text-lg mb-3">Email *</label>
+              <label className="block text-white/70 text-xs mb-2">Email</label>
               <input
                 type="email"
                 required
-                className="w-full px-6 py-4 bg-white/10 border-2 border-white/20 rounded-2xl text-white placeholder-white/50 focus:border-white/50 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all text-lg font-medium backdrop-blur-sm"
+                className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white placeholder-white/40 focus:border-white/40 focus:outline-none text-sm transition-colors"
                 placeholder="work@company.com"
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
@@ -77,37 +77,35 @@ export const DemoBookingModal: React.FC<DemoBookingModalProps> = ({ isOpen, onCl
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <label className="block text-white font-bold text-lg mb-3">Company *</label>
-              <input
-                type="text"
-                required
-                className="w-full px-6 py-4 bg-white/10 border-2 border-white/20 rounded-2xl text-white placeholder-white/50 focus:border-white/50 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all text-lg font-medium backdrop-blur-sm"
-                placeholder="Your company name"
-                value={formData.company}
-                onChange={(e) => setFormData({...formData, company: e.target.value})}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-white font-bold text-lg mb-3">Phone</label>
-              <input
-                type="tel"
-                className="w-full px-6 py-4 bg-white/10 border-2 border-white/20 rounded-2xl text-white placeholder-white/50 focus:border-white/50 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all text-lg font-medium backdrop-blur-sm"
-                placeholder="+44 7xxx xxx xxx"
-                value={formData.phone}
-                onChange={(e) => setFormData({...formData, phone: e.target.value})}
-              />
-            </div>
+          <div>
+            <label className="block text-white/70 text-xs mb-2">Company</label>
+            <input
+              type="text"
+              required
+              className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white placeholder-white/40 focus:border-white/40 focus:outline-none text-sm transition-colors"
+              placeholder="Your company"
+              value={formData.company}
+              onChange={(e) => setFormData({...formData, company: e.target.value})}
+            />
+          </div>
+          
+          <div>
+            <label className="block text-white/70 text-xs mb-2">Phone (optional)</label>
+            <input
+              type="tel"
+              className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white placeholder-white/40 focus:border-white/40 focus:outline-none text-sm transition-colors"
+              placeholder="+44 7xxx xxx xxx"
+              value={formData.phone}
+              onChange={(e) => setFormData({...formData, phone: e.target.value})}
+            />
           </div>
 
           <div>
-            <label className="block text-white font-bold text-lg mb-3">Message</label>
+            <label className="block text-white/70 text-xs mb-2">Message (optional)</label>
             <textarea
-              rows={5}
-              className="w-full px-6 py-4 bg-white/10 border-2 border-white/20 rounded-2xl text-white placeholder-white/50 focus:border-white/50 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all resize-none text-lg font-medium backdrop-blur-sm"
-              placeholder="Tell us about your brand and specific needs..."
+              rows={3}
+              className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white placeholder-white/40 focus:border-white/40 focus:outline-none text-sm resize-none transition-colors"
+              placeholder="Tell us about your needs..."
               value={formData.message}
               onChange={(e) => setFormData({...formData, message: e.target.value})}
             />
@@ -115,14 +113,14 @@ export const DemoBookingModal: React.FC<DemoBookingModalProps> = ({ isOpen, onCl
 
           <button
             onClick={handleSubmit}
-            className="w-full bg-white text-black font-bold py-6 rounded-2xl hover:bg-gray-100 transition-all duration-300 shadow-2xl hover:shadow-2xl transform hover:scale-[1.02] text-xl"
+            className="w-full bg-white text-black font-medium py-2 rounded hover:bg-gray-100 transition-colors text-sm"
           >
-            Schedule Demo Call
+            Schedule demo
           </button>
         </div>
 
-        <p className="text-white/50 text-center mt-8 text-lg">
-          We'll contact you within 24 hours to schedule your personalized demo
+        <p className="text-white/40 text-center mt-4 text-xs">
+          We'll contact you within 24 hours
         </p>
       </div>
     </div>

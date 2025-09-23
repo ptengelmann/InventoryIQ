@@ -160,20 +160,8 @@ export default function ProductionReadyLanding() {
 
 useEffect(() => {
   const handleScroll = () => setScrollY(window.scrollY)
-  const handleMouseMove = (e: MouseEvent) => {
-    setMousePosition({ 
-      x: (e.clientX - window.innerWidth / 2) / 50,
-      y: (e.clientY - window.innerHeight / 2) / 50
-    })
-  }
-  
   window.addEventListener('scroll', handleScroll)
-  window.addEventListener('mousemove', handleMouseMove)
-  
-  return () => {
-    window.removeEventListener('scroll', handleScroll)
-    window.removeEventListener('mousemove', handleMouseMove)
-  }
+  return () => window.removeEventListener('scroll', handleScroll)
 }, [])
 
   const handleLogin = () => {
@@ -212,41 +200,21 @@ useEffect(() => {
 
   return (
     <div className="min-h-screen bg-black text-white relative overflow-hidden">
-      {/* Enhanced background with better contrast for video/photo */}
+      {/* Clean black background with minimal grid overlay */}
       <div className="fixed inset-0 pointer-events-none">
-        {/* Primary gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-900 to-black" />
+        {/* Pure black background */}
+        <div className="absolute inset-0 bg-black" />
         
-        {/* High-contrast geometric elements for visual interest */}
+        {/* Subtle grid overlay for depth - no geometric circles */}
         <div className="absolute inset-0">
-          {/* Main accent shapes - positioned for visual balance in video/photo */}
           <div 
-            className="absolute w-[800px] h-[800px] border-2 border-white/10 rounded-full"
-            style={{
-              top: '-200px',
-              right: '-200px',
-              transform: `translate(${mousePosition.x * 10}px, ${mousePosition.y * 10}px) rotate(${scrollY * 0.02}deg)`
-            }}
-          />
-          <div 
-            className="absolute w-[600px] h-[600px] border border-white/5 rounded-full"
-            style={{
-              bottom: '-100px',
-              left: '-100px',
-              transform: `translate(${mousePosition.x * -8}px, ${mousePosition.y * 8}px) rotate(${scrollY * -0.01}deg)`
-            }}
-          />
-          
-          {/* Grid overlay for depth */}
-          <div 
-            className="absolute inset-0 opacity-[0.03]"
+            className="absolute inset-0 opacity-[0.02]"
             style={{
               backgroundImage: `
                 linear-gradient(white 1px, transparent 1px),
                 linear-gradient(90deg, white 1px, transparent 1px)
               `,
-              backgroundSize: '100px 100px',
-              transform: `translate(${mousePosition.x * 5}px, ${mousePosition.y * 5}px)`
+              backgroundSize: '100px 100px'
             }}
           />
         </div>
