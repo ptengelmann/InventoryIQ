@@ -12,6 +12,9 @@ model User {
   email               String             @unique
   name                String?
   company             String?
+  password            String?            // Add this if not exists
+  reset_token         String?            // New field for password reset
+  reset_token_expires DateTime?          // New field for token expiration
   created_at          DateTime           @default(now())
   updated_at          DateTime           @updatedAt
   default_currency    String             @default("GBP")

@@ -10,9 +10,10 @@ import { useUser } from '@/contexts/UserContext'
 interface NavbarProps {
   onLogin: () => void
   onSignup: () => void
+  onForgotPassword?: () => void  // Optional - only used on landing page
 }
 
-export function Navbar({ onLogin, onSignup }: NavbarProps) {
+export function Navbar({ onLogin, onSignup, onForgotPassword }: NavbarProps) {
   const { user, logout } = useUser()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)

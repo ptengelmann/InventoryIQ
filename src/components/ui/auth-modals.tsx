@@ -7,21 +7,24 @@ import { cn } from '@/lib/utils'
 interface AuthModalProps {
   isOpen: boolean
   onClose: () => void
-  mode: 'login' | 'signup'
+  mode: 'login' | 'signup' | 'reset'
   onSwitchMode: () => void
+  onSwitchToReset?: () => void
   onSuccess: (user: { name: string; email: string }) => void
 }
 
-export function AuthModal({ isOpen, onClose, mode, onSwitchMode, onSuccess }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, mode, onSwitchMode, onSwitchToReset, onSuccess }: AuthModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    resetEmail: ''
   })
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [resetMessage, setResetMessage] = useState('')
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -29,15 +32,57 @@ export function AuthModal({ isOpen, onClose, mode, onSwitchMode, onSuccess }: Au
       [e.target.name]: e.target.value
     }))
     setError('')
+    setResetMessage('')
+  }
+
+  const handleForgotPassword = () => {
+    // Copy current email to resetEmail field
+    setFormData(prev => ({ ...prev, resetEmail: prev.email }))
+    // Switch to reset mode using the new handler
+    if (onSwitchToReset) {
+      onSwitchToReset()
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
+    setResetMessage('')
 
     try {
-      // Basic validation
+      if (mode === 'reset') {
+        // Handle password reset request
+        if (!formData.resetEmail.trim()) {
+          throw new Error('Email is required')
+        }
+
+        if (!formData.resetEmail.includes('@')) {
+          throw new Error('Please enter a valid email')
+        }
+
+        const response = await fetch('/api/auth/reset-password', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'request',
+            email: formData.resetEmail
+          })
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to send reset email')
+        }
+
+        setResetMessage('A password reset link has been sent to your email address.')
+        return
+      }
+
+      // Original login/signup logic
       if (mode === 'signup') {
         if (!formData.name.trim()) {
           throw new Error('Name is required')
@@ -83,7 +128,8 @@ export function AuthModal({ isOpen, onClose, mode, onSwitchMode, onSuccess }: Au
         name: '',
         email: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        resetEmail: ''
       })
 
     } catch (err) {
@@ -106,10 +152,15 @@ export function AuthModal({ isOpen, onClose, mode, onSwitchMode, onSuccess }: Au
             </div>
             <div>
               <h2 className="text-xl font-light text-white">
-                {mode === 'login' ? 'Welcome back' : 'Get started'}
+                {mode === 'login' ? 'Welcome back' : mode === 'signup' ? 'Get started' : 'Reset password'}
               </h2>
               <p className="text-sm text-white/60">
-                {mode === 'login' ? 'Sign in to your account' : 'Create your OscarAI account'}
+                {mode === 'login' 
+                  ? 'Sign in to your account' 
+                  : mode === 'signup' 
+                  ? 'Create your OscarAI account'
+                  : 'Enter your email to receive a reset link'
+                }
               </p>
             </div>
           </div>
@@ -129,99 +180,133 @@ export function AuthModal({ isOpen, onClose, mode, onSwitchMode, onSuccess }: Au
             </div>
           )}
 
-          {mode === 'signup' && (
+          {resetMessage && (
+            <div className="bg-green-500/10 border border-green-500/30 rounded p-3">
+              <p className="text-green-400 text-sm">{resetMessage}</p>
+            </div>
+          )}
+
+          {mode === 'reset' ? (
+            // Password Reset Form
             <div>
               <label className="block text-sm text-white/70 mb-2">
-                Full Name
+                Email Address
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/40" />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/40" />
                 <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
+                  type="email"
+                  name="resetEmail"
+                  value={formData.resetEmail}
                   onChange={handleInputChange}
                   className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/20 rounded text-white placeholder-white/40 focus:border-white/40 focus:outline-none transition-colors"
-                  placeholder="Enter your full name"
+                  placeholder="Enter your email address"
                   required
                 />
               </div>
             </div>
-          )}
+          ) : (
+            // Login/Signup Forms
+            <>
+              {mode === 'signup' && (
+                <div>
+                  <label className="block text-sm text-white/70 mb-2">
+                    Full Name
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/40" />
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/20 rounded text-white placeholder-white/40 focus:border-white/40 focus:outline-none transition-colors"
+                      placeholder="Enter your full name"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
 
-          <div>
-            <label className="block text-sm text-white/70 mb-2">
-              Email Address
-            </label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/40" />
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/20 rounded text-white placeholder-white/40 focus:border-white/40 focus:outline-none transition-colors"
-                placeholder="Enter your email"
-                required
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm text-white/70 mb-2">
-              Password
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/40" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                className="w-full pl-10 pr-12 py-3 bg-white/5 border border-white/20 rounded text-white placeholder-white/40 focus:border-white/40 focus:outline-none transition-colors"
-                placeholder="Enter your password"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/40 hover:text-white/60"
-              >
-                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </button>
-            </div>
-          </div>
-
-          {mode === 'signup' && (
-            <div>
-              <label className="block text-sm text-white/70 mb-2">
-                Confirm Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/40" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/20 rounded text-white placeholder-white/40 focus:border-white/40 focus:outline-none transition-colors"
-                  placeholder="Confirm your password"
-                  required
-                />
+              <div>
+                <label className="block text-sm text-white/70 mb-2">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/40" />
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/20 rounded text-white placeholder-white/40 focus:border-white/40 focus:outline-none transition-colors"
+                    placeholder="Enter your email"
+                    required
+                  />
+                </div>
               </div>
-            </div>
-          )}
 
-          {mode === 'login' && (
-            <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center">
-                <input type="checkbox" className="rounded border-white/20 bg-white/5 text-white focus:ring-white/20" />
-                <span className="ml-2 text-white/60">Remember me</span>
-              </label>
-              <a href="#" className="text-white/80 hover:text-white">
-                Forgot password?
-              </a>
-            </div>
+              <div>
+                <label className="block text-sm text-white/70 mb-2">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/40" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    className="w-full pl-10 pr-12 py-3 bg-white/5 border border-white/20 rounded text-white placeholder-white/40 focus:border-white/40 focus:outline-none transition-colors"
+                    placeholder="Enter your password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/40 hover:text-white/60"
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+              </div>
+
+              {mode === 'signup' && (
+                <div>
+                  <label className="block text-sm text-white/70 mb-2">
+                    Confirm Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/40" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/20 rounded text-white placeholder-white/40 focus:border-white/40 focus:outline-none transition-colors"
+                      placeholder="Confirm your password"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+
+              {mode === 'login' && (
+                <div className="flex items-center justify-between text-sm">
+                  <label className="flex items-center">
+                    <input type="checkbox" className="rounded border-white/20 bg-white/5 text-white focus:ring-white/20" />
+                    <span className="ml-2 text-white/60">Remember me</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="text-white/80 hover:text-white"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
+            </>
           )}
 
           <button
@@ -237,23 +322,38 @@ export function AuthModal({ isOpen, onClose, mode, onSwitchMode, onSuccess }: Au
             {isLoading ? (
               <div className="flex items-center justify-center space-x-2">
                 <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
-                <span>{mode === 'login' ? 'Signing In...' : 'Creating Account...'}</span>
+                <span>
+                  {mode === 'login' ? 'Signing In...' : mode === 'signup' ? 'Creating Account...' : 'Sending Reset Link...'}
+                </span>
               </div>
             ) : (
-              mode === 'login' ? 'Sign In' : 'Create Account'
+              mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Send Reset Link'
             )}
           </button>
 
-          <div className="text-center text-sm text-white/60">
-            {mode === 'login' ? "Don't have an account? " : "Already have an account? "}
-            <button
-              type="button"
-              onClick={onSwitchMode}
-              className="text-white/80 hover:text-white"
-            >
-              {mode === 'login' ? 'Sign up' : 'Sign in'}
-            </button>
-          </div>
+          {mode !== 'reset' ? (
+            <div className="text-center text-sm text-white/60">
+              {mode === 'login' ? "Don't have an account? " : "Already have an account? "}
+              <button
+                type="button"
+                onClick={onSwitchMode}
+                className="text-white/80 hover:text-white"
+              >
+                {mode === 'login' ? 'Sign up' : 'Sign in'}
+              </button>
+            </div>
+          ) : (
+            <div className="text-center text-sm text-white/60">
+              Remember your password?{' '}
+              <button
+                type="button"
+                onClick={onSwitchMode}
+                className="text-white/80 hover:text-white"
+              >
+                Back to sign in
+              </button>
+            </div>
+          )}
 
           {mode === 'signup' && (
             <p className="text-xs text-white/50 text-center">

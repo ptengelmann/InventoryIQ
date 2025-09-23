@@ -132,7 +132,7 @@ export default function ProductionReadyLanding() {
   const router = useRouter()
   const { user, login } = useUser()
   const [authModalOpen, setAuthModalOpen] = useState(false)
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login')
+  const [authMode, setAuthMode] = useState<'login' | 'signup' | 'reset'>('login')
   const [demoModalOpen, setDemoModalOpen] = useState(false)
   
   // Interactive states
@@ -158,11 +158,11 @@ export default function ProductionReadyLanding() {
     return () => clearInterval(interval)
   }, [])
 
-useEffect(() => {
-  const handleScroll = () => setScrollY(window.scrollY)
-  window.addEventListener('scroll', handleScroll)
-  return () => window.removeEventListener('scroll', handleScroll)
-}, [])
+  useEffect(() => {
+    const handleScroll = () => setScrollY(window.scrollY)
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const handleLogin = () => {
     setAuthMode('login')
@@ -171,6 +171,11 @@ useEffect(() => {
 
   const handleSignup = () => {
     setAuthMode('signup')
+    setAuthModalOpen(true)
+  }
+
+  const handleForgotPassword = () => {
+    setAuthMode('reset')
     setAuthModalOpen(true)
   }
 
@@ -186,8 +191,20 @@ useEffect(() => {
     router.push('/dashboard')
   }
 
+  // Updated switchAuthMode to handle reset mode properly
   const switchAuthMode = () => {
-    setAuthMode(authMode === 'login' ? 'signup' : 'login')
+    if (authMode === 'login') {
+      setAuthMode('signup')
+    } else if (authMode === 'signup') {
+      setAuthMode('login')
+    } else if (authMode === 'reset') {
+      setAuthMode('login')
+    }
+  }
+
+  // New function specifically for forgot password
+  const handleSwitchToReset = () => {
+    setAuthMode('reset')
   }
 
   const handleBookDemo = () => {
@@ -222,7 +239,11 @@ useEffect(() => {
 
       {/* Header */}
       <div className="relative z-50">
-        <Navbar onLogin={handleLogin} onSignup={handleSignup} />
+        <Navbar 
+          onLogin={handleLogin} 
+          onSignup={handleSignup}
+          onForgotPassword={handleForgotPassword}
+        />
       </div>
 
       <AuthModal
@@ -230,6 +251,7 @@ useEffect(() => {
         onClose={() => setAuthModalOpen(false)}
         mode={authMode}
         onSwitchMode={switchAuthMode}
+        onSwitchToReset={handleSwitchToReset}
         onSuccess={handleAuthSuccess}
       />
 
