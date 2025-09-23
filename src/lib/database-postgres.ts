@@ -108,6 +108,9 @@ export interface SmartAlert {
 }
 
 export class PostgreSQLService {
+  static getPriceRecommendations(userIdentifier: string, analysisId: string) {
+    throw new Error('Method not implemented.')
+  }
   
   static async getAnalysisById(analysisId: string, userIdentifier: string): Promise<any> {
     try {
@@ -1206,6 +1209,148 @@ export class PostgreSQLService {
     } catch (error) {
       console.error('❌ Error getting seasonal strategies:', error)
       return []
+    }
+  }
+
+  // Real-time monitoring configuration methods
+  static async saveMonitoringConfig(userId: string, config: {
+    products: string[]
+    intervalMinutes: number
+    maxRetailersPerCheck: number
+    startedAt: Date
+    isActive: boolean
+  }): Promise<void> {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { email: userId }
+      })
+      
+      if (!user) {
+        throw new Error(`User not found: ${userId}`)
+      }
+      
+      await prisma.systemMetric.create({
+        data: {
+          metric_name: 'monitoring_config',
+          metric_value: config.intervalMinutes,
+          metric_unit: 'minutes',
+          user_id: user.id,
+          collected_at: config.startedAt,
+          retention_days: 30
+        }
+      })
+      
+      console.log(`Saved monitoring config for user ${userId}: ${config.products.length} products, ${config.intervalMinutes}min intervals`)
+      
+    } catch (error) {
+      console.error('Error saving monitoring config:', error)
+      throw error
+    }
+  }
+
+  static async getMonitoringConfig(userId: string): Promise<any> {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { email: userId }
+      })
+      
+      if (!user) return null
+      
+      const config = await prisma.systemMetric.findFirst({
+        where: {
+          metric_name: 'monitoring_config',
+          user_id: user.id
+        },
+        orderBy: { collected_at: 'desc' }
+      })
+      
+      if (!config) return null
+      
+      return {
+        userId,
+        products: [],
+        intervalMinutes: config.metric_value,
+        maxRetailersPerCheck: 3,
+        startedAt: config.collected_at,
+        isActive: true
+      }
+      
+    } catch (error) {
+      console.error('Error getting monitoring config:', error)
+      return null
+    }
+  }
+
+  static async updateMonitoringConfig(userId: string, updates: { isActive: boolean }): Promise<void> {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { email: userId }
+      })
+      
+      if (!user) {
+        throw new Error(`User not found: ${userId}`)
+      }
+      
+      await prisma.systemMetric.create({
+        data: {
+          metric_name: 'monitoring_status',
+          metric_value: updates.isActive ? 1 : 0,
+          metric_unit: 'boolean',
+          user_id: user.id,
+          retention_days: 30
+        }
+      })
+      
+      console.log(`Updated monitoring config for user ${userId}: isActive=${updates.isActive}`)
+      
+    } catch (error) {
+      console.error('Error updating monitoring config:', error)
+      throw error
+    }
+  }
+
+  static async saveCompetitorPricesWithProduct(
+    userId: string, 
+    product: string, 
+    competitorPrices: any[]
+  ): Promise<void> {
+    if (competitorPrices.length === 0) return
+    
+    try {
+      const user = await prisma.user.findUnique({
+        where: { email: userId }
+      })
+      
+      if (!user) {
+        throw new Error(`User not found: ${userId}`)
+      }
+      
+      for (const price of competitorPrices) {
+        await prisma.competitorPrice.create({
+          data: {
+            sku_code: price.sku || product.replace(/\s+/g, '-').toUpperCase(),
+            user_id: user.id,
+            competitor: price.competitor,
+            competitor_price: price.competitor_price,
+            our_price: price.our_price || 0,
+            price_difference: price.price_difference || 0,
+            price_difference_pct: price.price_difference_percentage || 0,
+            availability: price.availability !== undefined ? price.availability : true,
+            product_name: price.product_name || product,
+            relevance_score: price.relevance_score || 0.5,
+            source_url: price.url,
+            scraping_success: true,
+            scraping_method: 'real_scraping',
+            last_updated: new Date()
+          }
+        })
+      }
+      
+      console.log(`Saved ${competitorPrices.length} competitor prices for product: ${product}`)
+      
+    } catch (error) {
+      console.error('Error saving competitor prices with product:', error)
+      throw error
     }
   }
 

@@ -1,4 +1,4 @@
-// REPLACE YOUR EXISTING src/lib/alert-engine.ts WITH THIS VERSION
+// src/lib/alert-engine.ts WITH THIS VERSION
 // This fixes the export names and integrates with your smart_alerts table
 
 import Anthropic from '@anthropic-ai/sdk'
@@ -80,6 +80,94 @@ export interface SmartAlert {
 
 // FIXED: Export both class names for compatibility
 export class AlertEngine {
+  
+  /**
+   * Generate real alcohol context for portfolio-level smart alerts
+   */
+  static generatePortfolioAlcoholContext(skuData: any[]): {
+    seasonal_peak: string
+    compliance_notes: string[]
+    category_risk: string
+  } {
+    const categories = skuData.reduce((acc, sku) => {
+      const category = sku.category || 'unknown'
+      acc[category] = ((acc[category] as number) || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+    
+    const totalSkus = skuData.length
+    const categoryBreakdown = Object.entries(categories)
+      .map(([cat, count]) => ({ category: cat, percentage: ((count as number) / totalSkus) * 100 }))
+      .sort((a, b) => b.percentage - a.percentage)
+    
+    // Determine dominant seasonal peak based on portfolio composition
+    let seasonalPeak = 'Year-round demand'
+    const spiritsPercentage = categoryBreakdown.find(c => c.category === 'spirits')?.percentage || 0
+    const beerPercentage = categoryBreakdown.find(c => c.category === 'beer')?.percentage || 0
+    const winePercentage = categoryBreakdown.find(c => c.category === 'wine')?.percentage || 0
+    
+    if (spiritsPercentage > 40 && winePercentage > 20) {
+      seasonalPeak = 'Holiday season (Nov-Jan) - Spirit & wine focused portfolio'
+    } else if (spiritsPercentage > 50) {
+      seasonalPeak = 'Holiday season (Nov-Jan) - Premium spirits portfolio'
+    } else if (beerPercentage > 40) {
+      seasonalPeak = 'Summer season (May-Aug) - Beer-focused portfolio'
+    } else if (winePercentage > 40) {
+      seasonalPeak = 'Holiday season (Oct-Jan) - Wine-focused portfolio'
+    } else {
+      seasonalPeak = `Mixed portfolio: ${categoryBreakdown.slice(0, 2).map(c => `${Math.round(c.percentage)}% ${c.category}`).join(', ')}`
+    }
+    
+    // Generate real compliance notes based on portfolio composition
+    const complianceNotes: string[] = []
+    
+    if (spiritsPercentage > 30) {
+      complianceNotes.push('Premium spirits licensing required')
+      complianceNotes.push('Age verification critical for spirits sales')
+    }
+    
+    if (spiritsPercentage > 20 || winePercentage > 20) {
+      complianceNotes.push('Import duty considerations for premium products')
+    }
+    
+    // Check for high-ABV products
+    const highAbvCount = skuData.filter(sku => parseFloat(sku.abv) > 40).length
+    if (highAbvCount > totalSkus * 0.3) {
+      complianceNotes.push(`High-proof spirits handling (${Math.round((highAbvCount/totalSkus)*100)}% of portfolio)`)
+    }
+    
+    // Check for international products
+    const internationalCount = skuData.filter(sku => 
+      sku.origin_country && sku.origin_country !== 'UK'
+    ).length
+    if (internationalCount > totalSkus * 0.2) {
+      complianceNotes.push(`International product compliance (${Math.round((internationalCount/totalSkus)*100)}% imported)`)
+    }
+    
+    if (complianceNotes.length === 0) {
+      complianceNotes.push('Standard UK alcohol retail compliance')
+    }
+    
+    // Determine portfolio risk level
+    const criticalStockCount = skuData.filter(sku => {
+      const weeklySales = parseFloat(sku.weekly_sales) || 0
+      const inventoryLevel = parseInt(sku.inventory_level) || 0
+      return weeklySales > 0 && (inventoryLevel / weeklySales) < 2
+    }).length
+    
+    let categoryRisk = 'low'
+    const criticalPercentage = (criticalStockCount / totalSkus) * 100
+    
+    if (criticalPercentage > 30) categoryRisk = 'critical'
+    else if (criticalPercentage > 15) categoryRisk = 'high'
+    else if (criticalPercentage > 5) categoryRisk = 'medium'
+    
+    return {
+      seasonal_peak: seasonalPeak,
+      compliance_notes: complianceNotes,
+      category_risk: categoryRisk
+    }
+  }
   
   /**
    * Generate alerts from analysis data - MAIN ENTRY POINT
@@ -388,7 +476,7 @@ Focus on alcohol industry specifics: seasonality, shelf life, compliance, compet
   }
 
   /**
-   * CLAUDE PORTFOLIO INSIGHTS - Advanced analysis
+   * CLAUDE PORTFOLIO INSIGHTS - Advanced analysis with ACTIONABLE recommendations
    */
   private static async generateClaudePortfolioInsights(
     skuData: any[],
@@ -396,43 +484,61 @@ Focus on alcohol industry specifics: seasonality, shelf life, compliance, compet
   ): Promise<SmartAlert[]> {
     
     try {
-      const portfolioSummary = {
+      // Enhanced portfolio analysis with specific metrics
+      const portfolioAnalysis = {
         total_skus: skuData.length,
         categories: [...new Set(skuData.map(s => s.category))],
         total_inventory_value: skuData.reduce((sum, s) => sum + (parseFloat(s.price) * parseInt(s.inventory_level)), 0),
-        fast_movers: skuData.filter(s => parseFloat(s.weekly_sales) > 3).length,
-        slow_movers: skuData.filter(s => parseFloat(s.weekly_sales) < 1).length,
-        high_value_items: skuData.filter(s => parseFloat(s.price) > 50).length
+        fast_movers: skuData.filter(s => parseFloat(s.weekly_sales) > 3),
+        slow_movers: skuData.filter(s => parseFloat(s.weekly_sales) < 1),
+        high_value_items: skuData.filter(s => parseFloat(s.price) > 50),
+        critical_stock: skuData.filter(s => {
+          const weeklySales = parseFloat(s.weekly_sales) || 0
+          const inventoryLevel = parseInt(s.inventory_level) || 0
+          return weeklySales > 0 && (inventoryLevel / weeklySales) < 2
+        }),
+        category_breakdown: [...new Set(skuData.map(s => s.category))].map(cat => ({
+          category: cat,
+          count: skuData.filter(s => s.category === cat).length,
+          avg_price: skuData.filter(s => s.category === cat).reduce((sum, s) => sum + parseFloat(s.price), 0) / skuData.filter(s => s.category === cat).length,
+          total_value: skuData.filter(s => s.category === cat).reduce((sum, s) => sum + (parseFloat(s.price) * parseInt(s.inventory_level)), 0)
+        }))
       }
       
-      const prompt = `Analyze this alcohol inventory portfolio and identify 2-3 strategic business risks or opportunities:
+      const prompt = `You are an expert alcohol inventory manager. Analyze this portfolio and generate 2-3 SPECIFIC, ACTIONABLE alerts with exact numbers and immediate steps.
 
-PORTFOLIO OVERVIEW:
-${JSON.stringify(portfolioSummary, null, 2)}
+PORTFOLIO DATA:
+${JSON.stringify(portfolioAnalysis, null, 2)}
 
-Generate strategic alerts focusing on:
-- Cash flow optimization opportunities
-- Inventory concentration risks  
-- Category performance imbalances
-- Operational efficiency improvements
+Generate alerts that are IMMEDIATELY ACTIONABLE with specific numbers, deadlines, and concrete steps. Focus on:
+- Cash flow risks with exact £ amounts and timeframes
+- Inventory imbalances with specific product counts and actions
+- Category concentration risks with precise diversification steps
 
-Return as JSON array (max 3 alerts):
+Each alert MUST include:
+- Specific numbers (£ amounts, unit counts, percentages)
+- Exact deadlines or timeframes
+- Concrete next steps a manager can execute today
+
+Return as JSON array (2-3 alerts max):
 [
   {
     "type": "cash_flow_optimization",
-    "severity": "medium",
-    "message": "Strategic alert description",
-    "claude_analysis": "Detailed business analysis",
-    "strategic_options": ["Option 1", "Option 2", "Option 3"],
-    "immediate_actions": ["Action 1", "Action 2"],
-    "confidence_score": 0.85
+    "severity": "high",
+    "message": "Specific alert with exact numbers and deadlines",
+    "claude_analysis": "Detailed analysis with specific recommendations",
+    "strategic_options": ["Specific action 1 with numbers", "Specific action 2 with timeline", "Specific action 3 with targets"],
+    "immediate_actions": ["Do X by tomorrow", "Contact Y within 2 days", "Order Z units by Friday"],
+    "confidence_score": 0.9
   }
-]`
+]
+
+Make it sound like urgent, specific business advice with exact numbers and deadlines.`
 
       const response = await anthropic.messages.create({
         model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 2000,
-        temperature: 0.4,
+        max_tokens: 2500,
+        temperature: 0.2, // Lower temperature for more focused, specific responses
         messages: [{ role: 'user', content: prompt }]
       })
       
@@ -453,10 +559,10 @@ Return as JSON array (max 3 alerts):
             strategic_options: insight.strategic_options || [],
             immediate_actions: insight.immediate_actions || [],
             risk_level: insight.severity || 'medium',
-            confidence_score: insight.confidence_score || 0.8
+            confidence_score: insight.confidence_score || 0.9
           },
           auto_generated: true,
-          requires_human: insight.severity === 'critical',
+          requires_human: insight.severity === 'critical' || insight.severity === 'high',
           acknowledged: false,
           resolved: false,
           auto_resolved: false,
@@ -471,9 +577,25 @@ Return as JSON array (max 3 alerts):
     return []
   }
 
-  // Alert creation helpers (same as before)
+  // Alert creation helpers (same as before but with better seasonal peak logic)
   private static createStockoutAlert(sku: any, weeksOfStock: number, severity: Alert['severity']): Alert {
     const daysToStockout = Math.max(1, Math.floor(weeksOfStock * 7))
+    
+    // Generate real seasonal peak based on category
+    let seasonalPeak = 'Year-round demand'
+    const category = sku.category?.toLowerCase() || 'unknown'
+    
+    if (category.includes('gin') || category.includes('vodka') || category === 'spirits') {
+      seasonalPeak = 'Summer cocktails & Holiday season'
+    } else if (category.includes('whisky') || category.includes('whiskey')) {
+      seasonalPeak = 'Holiday season (Nov-Jan)'
+    } else if (category.includes('beer')) {
+      seasonalPeak = 'Summer season (May-Aug)'
+    } else if (category.includes('wine')) {
+      seasonalPeak = 'Holiday season (Oct-Jan)'
+    } else if (category.includes('cider')) {
+      seasonalPeak = 'Autumn season (Sep-Nov)'
+    }
     
     return {
       id: `stockout-${sku.sku}-${Date.now()}`,
@@ -499,9 +621,11 @@ Return as JSON array (max 3 alerts):
       },
       alcohol_context: {
         abv: parseFloat(sku.abv) || undefined,
-        shelf_life_days: parseInt(sku.shelf_life_days) || undefined,
-        seasonal_peak: sku.seasonal_peak,
-        compliance_notes: sku.category === 'spirits' ? ['High-proof spirits: Additional tax implications'] : []
+        shelf_life_days: parseInt(sku.shelf_life_days) || 365,
+        seasonal_peak: seasonalPeak,
+        compliance_notes: category === 'spirits' && parseFloat(sku.abv) > 40 ? 
+          [`High-proof spirits (${parseFloat(sku.abv)}% ABV): Additional tax requirements`] : 
+          ['Standard alcohol retail compliance']
       },
       created_at: new Date(),
       acknowledged: false,
@@ -515,6 +639,17 @@ Return as JSON array (max 3 alerts):
   }
   
   private static createOverstockAlert(sku: any, weeksOfStock: number): Alert {
+    const category = sku.category?.toLowerCase() || 'unknown'
+    let seasonalPeak = 'Year-round demand'
+    
+    if (category.includes('spirits')) {
+      seasonalPeak = 'Holiday season (Nov-Jan)'
+    } else if (category.includes('beer')) {
+      seasonalPeak = 'Summer season (May-Aug)'
+    } else if (category.includes('wine')) {
+      seasonalPeak = 'Holiday season (Oct-Jan)'
+    }
+    
     return {
       id: `overstock-${sku.sku}-${Date.now()}`,
       rule_id: 'overstock-risk',
@@ -536,6 +671,12 @@ Return as JSON array (max 3 alerts):
         weeks_of_stock: weeksOfStock,
         confidence: 0.8,
         trend: 'stable'
+      },
+      alcohol_context: {
+        abv: parseFloat(sku.abv) || undefined,
+        shelf_life_days: parseInt(sku.shelf_life_days) || 365,
+        seasonal_peak: seasonalPeak,
+        compliance_notes: ['Consider promotional pricing compliance', 'Monitor minimum pricing laws']
       },
       created_at: new Date(),
       acknowledged: false,
@@ -570,6 +711,11 @@ Return as JSON array (max 3 alerts):
         weeks_of_stock: parseInt(sku.inventory_level) / weeklySales,
         confidence: 0.8,
         trend: 'increasing'
+      },
+      alcohol_context: {
+        abv: parseFloat(sku.abv) || undefined,
+        seasonal_peak: 'Strong performance indicates market acceptance',
+        compliance_notes: ['Monitor competitive pricing', 'Consider premium positioning']
       },
       created_at: new Date(),
       acknowledged: false,
