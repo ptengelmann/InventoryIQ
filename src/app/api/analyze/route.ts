@@ -1,12 +1,10 @@
-// src/app/api/analyze/route.ts - FIXED VERSION
-// Real competitive scraping integration + database saves
-
+// src/app/api/analyze/route.ts - FIXED VERSION with Smart Alerts
 import { NextRequest, NextResponse } from 'next/server'
 import { PostgreSQLService } from '@/lib/database-postgres'
-import { RealCompetitiveScraping } from '@/lib/real-competitive-scraping' // FIXED: Real scraping
+import { RealCompetitiveScraping } from '@/lib/real-competitive-scraping'
 import { EnhancedSeasonalRecommendations } from '@/lib/enhanced-seasonal-recommendations'
 import { AlcoholSKU } from '@/types'
-import { AlertEngine } from '@/lib/alert-engine'
+import { AlertEngine } from '@/lib/alert-engine' // FIXED: Import corrected
 
 interface CSVRow {
   sku?: string
@@ -53,7 +51,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User email required' }, { status: 401 })
     }
 
-    console.log(`🎯 Starting ENHANCED analysis with REAL competitive intelligence for ${userEmail}`)
+    console.log(`🎯 Starting ENHANCED analysis with smart alerts for ${userEmail}`)
     console.log(`📊 Processing ${csvData.length} rows from ${fileName}`)
 
     const uploadId = `analysis-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
@@ -132,41 +130,45 @@ export async function POST(request: NextRequest) {
       
       console.log(`🎯 Selected ${highValueProducts.length} high-value products for competitive analysis`)
       
-      for (const sku of highValueProducts) {
-        try {
-          console.log(`🔍 Scraping competitors for: ${sku.brand} ${sku.sku}`)
-          
-          // REAL COMPETITIVE SCRAPING with AI insights
-          const competitorPrices = await RealCompetitiveScraping.scrapeRealCompetitorPrices(
-            `${sku.brand} ${sku.subcategory || ''}`.trim(),
-            sku.category,
-            3, // Max 3 retailers per product to control costs
-            true // Include AI insights
-          )
-          
-          if (competitorPrices.length > 0) {
-            // Set our price and calculate differences
-            const ourPrice = parseFloat(sku.price)
-            competitorPrices.forEach(comp => {
-              comp.our_price = ourPrice
-              comp.price_difference = comp.competitor_price - ourPrice
-              comp.price_difference_percentage = ((comp.competitor_price - ourPrice) / ourPrice) * 100
-              comp.sku = sku.sku // Set to our SKU code
-            })
+      if (process.env.SERP_API_KEY) {
+        for (const sku of highValueProducts) {
+          try {
+            console.log(`🔍 Scraping competitors for: ${sku.brand} ${sku.sku}`)
             
-            competitorData.push(...competitorPrices)
-            console.log(`✅ Found ${competitorPrices.length} real competitor prices for ${sku.sku}`)
-          } else {
-            console.log(`⚠️ No competitor data found for ${sku.sku}`)
+            // REAL COMPETITIVE SCRAPING with AI insights
+            const competitorPrices = await RealCompetitiveScraping.scrapeRealCompetitorPrices(
+              `${sku.brand} ${sku.subcategory || ''}`.trim(),
+              sku.category,
+              3, // Max 3 retailers per product to control costs
+              true // Include AI insights
+            )
+            
+            if (competitorPrices.length > 0) {
+              // Set our price and calculate differences
+              const ourPrice = parseFloat(sku.price)
+              competitorPrices.forEach(comp => {
+                comp.our_price = ourPrice
+                comp.price_difference = comp.competitor_price - ourPrice
+                comp.price_difference_percentage = ((comp.competitor_price - ourPrice) / ourPrice) * 100
+                comp.sku = sku.sku // Set to our SKU code
+              })
+              
+              competitorData.push(...competitorPrices)
+              console.log(`✅ Found ${competitorPrices.length} real competitor prices for ${sku.sku}`)
+            } else {
+              console.log(`⚠️ No competitor data found for ${sku.sku}`)
+            }
+            
+            // Rate limiting - be respectful to SERP API
+            await new Promise(resolve => setTimeout(resolve, 1000))
+            
+          } catch (skuError) {
+            console.error(`❌ Competitive scraping failed for ${sku.sku}:`, skuError)
+            continue // Don't fail entire analysis for one SKU
           }
-          
-          // Rate limiting - be respectful to SERP API
-          await new Promise(resolve => setTimeout(resolve, 1000))
-          
-        } catch (skuError) {
-          console.error(`❌ Competitive scraping failed for ${sku.sku}:`, skuError)
-          continue // Don't fail entire analysis for one SKU
         }
+      } else {
+        console.log('⚠️ SERP_API_KEY not found - skipping competitive scraping')
       }
       
       competitiveScrapeTime = Date.now() - competitiveStartTime
@@ -183,6 +185,7 @@ export async function POST(request: NextRequest) {
     
     let priceRecommendations: any[] = []
     try {
+      // Try to load AI price recommendations
       const { AIPriceRecommendations } = await import('@/lib/ai-price-recommendations')
       
       priceRecommendations = await AIPriceRecommendations.generateIntelligentPricing(
@@ -256,7 +259,36 @@ export async function POST(request: NextRequest) {
       seasonalRecommendations = []
     }
 
-    // Step 5: Generate inventory alerts
+    // Step 5: Generate intelligent alerts with Claude AI - FIXED VERSION
+    console.log('🧠 Generating AI-powered alerts with Claude integration...')
+
+    let alerts: any[] = []
+    let smartAlerts: any[] = []
+
+    try {
+      const alertResults = await AlertEngine.generateIntelligentAlerts(
+        alcoholSKUs,
+        uploadId,
+        userEmail
+      )
+      
+      alerts = alertResults.alerts
+      smartAlerts = alertResults.smart_alerts
+      
+      console.log(`🚨 Generated ${alerts.length} regular alerts`)
+      console.log(`⚡ Generated ${smartAlerts.length} smart alerts with Claude AI`)
+      
+    } catch (alertError) {
+      console.error('❌ AI alert generation failed:', alertError)
+      
+      // Fallback to basic alerts
+      alerts = AlertEngine.generateAlertsFromAnalysis(alcoholSKUs, [], [])
+      smartAlerts = []
+      
+      console.log(`🚨 Generated ${alerts.length} fallback alerts`)
+    }
+
+    // Step 6: Generate inventory alerts (keep existing logic for compatibility)
     const inventoryAlerts = alcoholSKUs
       .map(sku => {
         const weeklySales = parseFloat(sku.weekly_sales)
@@ -294,7 +326,7 @@ export async function POST(request: NextRequest) {
       })
       .flat()
 
-    // Step 6: Generate AI market insights
+    // Step 7: Generate AI market insights
     console.log('🧠 Generating AI market insights...')
     
     let marketInsights: any[] = []
@@ -327,7 +359,7 @@ export async function POST(request: NextRequest) {
       }]
     }
 
-    // Step 7: Calculate summary
+    // Step 8: Calculate summary
     const summary = {
       totalSKUs: alcoholSKUs.length,
       priceIncreases: priceRecommendations.filter(r => r.changePercentage > 0).length,
@@ -338,6 +370,7 @@ export async function POST(request: NextRequest) {
       seasonalRevenuePotential: seasonalRecommendations.reduce((sum, s) => sum + (s.estimated_revenue_impact || 0), 0),
       urgentSeasonalActions: seasonalRecommendations.filter(s => s.urgency === 'high' || s.urgency === 'critical').length,
       criticalAlertsGenerated: inventoryAlerts.filter(a => a.riskLevel === 'critical').length,
+      smartAlertsGenerated: smartAlerts.length,
       brandsIdentified: alcoholSKUs.filter(sku => sku.brand && sku.brand !== 'Unknown').length,
       
       // REAL COMPETITIVE INTELLIGENCE METRICS
@@ -356,9 +389,9 @@ export async function POST(request: NextRequest) {
 
     const processingTime = Date.now() - startTime
 
-    // Step 8: Save to database - INCLUDING REAL COMPETITOR DATA
+    // Step 9: Save to database with smart alerts - ENHANCED VERSION
     try {
-      await PostgreSQLService.saveAnalysis({
+      await PostgreSQLService.saveAnalysisWithSmartAlerts({
         uploadId,
         fileName,
         userId: userEmail,
@@ -366,14 +399,15 @@ export async function POST(request: NextRequest) {
         summary,
         priceRecommendations,
         inventoryAlerts,
-        smartAlerts: [],
-        competitorData, // FIXED: Real competitor data saved here
+        smartAlerts: [], // Keep empty for backward compatibility
+        competitorData,
         marketInsights,
         processingTimeMs: processingTime,
-        seasonalStrategies: seasonalRecommendations
+        seasonalStrategies: seasonalRecommendations,
+        smart_alerts: smartAlerts // Add the new field for smart alerts
       })
       
-      console.log('💾 Analysis saved to database with REAL competitive intelligence')
+      console.log(`✅ Analysis and ${smartAlerts.length} smart alerts saved to database`)
       
       // CRITICAL: Save competitor prices separately to ensure they persist
       if (competitorData.length > 0) {
@@ -382,14 +416,15 @@ export async function POST(request: NextRequest) {
       }
       
     } catch (saveError) {
-      console.error('❌ Database save failed:', saveError)
+      console.error('❌ Enhanced database save failed:', saveError)
     }
 
     console.log(`✅ Analysis completed in ${processingTime}ms`)
     console.log(`📊 Generated: ${priceRecommendations.length} price recs, ${seasonalRecommendations.length} seasonal strategies, ${marketInsights.length} insights`)
     console.log(`🎯 REAL COMPETITIVE DATA: ${competitorData.length} competitor prices from ${summary.retailersCovered} UK retailers`)
+    console.log(`⚡ SMART ALERTS: ${smartAlerts.length} Claude-powered smart alerts generated`)
 
-    // Step 9: Return results with real competitive intelligence
+    // Step 10: Return results with smart alerts included
     return NextResponse.json({
       success: true,
       analysisId: uploadId,
@@ -401,6 +436,7 @@ export async function POST(request: NextRequest) {
       competitorData, // REAL competitor prices returned to UI
       marketInsights,
       criticalAlerts: inventoryAlerts.filter(alert => alert.riskLevel === 'critical' || alert.riskLevel === 'high'),
+      smartAlerts: smartAlerts.slice(0, 10), // Preview of smart alerts for UI
       
       // COMPETITIVE INTELLIGENCE METADATA
       competitiveIntelligence: {
@@ -409,7 +445,7 @@ export async function POST(request: NextRequest) {
         pricesFound: competitorData.length,
         processingTimeMs: competitiveScrapeTime,
         dataQuality: competitorData.length > 0 ? 'excellent' : 'no_data',
-        costApproximate: `$${(competitorData.length * 0.01).toFixed(2)}`, // SERP API costs ~$0.01 per search
+        costApproximate: `${(competitorData.length * 0.01).toFixed(2)}`, // SERP API costs ~$0.01 per search
         nextUpdate: 'Real-time via /api/competitors/live'
       },
       
@@ -417,6 +453,7 @@ export async function POST(request: NextRequest) {
         aiPowered: true,
         realCompetitiveData: true, // Flag for premium feature
         seasonallyEnhanced: seasonalRecommendations.length > 0,
+        smartAlertsEnabled: smartAlerts.length > 0, // NEW: Smart alerts flag
         processedAt: new Date().toISOString(),
         fileName,
         dataQuality: {
@@ -425,7 +462,8 @@ export async function POST(request: NextRequest) {
           withSalesData: alcoholSKUs.filter(sku => parseFloat(sku.weekly_sales) > 0).length,
           withInventoryData: alcoholSKUs.filter(sku => parseInt(sku.inventory_level) > 0).length,
           seasonalStrategiesGenerated: seasonalRecommendations.length,
-          realCompetitorPrices: competitorData.length
+          realCompetitorPrices: competitorData.length,
+          smartAlertsGenerated: smartAlerts.length // NEW: Smart alerts count
         }
       }
     })

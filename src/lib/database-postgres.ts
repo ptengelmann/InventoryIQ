@@ -1,4 +1,4 @@
-// src/lib/database-postgres.ts - FIXED VERSION with proper singleton
+// src/lib/database-postgres.ts - COMPLETE VERSION with Smart Alerts
 import { PrismaClient } from '@prisma/client'
 import type { AlcoholSKU, CompetitorPrice } from '@/types'
 
@@ -60,7 +60,8 @@ export interface AnalysisData {
   competitorData: CompetitorPrice[]
   marketInsights: any[]
   processingTimeMs?: number
-  seasonalStrategies?: any[] 
+  seasonalStrategies?: any[]
+  smart_alerts?: SmartAlert[] // New field for enhanced smart alerts
 }
 
 export interface InventoryAlert {
@@ -77,6 +78,33 @@ export interface InventoryAlert {
     shelfLifeDays?: number
     seasonalPeak?: string
   }
+}
+
+export interface SmartAlert {
+  id: string
+  analysis_id: string
+  type: string
+  severity: 'low' | 'medium' | 'high' | 'critical'
+  message: string
+  recommendation: {
+    claude_analysis: string
+    strategic_options: string[]
+    immediate_actions: string[]
+    risk_level: string
+    confidence_score: number
+  }
+  auto_generated: boolean
+  requires_human: boolean
+  escalation_path?: {
+    conditions: string[]
+    escalate_to: string
+    timeline: string
+  }
+  acknowledged: boolean
+  resolved: boolean
+  auto_resolved: boolean
+  created_at: Date
+  resolved_at?: Date
 }
 
 export class PostgreSQLService {
@@ -101,7 +129,8 @@ export class PostgreSQLService {
           recommendations: true,
           alerts: true,
           competitor_data: true,
-          seasonal_strategies: true  // Include seasonal strategies
+          seasonal_strategies: true,
+          smart_alerts: true  // Include smart alerts
         }
       })
       
@@ -112,7 +141,7 @@ export class PostgreSQLService {
     }
   }
 
-  // FIXED: Save analysis with proper seasonal strategy handling
+  // ENHANCED: Save analysis with smart alerts support
   static async saveAnalysis(analysisData: AnalysisData): Promise<string> {
     try {
       console.log(`💾 Saving analysis for user ${analysisData.userEmail}`)
@@ -173,12 +202,10 @@ export class PostgreSQLService {
         await this.saveCompetitorData(user.id, analysisData.uploadId, analysisData.competitorData)
       }
       
-      // Step 6: FIXED - Save seasonal strategies with proper user ID
+      // Step 6: Save seasonal strategies
       if (analysisData.seasonalStrategies && analysisData.seasonalStrategies.length > 0) {
         console.log(`🎄 Saving ${analysisData.seasonalStrategies.length} seasonal strategies`)
         await this.saveSeasonalStrategies(user.id, analysisData.uploadId, analysisData.seasonalStrategies)
-      } else {
-        console.log(`⚠️ No seasonal strategies to save`)
       }
       
       return analysis.id
@@ -186,6 +213,137 @@ export class PostgreSQLService {
     } catch (error) {
       console.error('💥 PostgreSQL save error:', error)
       throw new Error(`Failed to save analysis: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  // NEW: Enhanced save method with smart alerts
+  static async saveAnalysisWithSmartAlerts(analysisData: AnalysisData & { 
+    smart_alerts?: SmartAlert[] 
+  }): Promise<string> {
+    try {
+      console.log(`💾 Saving analysis with smart alerts for user ${analysisData.userEmail}`)
+      
+      // First save the regular analysis
+      const analysisId = await this.saveAnalysis(analysisData)
+      
+      // Then save smart alerts if provided
+      if (analysisData.smart_alerts && analysisData.smart_alerts.length > 0) {
+        await this.saveSmartAlerts(analysisData.userEmail, analysisData.uploadId, analysisData.smart_alerts)
+      }
+      
+      console.log(`✅ Enhanced analysis save complete with ${analysisData.smart_alerts?.length || 0} smart alerts`)
+      return analysisId
+      
+    } catch (error) {
+      console.error('💥 Enhanced analysis save failed:', error)
+      throw error
+    }
+  }
+
+  /**
+   * CRITICAL: Save smart alerts to the smart_alerts table
+   */
+  static async saveSmartAlerts(
+    userIdOrEmail: string,
+    analysisId: string,
+    smartAlerts: SmartAlert[]
+  ): Promise<void> {
+    try {
+      console.log(`💾 Saving ${smartAlerts.length} smart alerts`)
+      
+      if (!smartAlerts || smartAlerts.length === 0) {
+        console.log('⚠️ No smart alerts to save')
+        return
+      }
+      
+      // Save each smart alert
+      for (const alert of smartAlerts) {
+        await prisma.smartAlert.create({
+          data: {
+            analysis_id: analysisId,
+            type: alert.type,
+            severity: alert.severity,
+            message: alert.message,
+            recommendation: alert.recommendation,
+            auto_generated: alert.auto_generated,
+            requires_human: alert.requires_human,
+            escalation_path: alert.escalation_path ? alert.escalation_path : undefined, // FIXED: Use undefined instead of null
+            acknowledged: false,
+            resolved: false,
+            auto_resolved: false
+          }
+        })
+      }
+      
+      console.log(`✅ Saved ${smartAlerts.length} smart alerts`)
+      
+    } catch (error) {
+      console.error('❌ Error saving smart alerts:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get smart alerts for an analysis
+   */
+  static async getSmartAlertsForAnalysis(
+    userIdOrEmail: string,
+    analysisId: string
+  ): Promise<SmartAlert[]> {
+    try {
+      console.log(`🔍 Getting smart alerts for analysis ${analysisId}`)
+      
+      const smartAlerts = await prisma.smartAlert.findMany({
+        where: {
+          analysis_id: analysisId
+        },
+        orderBy: [
+          { severity: 'desc' },
+          { created_at: 'desc' }
+        ]
+      })
+      
+      console.log(`📊 Found ${smartAlerts.length} smart alerts`)
+      return smartAlerts as SmartAlert[]
+      
+    } catch (error) {
+      console.error('❌ Error getting smart alerts:', error)
+      return []
+    }
+  }
+
+  /**
+   * Update smart alert status
+   */
+  static async updateSmartAlertStatus(
+    alertId: string,
+    action: 'acknowledge' | 'resolve',
+    userIdOrEmail: string
+  ): Promise<boolean> {
+    try {
+      console.log(`🔄 Updating smart alert ${alertId} with action ${action}`)
+      
+      const updateData: any = {}
+      
+      if (action === 'acknowledge') {
+        updateData.acknowledged = true
+      } else if (action === 'resolve') {
+        updateData.resolved = true
+        updateData.resolved_at = new Date()
+        updateData.acknowledged = true
+      }
+      
+      await prisma.smartAlert.update({
+        where: { id: alertId },
+        data: updateData
+      })
+      
+      console.log(`✅ Smart alert ${alertId} updated`)
+      return true
+      
+    } catch (error) {
+      console.error('❌ Error updating smart alert:', error)
+      return false
     }
   }
   
@@ -354,7 +512,8 @@ export class PostgreSQLService {
             take: 3,
             where: { resolved: false },
             orderBy: { urgency_score: 'desc' }
-          }
+          },
+          smart_alerts: true // Include smart alerts
         }
       })
       
@@ -368,7 +527,8 @@ export class PostgreSQLService {
         processedAt: analysis.processed_at.toISOString(),
         summary: analysis.summary,
         recommendations: analysis.recommendations,
-        alerts: analysis.alerts
+        alerts: analysis.alerts,
+        smartAlerts: analysis.smart_alerts // Include smart alerts in response
       }))
       
     } catch (error) {
@@ -723,6 +883,66 @@ export class PostgreSQLService {
       return false
     }
   }
+
+  // Delete analysis and all related data
+  static async deleteAnalysis(analysisId: string, userId: string): Promise<boolean> {
+    try {
+      console.log(`🗑️ Deleting analysis ${analysisId} for user ${userId}`)
+      
+      const user = await prisma.user.findUnique({
+        where: { email: userId }
+      })
+      
+      if (!user) return false
+      
+      // Delete in correct order due to foreign key constraints
+      await prisma.smartAlert.deleteMany({
+        where: { analysis_id: analysisId }
+      })
+      
+      await prisma.alert.deleteMany({
+        where: { 
+          analysis_id: analysisId,
+          user_id: user.id
+        }
+      })
+      
+      await prisma.priceRecommendation.deleteMany({
+        where: { 
+          analysis_id: analysisId,
+          user_id: user.id
+        }
+      })
+      
+      await prisma.competitorPrice.deleteMany({
+        where: { 
+          analysis_id: analysisId,
+          user_id: user.id
+        }
+      })
+      
+      await prisma.seasonalStrategy.deleteMany({
+        where: { 
+          analysis_id: analysisId,
+          user_id: user.id
+        }
+      })
+      
+      await prisma.analysis.delete({
+        where: { 
+          upload_id: analysisId,
+          user_id: user.id
+        }
+      })
+      
+      console.log(`✅ Analysis ${analysisId} and all related data deleted`)
+      return true
+      
+    } catch (error) {
+      console.error('Error deleting analysis:', error)
+      return false
+    }
+  }
   
   // Database health check
   static async healthCheck(): Promise<{
@@ -824,325 +1044,105 @@ export class PostgreSQLService {
     }
   }
 
-  // Real-time monitoring configuration methods
-  static async saveMonitoringConfig(userId: string, config: {
-    products: string[]
-    intervalMinutes: number
-    maxRetailersPerCheck: number
-    startedAt: Date
-    isActive: boolean
-  }): Promise<void> {
-    try {
-      const user = await prisma.user.findUnique({
-        where: { email: userId }
-      })
-      
-      if (!user) {
-        throw new Error(`User not found: ${userId}`)
-      }
-      
-      // Save to system_metrics table for now (you can create a dedicated table later)
-      await prisma.systemMetric.create({
-        data: {
-          metric_name: 'monitoring_config',
-          metric_value: config.intervalMinutes,
-          metric_unit: 'minutes',
-          user_id: user.id,
-          collected_at: config.startedAt,
-          retention_days: 30
-        }
-      })
-      
-      console.log(`Saved monitoring config for user ${userId}: ${config.products.length} products, ${config.intervalMinutes}min intervals`)
-      
-    } catch (error) {
-      console.error('Error saving monitoring config:', error)
-      throw error
-    }
-  }
-
-  static async getMonitoringConfig(userId: string): Promise<any> {
-    try {
-      const user = await prisma.user.findUnique({
-        where: { email: userId }
-      })
-      
-      if (!user) return null
-      
-      // Get latest monitoring config from system_metrics
-      const config = await prisma.systemMetric.findFirst({
-        where: {
-          metric_name: 'monitoring_config',
-          user_id: user.id
-        },
-        orderBy: { collected_at: 'desc' }
-      })
-      
-      if (!config) return null
-      
-      return {
-        userId,
-        products: [], // Would need to store this properly in a dedicated table
-        intervalMinutes: config.metric_value,
-        maxRetailersPerCheck: 3,
-        startedAt: config.collected_at,
-        isActive: true
-      }
-      
-    } catch (error) {
-      console.error('Error getting monitoring config:', error)
-      return null
-    }
-  }
-
-  static async updateMonitoringConfig(userId: string, updates: { isActive: boolean }): Promise<void> {
-    try {
-      const user = await prisma.user.findUnique({
-        where: { email: userId }
-      })
-      
-      if (!user) {
-        throw new Error(`User not found: ${userId}`)
-      }
-      
-      // Create a new metric entry to track the status change
-      await prisma.systemMetric.create({
-        data: {
-          metric_name: 'monitoring_status',
-          metric_value: updates.isActive ? 1 : 0,
-          metric_unit: 'boolean',
-          user_id: user.id,
-          retention_days: 30
-        }
-      })
-      
-      console.log(`Updated monitoring config for user ${userId}: isActive=${updates.isActive}`)
-      
-    } catch (error) {
-      console.error('Error updating monitoring config:', error)
-      throw error
-    }
-  }
-
-  // Price alert methods using existing tables
-  static async getPriceAlerts(userId: string, hours: number): Promise<any[]> {
-    try {
-      const user = await prisma.user.findUnique({
-        where: { email: userId }
-      })
-      
-      if (!user) return []
-      
-      const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000)
-      
-      // Get recent alerts that could be price-related
-      const alerts = await prisma.alert.findMany({
-        where: {
-          user_id: user.id,
-          created_at: { gte: cutoffTime },
-          type: {
-            in: ['pricing', 'competitive', 'price_opportunity', 'competitor_threat']
-          }
-        },
-        orderBy: { created_at: 'desc' },
-        take: 50
-      })
-      
-      return alerts.map(alert => ({
-        id: alert.id,
-        sku: alert.sku_code || 'unknown',
-        retailer: 'Various', // Would need to parse from alert message
-        oldPrice: 0, // Would need to store this in alert data
-        newPrice: 0, // Would need to store this in alert data  
-        changePercent: 0, // Would need to calculate
-        timestamp: alert.created_at
-      }))
-      
-    } catch (error) {
-      console.error('Error getting price alerts:', error)
-      return []
-    }
-  }
-
-  // Enhanced competitor price caching using existing competitor_prices table
-  static async getCachedCompetitorPrices(product: string, maxAgeHours: number): Promise<any[]> {
-    try {
-      const cutoffTime = new Date(Date.now() - maxAgeHours * 60 * 60 * 1000)
-      
-      const cachedPrices = await prisma.competitorPrice.findMany({
-        where: {
-          product_name: {
-            contains: product,
-            mode: 'insensitive'
-          },
-          last_updated: { gte: cutoffTime }
-        },
-        orderBy: { last_updated: 'desc' },
-        take: 20
-      })
-      
-      return cachedPrices.map(price => ({
-        retailer: price.competitor,
-        price: price.competitor_price,
-        availability: price.availability,
-        product_name: price.product_name,
-        url: price.source_url,
-        relevance_score: price.relevance_score,
-        last_updated: price.last_updated,
-        source: 'cached'
-      }))
-      
-    } catch (error) {
-      console.error('Error getting cached competitor prices:', error)
-      return []
-    }
-  }
-
-  // Save competitor prices with product association
-  static async saveCompetitorPricesWithProduct(
-    userId: string, 
-    product: string, 
-    competitorPrices: any[]
-  ): Promise<void> {
-    if (competitorPrices.length === 0) return
-    
-    try {
-      const user = await prisma.user.findUnique({
-        where: { email: userId }
-      })
-      
-      if (!user) {
-        throw new Error(`User not found: ${userId}`)
-      }
-      
-      for (const price of competitorPrices) {
-        await prisma.competitorPrice.create({
-          data: {
-            sku_code: price.sku || product.replace(/\s+/g, '-').toUpperCase(),
-            user_id: user.id,
-            competitor: price.competitor,
-            competitor_price: price.competitor_price,
-            our_price: price.our_price || 0,
-            price_difference: price.price_difference || 0,
-            price_difference_pct: price.price_difference_percentage || 0,
-            availability: price.availability !== undefined ? price.availability : true,
-            product_name: price.product_name || product,
-            relevance_score: price.relevance_score || 0.5,
-            source_url: price.url,
-            scraping_success: true,
-            scraping_method: 'real_scraping',
-            last_updated: new Date()
-          }
-        })
-      }
-      
-      console.log(`Saved ${competitorPrices.length} competitor prices for product: ${product}`)
-      
-    } catch (error) {
-      console.error('Error saving competitor prices with product:', error)
-      throw error
-    }
-  }
-
   /**
    * CRITICAL FIX: Save seasonal strategies with proper user ID handling
    */
-static async saveSeasonalStrategies(
-  userIdOrEmail: string, 
-  analysisId: string, 
-  seasonalStrategies: any[]
-): Promise<void> {
-  try {
-    console.log(`🎯 SAVING ${seasonalStrategies.length} seasonal strategies`)
-    console.log(`Input: userIdOrEmail=${userIdOrEmail}, analysisId=${analysisId}`)
-    
-    if (!seasonalStrategies || seasonalStrategies.length === 0) {
-      console.log('⚠️ No strategies to save')
-      return
-    }
-    
-    // Get the actual user ID - IMPROVED LOGIC
-    let userId: string
-    
-    if (userIdOrEmail.includes('@')) {
-      const user = await prisma.user.findUnique({
-        where: { email: userIdOrEmail }
-      })
+  static async saveSeasonalStrategies(
+    userIdOrEmail: string, 
+    analysisId: string, 
+    seasonalStrategies: any[]
+  ): Promise<void> {
+    try {
+      console.log(`🎯 SAVING ${seasonalStrategies.length} seasonal strategies`)
+      console.log(`Input: userIdOrEmail=${userIdOrEmail}, analysisId=${analysisId}`)
       
-      if (!user) {
-        console.error(`❌ User not found for email: ${userIdOrEmail}`)
-        throw new Error(`User not found: ${userIdOrEmail}`)
+      if (!seasonalStrategies || seasonalStrategies.length === 0) {
+        console.log('⚠️ No strategies to save')
+        return
       }
       
-      userId = user.id
-      console.log(`✅ Found user ID ${userId} for email ${userIdOrEmail}`)
-    } else {
-      userId = userIdOrEmail
-      console.log(`Using provided user ID: ${userId}`)
-    }
-    
-    // Save each strategy with CORRECTED FIELD MAPPING
-    let savedCount = 0
-    let failedCount = 0
-    
-    for (const strategy of seasonalStrategies) {
-      try {
-        console.log(`💾 Saving strategy: ${strategy.title || 'Unnamed'}`)
-        
-        // FIXED: Proper field mapping to match Prisma schema
-        const saved = await prisma.seasonalStrategy.create({
-          data: {
-            analysis_id: analysisId,
-            user_id: userId,
-            type: strategy.type || 'seasonal_promotion',
-            title: strategy.title || 'Seasonal Strategy',
-            description: strategy.description || '',
-            reasoning: strategy.reasoning || '',
-            seasonal_trigger: strategy.seasonal_trigger || '',
-            estimated_revenue_impact: parseFloat(strategy.estimated_revenue_impact) || 0,
-            urgency: strategy.urgency || 'medium',
-            implementation_timeline: strategy.implementation_timeline || '',
-            marketing_angle: strategy.marketing_angle || '',
-            target_customer: strategy.target_customer || '',
-            // FIXED: Ensure arrays are properly handled
-            products_involved: Array.isArray(strategy.products_involved) ? strategy.products_involved : [],
-            execution_steps: Array.isArray(strategy.execution_steps) ? strategy.execution_steps : [],
-            success_metrics: Array.isArray(strategy.success_metrics) ? strategy.success_metrics : [],
-            risk_factors: Array.isArray(strategy.risk_factors) ? strategy.risk_factors : [],
-            // FIXED: Handle pricing_strategy object
-            pricing_strategy: typeof strategy.pricing_strategy === 'object' ? strategy.pricing_strategy : {},
-            ai_confidence: parseFloat(strategy.confidence_score) || 0.8,
-            generated_by: 'enhanced_seasonal_engine',
-            status: 'pending'
-          }
+      // Get the actual user ID - IMPROVED LOGIC
+      let userId: string
+      
+      if (userIdOrEmail.includes('@')) {
+        const user = await prisma.user.findUnique({
+          where: { email: userIdOrEmail }
         })
         
-        console.log(`✅ Saved strategy with ID: ${saved.id}`)
-        savedCount++
-        
-      } catch (strategyError) {
-        console.error(`❌ Failed to save strategy "${strategy.title}":`, strategyError)
-        // LOG THE SPECIFIC ERROR
-        if (strategyError instanceof Error) {
-          console.error(`Error details: ${strategyError.message}`)
+        if (!user) {
+          console.error(`❌ User not found for email: ${userIdOrEmail}`)
+          throw new Error(`User not found: ${userIdOrEmail}`)
         }
-        failedCount++
+        
+        userId = user.id
+        console.log(`✅ Found user ID ${userId} for email ${userIdOrEmail}`)
+      } else {
+        userId = userIdOrEmail
+        console.log(`Using provided user ID: ${userId}`)
       }
+      
+      // Save each strategy with CORRECTED FIELD MAPPING
+      let savedCount = 0
+      let failedCount = 0
+      
+      for (const strategy of seasonalStrategies) {
+        try {
+          console.log(`💾 Saving strategy: ${strategy.title || 'Unnamed'}`)
+          
+          // FIXED: Proper field mapping to match Prisma schema
+          const saved = await prisma.seasonalStrategy.create({
+            data: {
+              analysis_id: analysisId,
+              user_id: userId,
+              type: strategy.type || 'seasonal_promotion',
+              title: strategy.title || 'Seasonal Strategy',
+              description: strategy.description || '',
+              reasoning: strategy.reasoning || '',
+              seasonal_trigger: strategy.seasonal_trigger || '',
+              estimated_revenue_impact: parseFloat(strategy.estimated_revenue_impact) || 0,
+              urgency: strategy.urgency || 'medium',
+              implementation_timeline: strategy.implementation_timeline || '',
+              marketing_angle: strategy.marketing_angle || '',
+              target_customer: strategy.target_customer || '',
+              // FIXED: Ensure arrays are properly handled
+              products_involved: Array.isArray(strategy.products_involved) ? strategy.products_involved : [],
+              execution_steps: Array.isArray(strategy.execution_steps) ? strategy.execution_steps : [],
+              success_metrics: Array.isArray(strategy.success_metrics) ? strategy.success_metrics : [],
+              risk_factors: Array.isArray(strategy.risk_factors) ? strategy.risk_factors : [],
+              // FIXED: Handle pricing_strategy object
+              pricing_strategy: typeof strategy.pricing_strategy === 'object' ? strategy.pricing_strategy : {},
+              ai_confidence: parseFloat(strategy.confidence_score) || 0.8,
+              generated_by: 'enhanced_seasonal_engine',
+              status: 'pending'
+            }
+          })
+          
+          console.log(`✅ Saved strategy with ID: ${saved.id}`)
+          savedCount++
+          
+        } catch (strategyError) {
+          console.error(`❌ Failed to save strategy "${strategy.title}":`, strategyError)
+          // LOG THE SPECIFIC ERROR
+          if (strategyError instanceof Error) {
+            console.error(`Error details: ${strategyError.message}`)
+          }
+          failedCount++
+        }
+      }
+      
+      console.log(`📊 SEASONAL SAVE COMPLETE: ${savedCount} saved, ${failedCount} failed`)
+      
+      // IMPROVED: Only throw if ALL strategies failed
+      if (savedCount === 0 && failedCount > 0) {
+        throw new Error(`All ${failedCount} seasonal strategies failed to save`)
+      }
+      
+    } catch (error) {
+      console.error('❌ CRITICAL ERROR in saveSeasonalStrategies:', error)
+      // IMPROVED: Re-throw with context so calling code knows it failed
+      throw new Error(`Failed to save seasonal strategies: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
-    
-    console.log(`📊 SEASONAL SAVE COMPLETE: ${savedCount} saved, ${failedCount} failed`)
-    
-    // IMPROVED: Only throw if ALL strategies failed
-    if (savedCount === 0 && failedCount > 0) {
-      throw new Error(`All ${failedCount} seasonal strategies failed to save`)
-    }
-    
-  } catch (error) {
-    console.error('❌ CRITICAL ERROR in saveSeasonalStrategies:', error)
-    // IMPROVED: Re-throw with context so calling code knows it failed
-    throw new Error(`Failed to save seasonal strategies: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
-}
 
   /**
    * Get seasonal strategies - handles both email and user ID
