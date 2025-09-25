@@ -64,9 +64,87 @@ export async function GET(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Step 2: Generate Claude AI competitive intelligence
+    console.log(`📊 Found ${competitorData.length} competitor prices for ${userSKUs.length} total SKUs`)
+
+    // Step 2: AUTO-POPULATE competitive data if insufficient
+    let enhancedCompetitorData = competitorData
+    
+    if (competitorData.length < 5 && userSKUs.length > 0) {
+      console.log(`🔄 Insufficient competitive data (${competitorData.length} prices). Auto-populating...`)
+      
+      try {
+        // Select top products for competitive analysis
+        const priorityProducts = userSKUs
+          .filter(sku => sku.price > 15 && sku.brand && sku.brand !== 'Unknown') // Filter suitable products
+          .sort((a, b) => (b.price * (b.weekly_sales || 0)) - (a.price * (a.weekly_sales || 0))) // Sort by revenue
+          .slice(0, 12) // Top 12 products
+        
+        console.log(`🎯 Auto-analyzing ${priorityProducts.length} priority products for competitive data`)
+        
+        // Batch competitive analysis
+        const newCompetitorPrices: any[] = []
+        let analysisCount = 0
+        
+        for (const sku of priorityProducts) {
+          try {
+            // Create search term
+            const searchTerm = `${sku.brand || ''} ${sku.subcategory || sku.category}`.trim()
+            
+            console.log(`[${analysisCount + 1}/${priorityProducts.length}] Analyzing: ${searchTerm}`)
+            
+            // Get competitive prices
+            const prices = await RealCompetitiveScraping.scrapeRealCompetitorPrices(
+              searchTerm,
+              sku.category,
+              3, // Max 3 competitors per product
+              false // Skip AI insights to save time/cost
+            )
+            
+            if (prices.length > 0) {
+              // Set our price and save
+              const competitorPricesWithContext = prices.map(price => ({
+                ...price,
+                sku: sku.sku_code,
+                our_price: sku.price,
+                price_difference: price.competitor_price - sku.price,
+                price_difference_percentage: ((price.competitor_price - sku.price) / sku.price) * 100
+              }))
+              
+              // Save to database
+              await PostgreSQLService.saveCompetitorPrices(userId, competitorPricesWithContext)
+              
+              newCompetitorPrices.push(...competitorPricesWithContext)
+              console.log(`✅ Found ${prices.length} competitor prices for ${sku.sku_code}`)
+            }
+            
+            analysisCount++
+            
+            // Rate limiting - be respectful
+            await new Promise(resolve => setTimeout(resolve, 1500))
+            
+            // Stop after getting some data to avoid long waits
+            if (newCompetitorPrices.length >= 15) break
+            
+          } catch (productError) {
+            console.error(`❌ Analysis failed for ${sku.sku_code}:`, productError)
+            continue
+          }
+        }
+        
+        // Update competitive data with new results
+        enhancedCompetitorData = [...competitorData, ...newCompetitorPrices]
+        
+        console.log(`✅ Auto-populated ${newCompetitorPrices.length} new competitor prices. Total: ${enhancedCompetitorData.length}`)
+        
+      } catch (autoPopulateError) {
+        console.error('❌ Auto-populate competitive data failed:', autoPopulateError)
+        // Continue with existing data
+      }
+    }
+
+    // Step 3: Generate Claude AI competitive intelligence with enhanced data
     const claudeInsights = await generateClaudeCompetitiveIntelligence(
-      competitorData,
+      enhancedCompetitorData,
       userSKUs,
       recentAnalyses
     )
@@ -93,10 +171,12 @@ export async function GET(request: NextRequest) {
       // Data context for Claude analysis
       data_context: {
         inventory_size: userSKUs.length,
-        competitor_prices_analyzed: competitorData.length,
-        unique_competitors: [...new Set(competitorData.map(c => c.competitor))].length,
+        competitor_prices_analyzed: enhancedCompetitorData.length,
+        unique_competitors: [...new Set(enhancedCompetitorData.map(c => c.competitor))].length,
         analysis_period: '7 days',
-        total_revenue_at_risk: claudeInsights.reduce((sum, i) => sum + Math.abs(i.revenue_impact_estimate), 0)
+        total_revenue_at_risk: claudeInsights.reduce((sum, i) => sum + Math.abs(i.revenue_impact_estimate), 0),
+        auto_populated_data: enhancedCompetitorData.length > competitorData.length,
+        new_competitive_data_points: enhancedCompetitorData.length - competitorData.length
       },
       
       generated_at: new Date().toISOString(),
