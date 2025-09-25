@@ -1,4 +1,4 @@
-// src/app/dashboard/page.tsx - DARK THEME VERSION
+// src/app/dashboard/page.tsx - COMPLETE ENHANCED DASHBOARD
 'use client'
 
 import React, { Suspense, useState, useEffect, useMemo } from 'react'
@@ -7,10 +7,9 @@ import { AuthModal } from '@/components/ui/auth-modals'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useUser } from '@/contexts/UserContext'
 import { 
-  BarChart3, TrendingUp, AlertTriangle, Download, Upload, Calendar, DollarSign, Package, Clock, CheckCircle, Filter, Eye, RefreshCw, Target, Brain, Lightbulb, FileText, ArrowRight, Zap, Tag, Crown, Gift, Wine, Info, X, ChevronDown, ChevronUp, Activity
+  BarChart3, TrendingUp, AlertTriangle, Download, Upload, Calendar, DollarSign, Package, Clock, CheckCircle, Filter, Eye, RefreshCw, Target, Brain, Lightbulb, FileText, ArrowRight, Zap, Tag, Crown, Gift, Wine, Info, X, ChevronDown, ChevronUp, Activity, Play, Pause, ExternalLink, Shield
 } from 'lucide-react'
 
-// [Keep all the existing type definitions and helper functions]
 interface DashboardStats {
   totalAnalyses: number
   totalSKUs: number
@@ -74,6 +73,38 @@ interface AnalysisDetails {
   seasonal_strategies?: SeasonalStrategy[]
   criticalAlerts: any[]
   processedAt: string
+}
+
+interface ClaudeInsight {
+  id: string
+  type: 'strategic_alert' | 'market_opportunity' | 'competitive_threat' | 'pricing_strategy'
+  priority: 'critical' | 'high' | 'medium' | 'low'
+  title: string
+  claude_analysis: string
+  strategic_recommendations: string[]
+  immediate_actions: string[]
+  revenue_impact_estimate: number
+  confidence_score: number
+  affected_products: string[]
+  competitors_involved: string[]
+  market_context: string
+  urgency_timeline: string
+  timestamp: Date
+}
+
+interface CompetitiveFeedData {
+  claude_insights: ClaudeInsight[]
+  monitoring_strategy: any
+  portfolio_assessment: any
+  data_context: any
+}
+
+interface MonitoringStatus {
+  isActive: boolean
+  activeProducts: number
+  totalRetailers: number
+  lastCheck: string
+  config?: any
 }
 
 function getSeasonalStrategies(data: any): SeasonalStrategy[] {
@@ -148,6 +179,16 @@ function DashboardContent() {
   const [loadingStats, setLoadingStats] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [debugMode, setDebugMode] = useState(false)
+  const [activeTab, setActiveTab] = useState<'overview' | 'live-intelligence' | 'analysis'>('live-intelligence')
+  
+  // Live Competitive Intelligence State
+  const [feedData, setFeedData] = useState<CompetitiveFeedData | null>(null)
+  const [monitoringStatus, setMonitoringStatus] = useState<MonitoringStatus | null>(null)
+  const [competitiveLoading, setCompetitiveLoading] = useState(false)
+  const [competitiveError, setCompetitiveError] = useState<string | null>(null)
+  const [expandedInsights, setExpandedInsights] = useState<Set<string>>(new Set())
+  const [refreshing, setRefreshing] = useState(false)
+  const [autoRefresh, setAutoRefresh] = useState(true)
   
   // Auth state
   const [authModalOpen, setAuthModalOpen] = useState(false)
@@ -168,12 +209,27 @@ function DashboardContent() {
     return getSeasonalStrategies(analysisDetails)
   }, [analysisDetails])
 
-  // [Keep all the existing useEffect hooks and functions - just the UI changes]
+  // Auto-refresh competitive intelligence every 5 minutes
+  useEffect(() => {
+    let interval: NodeJS.Timeout
+
+    if (autoRefresh && activeTab === 'live-intelligence' && user) {
+      interval = setInterval(() => {
+        fetchCompetitiveIntelligence(true)
+      }, 5 * 60 * 1000) // 5 minutes
+    }
+
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [autoRefresh, activeTab, user])
+
   useEffect(() => {
     if (searchParams) {
       const analysisParam = searchParams.get('analysis')
       if (analysisParam && analysisParam !== 'undefined' && analysisParam !== 'null') {
         setSelectedAnalysisId(analysisParam)
+        setActiveTab('analysis')
       }
     }
   }, [searchParams])
@@ -181,8 +237,12 @@ function DashboardContent() {
   useEffect(() => {
     if (user) {
       fetchDashboardData()
+      if (activeTab === 'live-intelligence') {
+        fetchCompetitiveIntelligence()
+        fetchMonitoringStatus()
+      }
     }
-  }, [user])
+  }, [user, activeTab])
   
   useEffect(() => {
     if (selectedAnalysisId && user && selectedAnalysisId !== 'undefined' && selectedAnalysisId !== 'null') {
@@ -214,6 +274,89 @@ function DashboardContent() {
       setLoadError('Failed to load dashboard data. Please try again.')
     } finally {
       setLoadingStats(false)
+    }
+  }
+
+  const fetchCompetitiveIntelligence = async (isRefresh = false) => {
+    if (!user) return
+    
+    if (isRefresh) {
+      setRefreshing(true)
+    } else {
+      setCompetitiveLoading(true)
+    }
+    
+    setCompetitiveError(null)
+
+    try {
+      const response = await fetch(`/api/dashboard/competitive-feed?userId=${encodeURIComponent(user.email)}`)
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP ${response.status}`)
+      }
+
+      const data = await response.json()
+      setFeedData(data)
+      
+    } catch (err) {
+      console.error('Competitive intelligence fetch failed:', err)
+      setCompetitiveError(err instanceof Error ? err.message : 'Failed to load competitive intelligence')
+    } finally {
+      setCompetitiveLoading(false)
+      setRefreshing(false)
+    }
+  }
+
+  const fetchMonitoringStatus = async () => {
+    if (!user) return
+    
+    try {
+      const response = await fetch(`/api/monitoring?userId=${encodeURIComponent(user.email)}`)
+      
+      if (response.ok) {
+        const data = await response.json()
+        setMonitoringStatus(data.status)
+      }
+    } catch (err) {
+      console.error('Monitoring status fetch failed:', err)
+    }
+  }
+
+  const toggleMonitoring = async () => {
+    if (!user || !feedData?.data_context) return
+    
+    try {
+      if (monitoringStatus?.isActive) {
+        // Stop monitoring using your existing API
+        await fetch(`/api/monitoring?userId=${encodeURIComponent(user.email)}`, {
+          method: 'DELETE'
+        })
+      } else {
+        // Start monitoring with top products using your existing API
+        const topProducts = Array.from({ length: Math.min(10, feedData.data_context.inventory_size) }, (_, i) => ({
+          sku: `TOP-PRODUCT-${i + 1}`,
+          product: `Top Product ${i + 1}`,
+          category: 'spirits',
+          currentPrice: 25 + Math.random() * 50
+        }))
+
+        await fetch('/api/monitoring', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.email,
+            products: topProducts,
+            intervalMinutes: 240, // 4 hours
+            maxRetailersPerCheck: 3
+          })
+        })
+      }
+
+      // Refresh status
+      setTimeout(() => fetchMonitoringStatus(), 1000)
+    } catch (err) {
+      console.error('Toggle monitoring failed:', err)
     }
   }
   
@@ -261,6 +404,18 @@ function DashboardContent() {
     })
   }
 
+  const toggleInsightExpansion = (insightId: string) => {
+    setExpandedInsights(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(insightId)) {
+        newSet.delete(insightId)
+      } else {
+        newSet.add(insightId)
+      }
+      return newSet
+    })
+  }
+
   const handleLogin = () => {
     setAuthMode('login')
     setAuthModalOpen(true)
@@ -284,7 +439,26 @@ function DashboardContent() {
     setSelectedAnalysisId(null)
     setAnalysisDetails(null)
     setAnalysisError(null)
+    setActiveTab('overview')
     router.push('/dashboard')
+  }
+
+  const getPriorityIcon = (priority: string) => {
+    switch (priority) {
+      case 'critical': return <AlertTriangle className="h-5 w-5 text-red-400" />
+      case 'high': return <TrendingUp className="h-5 w-5 text-orange-400" />
+      case 'medium': return <Target className="h-5 w-5 text-yellow-400" />
+      default: return <Eye className="h-5 w-5 text-white/60" />
+    }
+  }
+
+  const getPriorityStyle = (priority: string) => {
+    switch (priority) {
+      case 'critical': return 'border-red-400/30 bg-red-500/10'
+      case 'high': return 'border-orange-400/30 bg-orange-500/10'
+      case 'medium': return 'border-yellow-400/30 bg-yellow-500/10'
+      default: return 'border-white/30 bg-white/5'
+    }
   }
 
   // Loading state
@@ -381,8 +555,11 @@ function DashboardContent() {
             </div>
             <div className="font-mono text-xs space-y-1 text-white/60">
               <div>User: {user?.email}</div>
+              <div>Active Tab: {activeTab}</div>
               <div>Selected Analysis: {selectedAnalysisId || 'none'}</div>
               <div>Seasonal Strategies: {seasonalStrategies.length}</div>
+              <div>Monitoring Active: {monitoringStatus?.isActive ? 'Yes' : 'No'}</div>
+              <div>Claude Insights: {feedData?.claude_insights?.length || 0}</div>
             </div>
           </div>
         )}
@@ -404,8 +581,478 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* Analysis Details Section */}
-        {selectedAnalysisId && (
+        {/* Main Navigation Tabs */}
+        <div className="mb-8 border-b border-white/20">
+          <nav className="-mb-px flex space-x-8">
+            {[
+              { id: 'live-intelligence', label: 'Live Competitive Intelligence', icon: Brain },
+              { id: 'overview', label: 'Analytics Overview', icon: BarChart3 },
+              { id: 'analysis', label: selectedAnalysisId ? 'Analysis Details' : 'Recent Analyses', icon: FileText }
+            ].map((tab) => {
+              const Icon = tab.icon
+              const isActive = activeTab === tab.id
+              
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`group inline-flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    isActive
+                      ? "border-white text-white"
+                      : "border-transparent text-white/60 hover:text-white/80 hover:border-white/30"
+                  }`}
+                >
+                  <Icon className={`h-5 w-5 ${
+                    isActive ? "text-white" : "text-white/40 group-hover:text-white/60"
+                  }`} />
+                  <span>{tab.label}</span>
+                  {tab.id === 'live-intelligence' && feedData?.claude_insights && feedData.claude_insights.length > 0 && (
+                    <span className="ml-2 px-2 py-1 bg-red-500/20 text-red-300 text-xs rounded border border-red-500/30">
+                      {feedData.claude_insights.filter(i => i.priority === 'critical' || i.priority === 'high').length}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </nav>
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'live-intelligence' && (
+          <div className="space-y-6">
+            {/* Competitive Intelligence Header with Controls */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-white/10 rounded flex items-center justify-center">
+                  <Brain className="h-6 w-6 text-white/60" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-light text-white">Live Competitive Intelligence</h2>
+                  <p className="text-white/60 text-sm">Powered by Claude AI & Real-time Scraping</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                {/* Monitoring Toggle */}
+                {monitoringStatus && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-white/60 text-sm">Live Monitoring:</span>
+                    <button
+                      onClick={toggleMonitoring}
+                      className={`flex items-center space-x-2 px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                        monitoringStatus.isActive
+                          ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                          : 'bg-white/10 text-white/70 border border-white/20 hover:bg-white/15'
+                      }`}
+                    >
+                      {monitoringStatus.isActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                      <span>{monitoringStatus.isActive ? 'Active' : 'Inactive'}</span>
+                    </button>
+                  </div>
+                )}
+                
+                {/* Refresh Controls */}
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setAutoRefresh(!autoRefresh)}
+                    className={`p-2 rounded transition-colors ${
+                      autoRefresh 
+                        ? 'bg-green-500/20 text-green-300' 
+                        : 'bg-white/10 text-white/60 hover:bg-white/15'
+                    }`}
+                    title={`Auto-refresh: ${autoRefresh ? 'On' : 'Off'}`}
+                  >
+                    <Activity className="h-4 w-4" />
+                  </button>
+                  
+                  <button
+                    onClick={() => fetchCompetitiveIntelligence(true)}
+                    disabled={refreshing}
+                    className="flex items-center space-x-2 px-4 py-2 bg-white/10 text-white border border-white/20 rounded hover:bg-white/15 transition-colors disabled:opacity-50"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                    <span>Refresh</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Competitive Intelligence Content */}
+            {competitiveLoading ? (
+              <div className="text-center py-12">
+                <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-white/60">Loading Claude AI competitive intelligence...</p>
+              </div>
+            ) : competitiveError ? (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <AlertTriangle className="h-6 w-6 text-red-400" />
+                  <h3 className="text-lg font-medium text-red-300">Competitive Intelligence Error</h3>
+                </div>
+                <p className="text-red-200 mb-4">{competitiveError}</p>
+                <button
+                  onClick={() => fetchCompetitiveIntelligence()}
+                  className="text-red-300 hover:text-red-100 font-medium"
+                >
+                  Retry Analysis
+                </button>
+              </div>
+            ) : !feedData ? (
+              <div className="text-center py-12 bg-white/5 border border-white/20 rounded-lg">
+                <Brain className="h-12 w-12 mx-auto mb-4 text-white/40" />
+                <p className="text-white/60 mb-4">No competitive intelligence data available</p>
+                <button
+                  onClick={() => fetchCompetitiveIntelligence()}
+                  className="px-6 py-3 bg-white text-black font-medium rounded hover:bg-gray-100 transition-colors"
+                >
+                  Generate Intelligence
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Portfolio Assessment */}
+                {feedData.portfolio_assessment && (
+                  <div className="bg-white/5 border border-white/20 rounded-lg p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-medium text-white flex items-center space-x-2">
+                        <Shield className="h-5 w-5 text-white/60" />
+                        <span>Portfolio Health Assessment</span>
+                      </h3>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-white/60">Health Score:</span>
+                        <span className={`text-xl font-bold ${
+                          feedData.portfolio_assessment.health_score >= 8 ? 'text-green-400' :
+                          feedData.portfolio_assessment.health_score >= 6 ? 'text-yellow-400' :
+                          'text-red-400'
+                        }`}>
+                          {feedData.portfolio_assessment.health_score}/10
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white/5 border border-white/20 rounded p-4">
+                      <div className="text-white/80 text-sm leading-relaxed whitespace-pre-line">
+                        {feedData.portfolio_assessment.claude_assessment}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Claude AI Strategic Insights */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-medium text-white flex items-center space-x-2">
+                      <Zap className="h-5 w-5 text-white/60" />
+                      <span>Claude AI Strategic Insights</span>
+                    </h3>
+                    <span className="text-sm text-white/60">
+                      {feedData?.claude_insights?.length || 0} insights • £{Math.round(feedData?.data_context?.total_revenue_at_risk || 0).toLocaleString()} impact
+                    </span>
+                  </div>
+
+                  {feedData?.claude_insights && feedData.claude_insights.length === 0 ? (
+                    <div className="text-center py-8 bg-white/5 border border-white/20 rounded-lg">
+                      <Brain className="h-12 w-12 mx-auto mb-3 text-white/30" />
+                      <p className="text-white/60">No strategic insights detected</p>
+                      <p className="text-sm text-white/50">Upload more inventory or wait for competitive data</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {feedData?.claude_insights && feedData.claude_insights.map((insight) => {
+                        const isExpanded = expandedInsights.has(insight.id)
+                        const priorityStyle = getPriorityStyle(insight.priority)
+                        const priorityIcon = getPriorityIcon(insight.priority)
+                        
+                        return (
+                          <div key={insight.id} className={`border rounded-lg overflow-hidden hover:border-white/40 transition-colors ${priorityStyle}`}>
+                            {/* Insight Header */}
+                            <div className="p-4 border-b border-white/10">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                  {priorityIcon}
+                                  <div>
+                                    <h4 className="font-medium text-white">{insight.title}</h4>
+                                    <div className="flex items-center space-x-2 mt-1">
+                                      <span className="text-xs text-white/60 uppercase">{insight.type.replace(/_/g, ' ')}</span>
+                                      <span className="text-xs text-white/40">•</span>
+                                      <span className="text-xs text-white/60">{insight.urgency_timeline}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-lg font-medium text-white">
+                                    £{Math.abs(insight.revenue_impact_estimate).toLocaleString()}
+                                  </div>
+                                  <div className="text-xs text-white/60">
+                                    {Math.round(insight.confidence_score * 100)}% confidence
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Insight Content */}
+                            <div className="p-4 space-y-3">
+                              <p className="text-white/80 text-sm leading-relaxed">
+                                {insight.claude_analysis}
+                              </p>
+                              
+                              {/* Affected Products & Competitors */}
+                              <div className="flex flex-wrap items-center gap-4 text-xs">
+                                {insight.affected_products.length > 0 && (
+                                  <div className="flex items-center space-x-1">
+                                    <span className="text-white/60">Products:</span>
+                                    <span className="text-white/80">{insight.affected_products.slice(0, 3).join(', ')}</span>
+                                    {insight.affected_products.length > 3 && (
+                                      <span className="text-white/60">+{insight.affected_products.length - 3} more</span>
+                                    )}
+                                  </div>
+                                )}
+                                
+                                {insight.competitors_involved.length > 0 && (
+                                  <div className="flex items-center space-x-1">
+                                    <span className="text-white/60">Competitors:</span>
+                                    <span className="text-white/80">{insight.competitors_involved.join(', ')}</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Expandable Details */}
+                              <div className="border-t border-white/10 pt-3">
+                                <button
+                                  onClick={() => toggleInsightExpansion(insight.id)}
+                                  className="flex items-center justify-between w-full text-left font-medium text-white hover:text-white/80 transition-colors"
+                                >
+                                  <span>Strategic Actions</span>
+                                  {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                                </button>
+                                
+                                {isExpanded && (
+                                  <div className="mt-3 space-y-4">
+                                    {/* Strategic Recommendations */}
+                                    {insight.strategic_recommendations.length > 0 && (
+                                      <div className="bg-white/5 border border-white/20 rounded p-3">
+                                        <h5 className="font-medium text-white/80 mb-2 flex items-center space-x-2">
+                                          <Crown className="h-4 w-4" />
+                                          <span>Strategic Recommendations:</span>
+                                        </h5>
+                                        <ul className="space-y-1">
+                                          {insight.strategic_recommendations.map((rec, idx) => (
+                                            <li key={idx} className="flex items-start space-x-2">
+                                              <div className="w-1 h-1 bg-white/60 rounded-full mt-2 flex-shrink-0" />
+                                              <span className="text-sm text-white/70">{rec}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+
+                                    {/* Immediate Actions */}
+                                    {insight.immediate_actions.length > 0 && (
+                                      <div>
+                                        <h5 className="font-medium text-white/80 mb-2">Immediate Actions:</h5>
+                                        <div className="space-y-2">
+                                          {insight.immediate_actions.map((action, idx) => (
+                                            <div key={idx} className="flex items-start space-x-2">
+                                              <span className="w-5 h-5 bg-white/20 text-white/80 rounded-full flex items-center justify-center text-xs font-medium mt-0.5 flex-shrink-0">
+                                                {idx + 1}
+                                              </span>
+                                              <span className="text-sm text-white/70">{action}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Market Context */}
+                                    {insight.market_context && (
+                                      <div className="bg-white/5 border border-white/20 rounded p-3">
+                                        <h5 className="font-medium text-white/80 mb-2">Market Context:</h5>
+                                        <p className="text-sm text-white/70">{insight.market_context}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Data Context Footer */}
+                <div className="bg-white/5 border border-white/20 rounded-lg p-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center text-sm">
+                    <div>
+                      <div className="text-lg font-medium text-white">{feedData?.data_context?.inventory_size || 0}</div>
+                      <div className="text-white/60">Products in Portfolio</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-medium text-white">{feedData?.data_context?.competitor_prices_analyzed || 0}</div>
+                      <div className="text-white/60">Competitor Prices</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-medium text-white">{feedData?.data_context?.unique_competitors || 0}</div>
+                      <div className="text-white/60">UK Retailers</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-medium text-green-400">
+                        {monitoringStatus?.isActive ? 'LIVE' : 'STATIC'}
+                      </div>
+                      <div className="text-white/60">Data Status</div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-3 pt-3 border-t border-white/10 text-center">
+                    <p className="text-xs text-white/50">
+                      Last updated: {new Date().toLocaleTimeString()} • 
+                      Powered by Claude AI & SERP API • 
+                      Analysis period: {feedData?.data_context?.analysis_period || '7 days'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'overview' && (
+          <div className="space-y-8">
+            {/* Stats Cards */}
+            {loadingStats ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-pulse">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="bg-white/5 h-32 rounded-lg"></div>
+                ))}
+              </div>
+            ) : stats ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white/5 border border-white/20 rounded-lg p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-white/60">Total SKUs</p>
+                      <p className="text-3xl font-light text-white">{stats.totalSKUs || 0}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-white/10 rounded flex items-center justify-center">
+                      <Package className="h-6 w-6 text-white/60" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white/5 border border-white/20 rounded-lg p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-white/60">Revenue Potential</p>
+                      <p className="text-3xl font-light text-white">£{Math.round(stats.totalRevenuePotential || 0).toLocaleString()}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-green-500/20 rounded flex items-center justify-center">
+                      <DollarSign className="h-6 w-6 text-green-400" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white/5 border border-white/20 rounded-lg p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-white/60">Recent Analyses</p>
+                      <p className="text-3xl font-light text-white">{stats.recentAnalyses || 0}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-white/10 rounded flex items-center justify-center">
+                      <Activity className="h-6 w-6 text-white/60" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {/* Recent Analyses Table */}
+            <div className="bg-white/5 border border-white/20 rounded-lg p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-light text-white">Recent Analyses</h2>
+                <button
+                  onClick={() => router.push('/analytics')}
+                  className="text-white/60 hover:text-white text-sm font-medium flex items-center space-x-1 transition-colors"
+                >
+                  <Upload className="h-4 w-4" />
+                  <span>New Analysis</span>
+                </button>
+              </div>
+              
+              {Array.isArray(recentAnalyses) && recentAnalyses.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead>
+                      <tr className="border-b border-white/10">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase">File Name</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase">Date</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase">SKUs</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase">Seasonal</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/10">
+                      {recentAnalyses.map((analysis, index) => {
+                        const analysisSeasonal = getSeasonalStrategies(analysis)
+                        return (
+                          <tr key={analysis._id || `analysis-${index}`} className="hover:bg-white/5">
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="font-medium text-white">{analysis.fileName || 'Unnamed analysis'}</div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-sm text-white/60">
+                                {analysis.processedAt ? new Date(analysis.processedAt).toLocaleDateString() : 'Unknown'}
+                              </div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-sm text-white">{analysis.summary?.totalSKUs || 0}</div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              {analysisSeasonal.length > 0 ? (
+                                <span className="inline-flex items-center px-2 py-1 bg-green-500/20 text-green-300 text-xs rounded border border-green-500/30">
+                                  <Calendar className="h-3 w-3 mr-1" />
+                                  {analysisSeasonal.length}
+                                </span>
+                              ) : (
+                                <span className="text-white/40 text-xs">-</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <button
+                                onClick={() => {
+                                  setSelectedAnalysisId(analysis.uploadId)
+                                  setActiveTab('analysis')
+                                }}
+                                className="inline-flex items-center space-x-1 text-sm font-medium text-white/60 hover:text-white transition-colors"
+                              >
+                                <Eye className="h-4 w-4" />
+                                <span>View</span>
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Calendar className="h-12 w-12 text-white/30 mx-auto mb-3" />
+                  <p className="text-white/60">No analyses found</p>
+                  <button
+                    onClick={() => router.push('/analytics')}
+                    className="inline-flex items-center space-x-2 px-4 py-2 bg-white text-black font-medium rounded hover:bg-gray-100 transition-colors mt-4"
+                  >
+                    <Upload className="h-4 w-4" />
+                    <span>Upload Inventory File</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'analysis' && selectedAnalysisId && (
           <div className="space-y-8">
             <div className="flex justify-between items-center">
               <button
@@ -949,139 +1596,6 @@ function DashboardContent() {
                 )}
               </div>
             )}
-          </div>
-        )}
-
-        {/* Regular Dashboard Content (when no analysis selected) */}
-        {!selectedAnalysisId && (
-          <div className="space-y-8">
-            {/* Stats Cards */}
-            {loadingStats ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-pulse">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="bg-white/5 h-32 rounded-lg"></div>
-                ))}
-              </div>
-            ) : stats ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white/5 border border-white/20 rounded-lg p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-white/60">Total SKUs</p>
-                      <p className="text-3xl font-light text-white">{stats.totalSKUs || 0}</p>
-                    </div>
-                    <div className="w-12 h-12 bg-white/10 rounded flex items-center justify-center">
-                      <Package className="h-6 w-6 text-white/60" />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-white/5 border border-white/20 rounded-lg p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-white/60">Revenue Potential</p>
-                      <p className="text-3xl font-light text-white">£{Math.round(stats.totalRevenuePotential || 0).toLocaleString()}</p>
-                    </div>
-                    <div className="w-12 h-12 bg-green-500/20 rounded flex items-center justify-center">
-                      <DollarSign className="h-6 w-6 text-green-400" />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-white/5 border border-white/20 rounded-lg p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-white/60">Recent Analyses</p>
-                      <p className="text-3xl font-light text-white">{stats.recentAnalyses || 0}</p>
-                    </div>
-                    <div className="w-12 h-12 bg-white/10 rounded flex items-center justify-center">
-                      <Activity className="h-6 w-6 text-white/60" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : null}
-
-            {/* Recent Analyses Table */}
-            <div className="bg-white/5 border border-white/20 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-light text-white">Recent Analyses</h2>
-                <button
-                  onClick={() => router.push('/analytics')}
-                  className="text-white/60 hover:text-white text-sm font-medium flex items-center space-x-1 transition-colors"
-                >
-                  <Upload className="h-4 w-4" />
-                  <span>New Analysis</span>
-                </button>
-              </div>
-              
-              {Array.isArray(recentAnalyses) && recentAnalyses.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full">
-                    <thead>
-                      <tr className="border-b border-white/10">
-                        <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase">File Name</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase">Date</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase">SKUs</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase">Seasonal</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/10">
-                      {recentAnalyses.map((analysis, index) => {
-                        const analysisSeasonal = getSeasonalStrategies(analysis)
-                        return (
-                          <tr key={analysis._id || `analysis-${index}`} className="hover:bg-white/5">
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="font-medium text-white">{analysis.fileName || 'Unnamed analysis'}</div>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm text-white/60">
-                                {analysis.processedAt ? new Date(analysis.processedAt).toLocaleDateString() : 'Unknown'}
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm text-white">{analysis.summary?.totalSKUs || 0}</div>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              {analysisSeasonal.length > 0 ? (
-                                <span className="inline-flex items-center px-2 py-1 bg-green-500/20 text-green-300 text-xs rounded border border-green-500/30">
-                                  <Calendar className="h-3 w-3 mr-1" />
-                                  {analysisSeasonal.length}
-                                </span>
-                              ) : (
-                                <span className="text-white/40 text-xs">-</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <button
-                                onClick={() => setSelectedAnalysisId(analysis.uploadId)}
-                                className="inline-flex items-center space-x-1 text-sm font-medium text-white/60 hover:text-white transition-colors"
-                              >
-                                <Eye className="h-4 w-4" />
-                                <span>View</span>
-                              </button>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Calendar className="h-12 w-12 text-white/30 mx-auto mb-3" />
-                  <p className="text-white/60">No analyses found</p>
-                  <button
-                    onClick={() => router.push('/analytics')}
-                    className="inline-flex items-center space-x-2 px-4 py-2 bg-white text-black font-medium rounded hover:bg-gray-100 transition-colors mt-4"
-                  >
-                    <Upload className="h-4 w-4" />
-                    <span>Upload Inventory File</span>
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
         )}
       </main>
