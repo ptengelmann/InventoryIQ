@@ -579,7 +579,7 @@ Prioritize insights that address:
 
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20250114',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 6000,
       temperature: 0.2,
       messages: [{ role: 'user', content: enhancedPrompt }]
@@ -652,7 +652,7 @@ Provide specific recommendations with £ thresholds, timing intervals, and autom
 
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20250114',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 2000,
       temperature: 0.3,
       messages: [{ role: 'user', content: enhancedPrompt }]
@@ -781,7 +781,7 @@ Provide direct, actionable insights for C-level decision making.`
 
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20250114',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 2000,
       temperature: 0.2,
       messages: [{ role: 'user', content: advancedPrompt }]
