@@ -1219,6 +1219,10 @@ export class PostgreSQLService {
     maxRetailersPerCheck: number
     startedAt: Date
     isActive: boolean
+    priorityProducts?: any[] // Add this
+    selectionMethod?: string // Add this  
+    totalInventorySize?: number // Add this
+
   }): Promise<void> {
     try {
       const user = await prisma.user.findUnique({
