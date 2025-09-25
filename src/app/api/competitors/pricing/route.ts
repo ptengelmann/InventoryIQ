@@ -411,7 +411,7 @@ Keep it concise and actionable for alcohol retail management.`
 
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-3-5-sonnet-20250114',
       max_tokens: 500,
       temperature: 0.3,
       messages: [{

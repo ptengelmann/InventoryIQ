@@ -406,7 +406,7 @@ ${competitiveResults
 Write a concise 4-5 sentence executive summary focusing on key insights and recommended actions for alcohol retail management. Include specific numbers and be direct about priorities.`
 
   const response = await anthropic.messages.create({
-    model: 'claude-3-5-sonnet-20241022',
+    model: 'claude-3-5-sonnet-20250114',
     max_tokens: 400,
     temperature: 0.3,
     messages: [{ role: 'user', content: prompt }]

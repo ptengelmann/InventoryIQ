@@ -221,7 +221,7 @@ Return as JSON array:
 Focus on products where competitive intelligence will have the highest business impact. Be specific about WHY each product was selected.`
 
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-3-5-sonnet-20250114',
       max_tokens: 3000,
       temperature: 0.2,
       messages: [{ role: 'user', content: prompt }]

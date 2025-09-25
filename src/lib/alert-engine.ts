@@ -316,7 +316,7 @@ Return as JSON array:
 Focus on alcohol industry specifics: seasonality, shelf life, compliance, competitor dynamics.`
 
       const response = await anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-3-5-sonnet-20250114',
         max_tokens: 3000,
         temperature: 0.3,
         messages: [{ role: 'user', content: prompt }]
@@ -536,7 +536,7 @@ Return as JSON array (2-3 alerts max):
 Make it sound like urgent, specific business advice with exact numbers and deadlines.`
 
       const response = await anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-3-5-sonnet-20250114',
         max_tokens: 2500,
         temperature: 0.2, // Lower temperature for more focused, specific responses
         messages: [{ role: 'user', content: prompt }]

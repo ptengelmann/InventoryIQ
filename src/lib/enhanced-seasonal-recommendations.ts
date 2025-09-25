@@ -65,7 +65,7 @@ export class EnhancedSeasonalRecommendations {
 
     try {
       const response = await anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-3-5-sonnet-20250114',
         max_tokens: 1000,
         temperature: 0.1,
         messages: [{
@@ -180,7 +180,7 @@ Example format: ["Valentine's Day (February 14, 7 days away)", "Six Nations Rugb
       console.log('🤖 Calling Claude for intelligent seasonal strategies...')
       
       const response = await anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-3-5-sonnet-20250114',
         max_tokens: 6000, // Increased for more strategies
         temperature: 0.7,
         messages: [{
