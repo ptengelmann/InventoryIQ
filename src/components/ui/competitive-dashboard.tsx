@@ -1,4 +1,4 @@
-// src/app/competitive/page.tsx - PROFESSIONAL BLACK/WHITE VERSION
+// src/app/competitive/page.tsx - DARK THEME VERSION
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -118,7 +118,6 @@ export default function CompetitivePage() {
         }
       }
       
-      // Professional demo data
       const mockData: PriceComparisonResult[] = []
       setCompetitorData(mockData)
     } catch (error) {
@@ -137,7 +136,7 @@ export default function CompetitivePage() {
       const queryParams = new URLSearchParams({
         product: testProduct,
         category: 'spirits',
-        maxRetailers: '10' // Increased from 5 to 10
+        maxRetailers: '10'
       })
       
       if (user) {
@@ -145,12 +144,8 @@ export default function CompetitivePage() {
         queryParams.append('userId', user.email)
       }
       
-      console.log('Testing live competitor data for:', testProduct)
-      
       const response = await fetch(`/api/competitors/live?${queryParams.toString()}`)
       const data = await response.json()
-      
-      console.log('Live API Response:', data)
       
       if (data.success && data.competitors && data.competitors.length > 0) {
         const newResult: PriceComparisonResult = {
@@ -185,22 +180,18 @@ export default function CompetitivePage() {
           }
         }
         
-        // Calculate market position
         if (data.market_analysis && data.competitors.length > 0) {
           const avgPrice = data.market_analysis.price_range?.average || 0
-          const minPrice = data.market_analysis.price_range?.min || 0
-          const maxPrice = data.market_analysis.price_range?.max || 0
           
           if (avgPrice > 0) {
             const priceAdvantage = data.our_price > 0 ? ((data.our_price - avgPrice) / avgPrice) * 100 : 0
             
             newResult.market_position = {
-              rank: 1, // Would need our_price to calculate real rank
+              rank: 1,
               percentile: 50,
               price_advantage: Math.round(priceAdvantage * 100) / 100
             }
             
-            // Generate better recommendations
             if (priceAdvantage > 15) {
               newResult.recommendations = {
                 action: 'decrease',
@@ -225,7 +216,6 @@ export default function CompetitivePage() {
           }
         }
         
-        // Add to existing data (remove old entry with same product if exists)
         setCompetitorData(prev => {
           const filtered = prev.filter(item => !item.sku.includes(testProduct.replace(/\s+/g, '-').toUpperCase()))
           return [newResult, ...filtered]
@@ -233,8 +223,6 @@ export default function CompetitivePage() {
         
         setTestProduct('')
         
-      } else {
-        console.log('No competitive data found for:', testProduct)
       }
       
     } catch (error) {
@@ -253,24 +241,24 @@ export default function CompetitivePage() {
   const getActionIcon = (action: string) => {
     switch (action) {
       case 'increase':
-        return <ArrowUp className="h-4 w-4 text-green-700" />
+        return <ArrowUp className="h-4 w-4 text-green-400" />
       case 'decrease':
-        return <ArrowDown className="h-4 w-4 text-red-700" />
+        return <ArrowDown className="h-4 w-4 text-red-400" />
       case 'maintain':
-        return <Minus className="h-4 w-4 text-gray-700" />
+        return <Minus className="h-4 w-4 text-white/60" />
       default:
-        return <Eye className="h-4 w-4 text-gray-700" />
+        return <Eye className="h-4 w-4 text-white/60" />
     }
   }
 
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
       case 'high':
-        return 'bg-gray-800 text-white border-gray-800'
+        return 'bg-red-500/20 text-red-300 border-red-500/30'
       case 'medium':
-        return 'bg-gray-600 text-white border-gray-600'
+        return 'bg-orange-500/20 text-orange-300 border-orange-500/30'
       default:
-        return 'bg-gray-400 text-white border-gray-400'
+        return 'bg-white/10 text-white/70 border-white/20'
     }
   }
 
@@ -289,12 +277,12 @@ export default function CompetitivePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-black">
         <Navbar onLogin={handleLogin} onSignup={handleSignup} />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center">
-            <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading competitive intelligence...</p>
+            <div className="w-8 h-8 border-4 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-white/60">Loading competitive intelligence...</p>
           </div>
         </div>
       </div>
@@ -302,7 +290,7 @@ export default function CompetitivePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-black">
       <Navbar onLogin={handleLogin} onSignup={handleSignup} />
 
       <AuthModal
@@ -316,47 +304,49 @@ export default function CompetitivePage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-8">
           {/* Header */}
-          <div className="text-center space-y-4">
-            <div className="inline-flex items-center space-x-2 bg-black text-white px-4 py-2 rounded-lg">
-              <Target className="h-4 w-4" />
-              <span className="text-sm font-medium">UK Alcohol Competitive Intelligence</span>
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+          <div className="text-center space-y-6">
+            <div className="inline-flex items-center space-x-2 px-3 py-1 border border-white/20 rounded">
+              <div className="w-1.5 h-1.5 bg-green-400 rounded-full" />
+              <span className="text-white/60 text-sm">AI-powered competitive intelligence</span>
             </div>
 
-            <h1 className="text-4xl md:text-5xl font-bold text-black">
-              Competitive Price Intelligence
+            <h1 className="text-4xl md:text-6xl font-light text-white leading-tight">
+              Competitive market intelligence
+              <br />
+              <span className="text-white/60">for UK alcohol retailers</span>
             </h1>
 
-            <p className="text-xl text-gray-600 max-w-4xl mx-auto">
-              Real-time competitive pricing from major UK alcohol retailers. 
-              Monitor Majestic Wine, Waitrose, Tesco, ASDA, and more.
+            <p className="text-base md:text-lg text-white/60 leading-relaxed max-w-2xl mx-auto">
+              Monitor competitor prices, track stock levels, and get AI-powered strategic 
+              recommendations across 20+ UK retailers. Real-time data from Majestic Wine, 
+              Waitrose, Tesco, ASDA, and more.
             </p>
 
-            <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-600">
+            <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-white/40">
               <div className="flex items-center space-x-2">
-                <CheckCircle className="h-4 w-4 text-black" />
+                <CheckCircle className="h-4 w-4 text-green-400" />
                 <span>Real UK retailer data</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Shield className="h-4 w-4 text-black" />
+                <Shield className="h-4 w-4 text-green-400" />
                 <span>SERP API powered</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Database className="h-4 w-4 text-black" />
+                <Database className="h-4 w-4 text-green-400" />
                 <span>Database persistence</span>
               </div>
             </div>
           </div>
 
           {/* Live Test Section */}
-          <div className="bg-white border-2 border-gray-200 rounded-lg p-8">
+          <div className="bg-white/5 border border-white/20 rounded-lg p-8">
             <div className="flex items-center space-x-3 mb-6">
-              <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center">
-                <Activity className="h-6 w-6 text-white" />
+              <div className="w-12 h-12 bg-white/10 rounded flex items-center justify-center">
+                <Activity className="h-6 w-6 text-white/60" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-black">Live Competitive Search</h3>
-                <p className="text-gray-600">Get real-time pricing from UK alcohol retailers</p>
+                <h3 className="text-2xl font-light text-white">Live competitive search</h3>
+                <p className="text-white/60">Get real-time pricing from UK alcohol retailers</p>
               </div>
             </div>
             
@@ -366,13 +356,13 @@ export default function CompetitivePage() {
                 placeholder="Enter product name (e.g., 'Grey Goose Vodka', 'Macallan 12 Whisky')"
                 value={testProduct}
                 onChange={(e) => setTestProduct(e.target.value)}
-                className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black text-lg"
+                className="flex-1 px-4 py-3 bg-white/10 border border-white/20 rounded text-white placeholder-white/40 focus:border-white/40 focus:outline-none"
                 onKeyPress={(e) => e.key === 'Enter' && testLiveCompetitorData()}
               />
               <button
                 onClick={testLiveCompetitorData}
                 disabled={!testProduct || refreshing}
-                className="flex items-center space-x-2 px-6 py-3 bg-black text-white font-semibold rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center space-x-2 px-6 py-3 bg-white text-black font-medium rounded hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {refreshing ? (
                   <RefreshCw className="h-5 w-5 animate-spin" />
@@ -383,17 +373,17 @@ export default function CompetitivePage() {
               </button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-white/60">
               <div className="flex items-center space-x-2">
-                <Globe className="h-4 w-4 text-black" />
+                <Globe className="h-4 w-4 text-white/60" />
                 <span>10+ UK alcohol retailers</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Brain className="h-4 w-4 text-black" />
+                <Brain className="h-4 w-4 text-white/60" />
                 <span>AI-powered market insights</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Database className="h-4 w-4 text-black" />
+                <Database className="h-4 w-4 text-white/60" />
                 <span>Auto-saved to database</span>
               </div>
             </div>
@@ -412,19 +402,22 @@ export default function CompetitivePage() {
                 label: 'Price Decreases Needed', 
                 value: overviewStats.needPriceDecrease, 
                 icon: ArrowDown,
-                description: 'Above market pricing'
+                description: 'Above market pricing',
+                color: 'text-red-400'
               },
               { 
                 label: 'Price Increases Possible', 
                 value: overviewStats.needPriceIncrease, 
                 icon: ArrowUp,
-                description: 'Below market pricing'
+                description: 'Below market pricing',
+                color: 'text-green-400'
               },
               { 
                 label: 'High Priority Actions', 
                 value: overviewStats.highUrgency, 
                 icon: AlertTriangle,
-                description: 'Immediate attention required'
+                description: 'Immediate attention required',
+                color: 'text-orange-400'
               },
               { 
                 label: 'Price Advantage', 
@@ -433,14 +426,14 @@ export default function CompetitivePage() {
                 description: 'vs market average'
               }
             ].map((stat, index) => (
-              <div key={index} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow">
+              <div key={index} className="bg-white/5 border border-white/20 rounded p-6 hover:bg-white/8 transition-colors">
                 <div className="flex items-center justify-between mb-2">
-                  <stat.icon className="h-8 w-8 text-black" />
-                  <div className="text-3xl font-bold text-black">{stat.value}</div>
+                  <stat.icon className={`h-8 w-8 ${stat.color || 'text-white/60'}`} />
+                  <div className={`text-3xl font-light ${stat.color || 'text-white'}`}>{stat.value}</div>
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-black">{stat.label}</div>
-                  <div className="text-xs text-gray-500">{stat.description}</div>
+                  <div className="text-sm font-medium text-white">{stat.label}</div>
+                  <div className="text-xs text-white/50">{stat.description}</div>
                 </div>
               </div>
             ))}
@@ -449,19 +442,19 @@ export default function CompetitivePage() {
           {/* Search and Filters */}
           <div className="flex items-center space-x-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/40" />
               <input
                 type="text"
                 placeholder="Search products..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded text-white placeholder-white/40 focus:border-white/40 focus:outline-none"
               />
             </div>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+              className="px-4 py-3 bg-white/10 border border-white/20 rounded text-white focus:border-white/40 focus:outline-none"
             >
               <option value="all">All Categories</option>
               <option value="beer">Beer</option>
@@ -472,7 +465,7 @@ export default function CompetitivePage() {
             <button
               onClick={refreshData}
               disabled={refreshing}
-              className="flex items-center space-x-2 px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+              className="flex items-center space-x-2 px-4 py-3 bg-white/10 border border-white/20 rounded hover:bg-white/15 transition-colors disabled:opacity-50 text-white"
             >
               <RefreshCw className={cn("h-5 w-5", refreshing && "animate-spin")} />
               <span>Refresh</span>
@@ -480,45 +473,45 @@ export default function CompetitivePage() {
           </div>
 
           {/* Main Data Table */}
-          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-              <h3 className="text-xl font-bold text-black">Competitive Price Analysis</h3>
-              <p className="text-gray-600 text-sm">Real-time pricing intelligence from UK alcohol retailers</p>
+          <div className="bg-white/5 border border-white/20 rounded-lg overflow-hidden">
+            <div className="px-6 py-4 border-b border-white/10">
+              <h3 className="text-xl font-light text-white">Competitive price analysis</h3>
+              <p className="text-white/60 text-sm">Real-time pricing intelligence from UK alcohol retailers</p>
             </div>
             
             {filteredData.length === 0 ? (
               <div className="text-center py-16">
-                <div className="w-16 h-16 bg-black rounded-lg flex items-center justify-center mx-auto mb-6">
-                  <Target className="h-8 w-8 text-white" />
+                <div className="w-16 h-16 bg-white/10 rounded flex items-center justify-center mx-auto mb-6">
+                  <Target className="h-8 w-8 text-white/60" />
                 </div>
-                <h3 className="text-2xl font-bold text-black mb-4">
-                  {loading ? 'Loading...' : 'Test Live Competitive Intelligence'}
+                <h3 className="text-2xl font-light text-white mb-4">
+                  {loading ? 'Loading...' : 'Test live competitive intelligence'}
                 </h3>
-                <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                <p className="text-white/60 mb-8 max-w-md mx-auto text-sm">
                   Enter a product name above to get real-time competitive pricing from UK alcohol retailers.
                 </p>
                 <div className="space-y-4">
                   <div className="flex justify-center space-x-2">
                     <button
                       onClick={() => setTestProduct('Grey Goose Vodka')}
-                      className="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                      className="px-4 py-2 bg-white/10 border border-white/20 rounded hover:bg-white/15 transition-colors text-sm text-white"
                     >
                       Try: Grey Goose Vodka
                     </button>
                     <button
                       onClick={() => setTestProduct('Macallan 12 Whisky')}
-                      className="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                      className="px-4 py-2 bg-white/10 border border-white/20 rounded hover:bg-white/15 transition-colors text-sm text-white"
                     >
                       Try: Macallan 12 Whisky
                     </button>
                     <button
                       onClick={() => setTestProduct('Hendricks Gin')}
-                      className="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                      className="px-4 py-2 bg-white/10 border border-white/20 rounded hover:bg-white/15 transition-colors text-sm text-white"
                     >
                       Try: Hendricks Gin
                     </button>
                   </div>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-white/50">
                     Click any suggestion or enter your own product name
                   </p>
                 </div>
@@ -526,26 +519,26 @@ export default function CompetitivePage() {
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-white/5">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">Product</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">Market Position</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">Competitor Prices</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">Recommendation</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-white/60 uppercase">Product</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-white/60 uppercase">Market Position</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-white/60 uppercase">Competitor Prices</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-white/60 uppercase">Recommendation</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="divide-y divide-white/10">
                     {filteredData.map((item) => (
-                      <tr key={item.sku} className="hover:bg-gray-50">
+                      <tr key={item.sku} className="hover:bg-white/5">
                         <td className="px-6 py-4">
                           <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
-                              <Package className="h-5 w-5 text-white" />
+                            <div className="w-10 h-10 bg-white/10 rounded flex items-center justify-center">
+                              <Package className="h-5 w-5 text-white/60" />
                             </div>
                             <div>
-                              <div className="font-bold text-black">{item.sku}</div>
+                              <div className="font-medium text-white">{item.sku}</div>
                               {item.sku.startsWith('LIVE-') && (
-                                <span className="text-xs bg-black text-white px-2 py-1 rounded font-medium">LIVE DATA</span>
+                                <span className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded border border-green-500/30 font-medium">LIVE DATA</span>
                               )}
                             </div>
                           </div>
@@ -553,14 +546,14 @@ export default function CompetitivePage() {
                         <td className="px-6 py-4">
                           <div className="space-y-1">
                             <div className={cn(
-                              "inline-flex px-2 py-1 text-xs font-bold rounded",
-                              item.market_position.price_advantage > 10 ? 'bg-red-100 text-red-800' :
-                              item.market_position.price_advantage < -10 ? 'bg-green-100 text-green-800' :
-                              'bg-gray-100 text-gray-800'
+                              "inline-flex px-2 py-1 text-xs font-medium rounded border",
+                              item.market_position.price_advantage > 10 ? 'bg-red-500/20 text-red-300 border-red-500/30' :
+                              item.market_position.price_advantage < -10 ? 'bg-green-500/20 text-green-300 border-green-500/30' :
+                              'bg-white/10 text-white/70 border-white/20'
                             )}>
                               {item.market_position.price_advantage > 0 ? '+' : ''}{item.market_position.price_advantage.toFixed(1)}%
                             </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-white/50">
                               vs market average
                             </div>
                           </div>
@@ -568,20 +561,20 @@ export default function CompetitivePage() {
                         <td className="px-6 py-4">
                           <div className="space-y-2">
                             {item.competitor_prices.slice(0, 5).map((comp, idx) => (
-                              <div key={idx} className="flex items-center justify-between text-sm bg-gray-50 rounded p-2">
+                              <div key={idx} className="flex items-center justify-between text-sm bg-white/5 border border-white/10 rounded p-2">
                                 <div className="flex items-center space-x-2">
-                                  <span className="font-medium text-black">{comp.competitor}</span>
+                                  <span className="font-medium text-white">{comp.competitor}</span>
                                   {comp.promotional && (
-                                    <span className="px-2 py-1 bg-black text-white text-xs rounded font-medium">PROMO</span>
+                                    <span className="px-2 py-1 bg-orange-500/20 text-orange-300 text-xs rounded border border-orange-500/30 font-medium">PROMO</span>
                                   )}
                                 </div>
                                 <div className="text-right">
-                                  <div className="font-bold">£{comp.competitor_price.toFixed(2)}</div>
+                                  <div className="font-medium text-white">£{comp.competitor_price.toFixed(2)}</div>
                                 </div>
                               </div>
                             ))}
                             {item.competitor_prices.length > 5 && (
-                              <div className="text-xs text-gray-500 text-center">
+                              <div className="text-xs text-white/50 text-center">
                                 +{item.competitor_prices.length - 5} more retailers
                               </div>
                             )}
@@ -591,22 +584,22 @@ export default function CompetitivePage() {
                           <div className="space-y-2">
                             <div className="flex items-center space-x-2">
                               {getActionIcon(item.recommendations.action)}
-                              <span className="font-bold capitalize">
+                              <span className="font-medium capitalize text-white">
                                 {item.recommendations.action}
                               </span>
                               {item.recommendations.target_price && (
-                                <span className="text-sm text-gray-600">
+                                <span className="text-sm text-white/60">
                                   → £{item.recommendations.target_price.toFixed(2)}
                                 </span>
                               )}
                             </div>
                             <div className={cn(
-                              "inline-flex px-2 py-1 text-xs font-bold rounded", 
+                              "inline-flex px-2 py-1 text-xs font-medium rounded border", 
                               getUrgencyColor(item.recommendations.urgency)
                             )}>
                               {item.recommendations.urgency} priority
                             </div>
-                            <p className="text-sm text-gray-600 max-w-xs">
+                            <p className="text-sm text-white/60 max-w-xs">
                               {item.recommendations.reasoning}
                             </p>
                           </div>
@@ -621,38 +614,38 @@ export default function CompetitivePage() {
 
           {/* Getting Started */}
           {filteredData.length === 0 && !loading && (
-            <div className="bg-white border border-gray-200 rounded-lg p-8">
+            <div className="bg-white/5 border border-white/20 rounded-lg p-8">
               <div className="text-center space-y-6">
-                <h3 className="text-xl font-bold text-black">Getting Started</h3>
+                <h3 className="text-xl font-light text-white">Getting Started</h3>
                 <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto text-left">
                   <div className="space-y-4">
-                    <h4 className="font-semibold text-black">Option 1: Test Individual Products</h4>
-                    <p className="text-gray-600">
+                    <h4 className="font-medium text-white">Option 1: Test Individual Products</h4>
+                    <p className="text-white/60 text-sm">
                       Use the search box above to test specific alcohol products. We'll fetch real prices from UK retailers.
                     </p>
-                    <ul className="space-y-1 text-sm text-gray-600">
+                    <ul className="space-y-1 text-sm text-white/60">
                       <li className="flex items-center space-x-2">
-                        <CheckCircle className="h-4 w-4 text-black" />
+                        <div className="w-1 h-1 bg-green-400 rounded-full" />
                         <span>10+ UK alcohol retailers</span>
                       </li>
                       <li className="flex items-center space-x-2">
-                        <CheckCircle className="h-4 w-4 text-black" />
+                        <div className="w-1 h-1 bg-green-400 rounded-full" />
                         <span>Real-time SERP API data</span>
                       </li>
                       <li className="flex items-center space-x-2">
-                        <CheckCircle className="h-4 w-4 text-black" />
+                        <div className="w-1 h-1 bg-green-400 rounded-full" />
                         <span>AI-powered insights</span>
                       </li>
                     </ul>
                   </div>
                   <div className="space-y-4">
-                    <h4 className="font-semibold text-black">Option 2: Upload Your Inventory</h4>
-                    <p className="text-gray-600">
+                    <h4 className="font-medium text-white">Option 2: Upload Your Inventory</h4>
+                    <p className="text-white/60 text-sm">
                       Upload your complete inventory CSV to get competitive analysis for all your products automatically.
                     </p>
                     <button
                       onClick={() => router.push('/analytics')}
-                      className="inline-flex items-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                      className="inline-flex items-center space-x-2 px-4 py-2 bg-white text-black rounded hover:bg-gray-100 transition-colors"
                     >
                       <Plus className="h-4 w-4" />
                       <span>Upload Inventory CSV</span>

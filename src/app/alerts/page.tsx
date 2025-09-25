@@ -1,5 +1,5 @@
 // CREATE NEW FILE: /app/alerts/page.tsx
-// Comprehensive Alert Management Page - Professional Black/White Design
+// Dark Theme Alert Management Page
 
 'use client'
 
@@ -205,12 +205,12 @@ export default function AlertManagementPage() {
   // Show loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-black">
         <Navbar onLogin={handleLogin} onSignup={handleSignup} />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center">
-            <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading alert management...</p>
+            <div className="w-8 h-8 border-4 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-white/60">Loading alert management...</p>
           </div>
         </div>
       </div>
@@ -220,7 +220,7 @@ export default function AlertManagementPage() {
   // Redirect to auth if not logged in
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-black">
         <Navbar onLogin={handleLogin} onSignup={handleSignup} />
         
         <AuthModal
@@ -233,14 +233,14 @@ export default function AlertManagementPage() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center space-y-6">
-            <div className="w-16 h-16 bg-black rounded-lg flex items-center justify-center mx-auto">
-              <Bell className="h-8 w-8 text-white" />
+            <div className="w-16 h-16 bg-white/10 rounded flex items-center justify-center mx-auto">
+              <Bell className="h-8 w-8 text-white/60" />
             </div>
-            <h2 className="text-3xl font-bold text-black">Access Required</h2>
-            <p className="text-gray-600">Please sign in to access alert management.</p>
+            <h2 className="text-3xl font-light text-white">Access Required</h2>
+            <p className="text-white/60">Please sign in to access alert management.</p>
             <button
               onClick={handleLogin}
-              className="bg-black text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors"
+              className="bg-white text-black px-6 py-3 rounded font-medium hover:bg-gray-100 transition-colors"
             >
               Sign In
             </button>
@@ -251,7 +251,7 @@ export default function AlertManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-black">
       <Navbar onLogin={handleLogin} onSignup={handleSignup} />
 
       <AuthModal
@@ -265,52 +265,53 @@ export default function AlertManagementPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-8">
           {/* Header */}
-          <div className="text-center space-y-4">
-            <div className="inline-flex items-center space-x-2 bg-black text-white px-4 py-2 rounded-lg">
-              <Bell className="h-4 w-4" />
-              <span className="text-sm font-medium">Alert Management System</span>
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+          <div className="text-center space-y-6">
+            <div className="inline-flex items-center space-x-2 px-3 py-1 border border-white/20 rounded">
+              <div className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse" />
+              <span className="text-white/60 text-sm">Real-time alert monitoring</span>
             </div>
 
-            <h1 className="text-4xl md:text-5xl font-bold text-black">
-              Alert Management
+            <h1 className="text-4xl md:text-6xl font-light text-white leading-tight">
+              Alert management system
+              <br />
+              <span className="text-white/60">for inventory intelligence</span>
             </h1>
 
-            <p className="text-xl text-gray-600 max-w-4xl mx-auto">
+            <p className="text-base md:text-lg text-white/60 leading-relaxed max-w-2xl mx-auto">
               Monitor and manage all inventory alerts across your analyses. 
               Take action on critical stockouts, overstocks, and pricing opportunities.
             </p>
 
-            <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-600">
+            <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-white/40">
               <div className="flex items-center space-x-2">
-                <CheckCircle className="h-4 w-4 text-black" />
+                <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse" />
                 <span>Real-time monitoring</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Shield className="h-4 w-4 text-black" />
+                <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse" style={{animationDelay: '0.5s'}} />
                 <span>Smart alert prioritization</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Database className="h-4 w-4 text-black" />
+                <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse" style={{animationDelay: '1s'}} />
                 <span>Action tracking</span>
               </div>
             </div>
           </div>
 
           {error && (
-            <div className="bg-white border-2 border-red-200 rounded-lg p-6">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6">
               <div className="flex items-center space-x-3 mb-4">
-                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                  <AlertTriangle className="h-6 w-6 text-red-600" />
+                <div className="w-12 h-12 bg-red-500/20 rounded flex items-center justify-center">
+                  <AlertTriangle className="h-6 w-6 text-red-400" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-black">Error Loading Data</h3>
-                  <p className="text-gray-600">{error}</p>
+                  <h3 className="text-xl font-medium text-red-300">Error Loading Data</h3>
+                  <p className="text-red-200">{error}</p>
                 </div>
               </div>
               <button 
                 onClick={fetchAnalyses}
-                className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+                className="bg-white text-black px-4 py-2 rounded hover:bg-gray-100 transition-colors"
               >
                 Try Again
               </button>
@@ -331,35 +332,39 @@ export default function AlertManagementPage() {
                   label: 'Critical Alerts', 
                   value: alertStats.criticalAlerts, 
                   icon: AlertTriangle,
-                  description: 'Immediate attention required'
+                  description: 'Immediate attention required',
+                  color: 'text-red-400'
                 },
                 { 
                   label: 'Unread Alerts', 
                   value: alertStats.unreadAlerts, 
                   icon: Clock,
-                  description: 'Awaiting acknowledgment'
+                  description: 'Awaiting acknowledgment',
+                  color: 'text-orange-400'
                 },
                 { 
                   label: 'Acknowledgement Rate', 
                   value: `${Math.round(alertStats.acknowledgementRate)}%`, 
                   icon: CheckCircle,
-                  description: 'Team responsiveness'
+                  description: 'Team responsiveness',
+                  color: 'text-green-400'
                 },
                 { 
                   label: 'Resolution Rate', 
                   value: `${Math.round(alertStats.resolutionRate)}%`, 
                   icon: Target,
-                  description: 'Action completion'
+                  description: 'Action completion',
+                  color: 'text-green-400'
                 }
               ].map((stat, index) => (
-                <div key={index} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow">
+                <div key={index} className="bg-white/5 border border-white/20 rounded p-6 hover:bg-white/8 transition-colors">
                   <div className="flex items-center justify-between mb-2">
-                    <stat.icon className="h-8 w-8 text-black" />
-                    <div className="text-3xl font-bold text-black">{stat.value}</div>
+                    <stat.icon className={`h-8 w-8 ${stat.color || 'text-white/60'}`} />
+                    <div className={`text-3xl font-light ${stat.color || 'text-white'}`}>{stat.value}</div>
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-black">{stat.label}</div>
-                    <div className="text-xs text-gray-500">{stat.description}</div>
+                    <div className="text-sm font-medium text-white">{stat.label}</div>
+                    <div className="text-xs text-white/50">{stat.description}</div>
                   </div>
                 </div>
               ))}
@@ -370,17 +375,17 @@ export default function AlertManagementPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4 flex-1">
               <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/40" />
                 <input
                   type="text"
                   placeholder="Search analyses..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                  className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded text-white placeholder-white/40 focus:border-white/40 focus:outline-none"
                 />
               </div>
               
-              <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
+              <div className="flex items-center space-x-1 bg-white/10 rounded p-1">
                 {[
                   { key: 'all', label: 'All', count: analyses.length },
                   { key: 'critical', label: 'Critical', count: analyses.filter(a => a.criticalAlerts > 0).length },
@@ -390,10 +395,10 @@ export default function AlertManagementPage() {
                     key={filterOption.key}
                     onClick={() => setFilter(filterOption.key as any)}
                     className={cn(
-                      "px-4 py-2 rounded-md text-sm font-medium transition-colors",
+                      "px-4 py-2 rounded text-sm font-medium transition-colors",
                       filter === filterOption.key
-                        ? "bg-black text-white"
-                        : "text-gray-600 hover:text-black hover:bg-gray-200"
+                        ? "bg-white text-black"
+                        : "text-white/60 hover:text-white hover:bg-white/10"
                     )}
                   >
                     {filterOption.label}
@@ -409,10 +414,10 @@ export default function AlertManagementPage() {
               <button
                 onClick={() => setShowManagement(!showManagement)}
                 className={cn(
-                  "flex items-center space-x-2 px-4 py-3 rounded-lg transition-colors border",
+                  "flex items-center space-x-2 px-4 py-3 rounded transition-colors border",
                   showManagement 
-                    ? "bg-black text-white border-black"
-                    : "bg-white text-gray-700 border-gray-300 hover:border-gray-400"
+                    ? "bg-white text-black border-white"
+                    : "bg-white/10 text-white border-white/20 hover:bg-white/15"
                 )}
               >
                 <Settings className="h-4 w-4" />
@@ -422,7 +427,7 @@ export default function AlertManagementPage() {
               <button
                 onClick={fetchAnalyses}
                 disabled={loading}
-                className="flex items-center space-x-2 px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+                className="flex items-center space-x-2 px-4 py-3 bg-white/10 border border-white/20 rounded hover:bg-white/15 transition-colors disabled:opacity-50 text-white"
               >
                 <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
                 <span>Refresh</span>
@@ -430,7 +435,7 @@ export default function AlertManagementPage() {
               
               <button
                 onClick={() => router.push('/analytics')}
-                className="flex items-center space-x-2 px-4 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                className="flex items-center space-x-2 px-4 py-3 bg-white text-black rounded hover:bg-gray-100 transition-colors"
               >
                 <Plus className="h-4 w-4" />
                 <span>New Analysis</span>
@@ -442,22 +447,22 @@ export default function AlertManagementPage() {
           {selectedAnalysis ? (
             <div className="space-y-6">
               {/* Analysis Header */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="bg-white/5 border border-white/20 rounded-lg p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <button
                       onClick={() => setSelectedAnalysis(null)}
-                      className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors"
+                      className="flex items-center space-x-2 text-white/60 hover:text-white transition-colors"
                     >
                       <ArrowRight className="h-4 w-4 rotate-180" />
                       <span>Back to Analyses</span>
                     </button>
-                    <div className="h-6 w-px bg-gray-300"></div>
+                    <div className="h-6 w-px bg-white/20"></div>
                     <div>
-                      <h2 className="text-xl font-bold text-black">
+                      <h2 className="text-xl font-medium text-white">
                         {analyses.find(a => a.uploadId === selectedAnalysis)?.fileName || 'Unknown Analysis'}
                       </h2>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-white/60">
                         {analyses.find(a => a.uploadId === selectedAnalysis)?.totalSKUs || 0} SKUs • {analyses.find(a => a.uploadId === selectedAnalysis)?.alertCount || 0} alerts
                       </p>
                     </div>
@@ -471,13 +476,13 @@ export default function AlertManagementPage() {
                       return (
                         <>
                           {currentAnalysis.criticalAlerts > 0 && (
-                            <span className="inline-flex items-center space-x-1 px-3 py-1 bg-red-100 text-red-800 text-sm font-medium rounded-lg">
+                            <span className="inline-flex items-center space-x-1 px-3 py-1 bg-red-500/20 text-red-300 text-sm font-medium rounded border border-red-500/30">
                               <AlertTriangle className="h-4 w-4" />
                               <span>{currentAnalysis.criticalAlerts} Critical</span>
                             </span>
                           )}
                           {currentAnalysis.unreadAlerts > 0 && (
-                            <span className="inline-flex items-center space-x-1 px-3 py-1 bg-yellow-100 text-yellow-800 text-sm font-medium rounded-lg">
+                            <span className="inline-flex items-center space-x-1 px-3 py-1 bg-orange-500/20 text-orange-300 text-sm font-medium rounded border border-orange-500/30">
                               <Clock className="h-4 w-4" />
                               <span>{currentAnalysis.unreadAlerts} Unread</span>
                             </span>
@@ -511,12 +516,12 @@ export default function AlertManagementPage() {
             <div className="grid lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredAnalyses.length === 0 ? (
                 <div className="lg:col-span-3 xl:col-span-4">
-                  <div className="bg-white border border-gray-200 rounded-lg p-16 text-center">
-                    <div className="w-20 h-20 bg-black rounded-lg flex items-center justify-center mx-auto mb-8">
-                      <FileText className="h-10 w-10 text-white" />
+                  <div className="bg-white/5 border border-white/20 rounded-lg p-16 text-center">
+                    <div className="w-20 h-20 bg-white/10 rounded flex items-center justify-center mx-auto mb-8">
+                      <FileText className="h-10 w-10 text-white/60" />
                     </div>
-                    <h3 className="text-2xl font-bold text-black mb-4">No Analyses Found</h3>
-                    <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                    <h3 className="text-2xl font-light text-white mb-4">No analyses found</h3>
+                    <p className="text-white/60 mb-8 max-w-md mx-auto text-sm">
                       {searchTerm || filter !== 'all' 
                         ? 'Try adjusting your search or filter criteria.' 
                         : 'Upload your first inventory CSV to get started with alert monitoring.'
@@ -526,7 +531,7 @@ export default function AlertManagementPage() {
                       <div className="space-y-6">
                         <button
                           onClick={() => router.push('/analytics')}
-                          className="inline-flex items-center space-x-2 px-6 py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
+                          className="inline-flex items-center space-x-2 px-6 py-3 bg-white text-black font-medium rounded hover:bg-gray-100 transition-colors"
                         >
                           <BarChart3 className="h-5 w-5" />
                           <span>Upload Inventory CSV</span>
@@ -534,32 +539,32 @@ export default function AlertManagementPage() {
                         </button>
                         
                         <div className="grid md:grid-cols-3 gap-4 max-w-2xl mx-auto text-left">
-                          <div className="p-4 bg-gray-50 rounded-lg">
-                            <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center mb-3">
-                              <AlertTriangle className="h-4 w-4 text-white" />
+                          <div className="p-4 bg-white/5 border border-white/20 rounded">
+                            <div className="w-8 h-8 bg-red-500/20 rounded flex items-center justify-center mb-3">
+                              <AlertTriangle className="h-4 w-4 text-red-400" />
                             </div>
-                            <h4 className="font-semibold text-black text-sm">Critical Alerts</h4>
-                            <p className="text-xs text-gray-600 mt-1">
+                            <h4 className="font-medium text-white text-sm">Critical Alerts</h4>
+                            <p className="text-xs text-white/60 mt-1">
                               Immediate stockout risks and urgent actions
                             </p>
                           </div>
                           
-                          <div className="p-4 bg-gray-50 rounded-lg">
-                            <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center mb-3">
-                              <TrendingUp className="h-4 w-4 text-white" />
+                          <div className="p-4 bg-white/5 border border-white/20 rounded">
+                            <div className="w-8 h-8 bg-green-500/20 rounded flex items-center justify-center mb-3">
+                              <TrendingUp className="h-4 w-4 text-green-400" />
                             </div>
-                            <h4 className="font-semibold text-black text-sm">Price Opportunities</h4>
-                            <p className="text-xs text-gray-600 mt-1">
+                            <h4 className="font-medium text-white text-sm">Price Opportunities</h4>
+                            <p className="text-xs text-white/60 mt-1">
                               Competitive pricing and margin optimization
                             </p>
                           </div>
                           
-                          <div className="p-4 bg-gray-50 rounded-lg">
-                            <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center mb-3">
-                              <Package className="h-4 w-4 text-white" />
+                          <div className="p-4 bg-white/5 border border-white/20 rounded">
+                            <div className="w-8 h-8 bg-white/20 rounded flex items-center justify-center mb-3">
+                              <Package className="h-4 w-4 text-white/60" />
                             </div>
-                            <h4 className="font-semibold text-black text-sm">Inventory Insights</h4>
-                            <p className="text-xs text-gray-600 mt-1">
+                            <h4 className="font-medium text-white text-sm">Inventory Insights</h4>
+                            <p className="text-xs text-white/60 mt-1">
                               Overstock management and clearance strategy
                             </p>
                           </div>
@@ -572,12 +577,12 @@ export default function AlertManagementPage() {
                 filteredAnalyses.map((analysis) => (
                   <div
                     key={analysis.uploadId}
-                    className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-all cursor-pointer group"
+                    className="bg-white/5 border border-white/20 rounded-lg p-6 hover:bg-white/8 transition-all cursor-pointer group"
                     onClick={() => setSelectedAnalysis(analysis.uploadId)}
                   >
                     <div className="flex items-center justify-between mb-4">
-                      <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center group-hover:bg-gray-800 transition-colors">
-                        <Package className="h-6 w-6 text-white" />
+                      <div className="w-12 h-12 bg-white/10 rounded flex items-center justify-center group-hover:bg-white/15 transition-colors">
+                        <Package className="h-6 w-6 text-white/60" />
                       </div>
                       
                       {showManagement && (
@@ -587,10 +592,10 @@ export default function AlertManagementPage() {
                             handleDeleteAnalysis(analysis.uploadId)
                           }}
                           disabled={deleting === analysis.uploadId}
-                          className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                          className="p-2 text-red-400 hover:bg-red-500/20 rounded transition-colors"
                         >
                           {deleting === analysis.uploadId ? (
-                            <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                            <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
                           ) : (
                             <Trash2 className="h-4 w-4" />
                           )}
@@ -598,38 +603,38 @@ export default function AlertManagementPage() {
                       )}
                     </div>
                     
-                    <h3 className="font-bold text-black text-lg mb-2 group-hover:text-gray-700 transition-colors truncate">
+                    <h3 className="font-medium text-white text-lg mb-2 group-hover:text-white/80 transition-colors truncate">
                       {analysis.fileName}
                     </h3>
                     
-                    <p className="text-sm text-gray-600 mb-4">
+                    <p className="text-sm text-white/60 mb-4">
                       {formatDate(analysis.processedAt)}
                     </p>
                     
                     <div className="grid grid-cols-3 gap-4 mb-4">
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-black">{analysis.totalSKUs}</div>
-                        <div className="text-xs text-gray-500">SKUs</div>
+                        <div className="text-2xl font-light text-white">{analysis.totalSKUs}</div>
+                        <div className="text-xs text-white/50">SKUs</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-black">{analysis.alertCount}</div>
-                        <div className="text-xs text-gray-500">Alerts</div>
+                        <div className="text-2xl font-light text-white">{analysis.alertCount}</div>
+                        <div className="text-xs text-white/50">Alerts</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-red-600">{analysis.criticalAlerts}</div>
-                        <div className="text-xs text-gray-500">Critical</div>
+                        <div className="text-2xl font-light text-red-400">{analysis.criticalAlerts}</div>
+                        <div className="text-xs text-white/50">Critical</div>
                       </div>
                     </div>
                     
                     <div className="flex items-center justify-between">
                       {analysis.unreadAlerts > 0 && (
-                        <span className="inline-flex items-center space-x-1 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded">
+                        <span className="inline-flex items-center space-x-1 px-2 py-1 bg-orange-500/20 text-orange-300 text-xs font-medium rounded border border-orange-500/30">
                           <Clock className="h-3 w-3" />
                           <span>{analysis.unreadAlerts} unread</span>
                         </span>
                       )}
                       
-                      <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-black transition-colors ml-auto" />
+                      <ArrowRight className="h-4 w-4 text-white/40 group-hover:text-white/60 transition-colors ml-auto" />
                     </div>
                   </div>
                 ))

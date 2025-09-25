@@ -1,4 +1,4 @@
-// src/components/ui/alert-dashboard.tsx - FIXED VERSION
+// src/components/ui/alert-dashboard.tsx - DARK THEME VERSION
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -66,13 +66,9 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
       setLoading(true)
       setError(null)
       
-      console.log('Fetching alerts for user:', user.email)
-      
       const endpoint = analysisId 
         ? `/api/alerts/${analysisId}?userId=${user.email}`
         : `/api/alerts/latest?userId=${user.email}`
-      
-      console.log('Alert API endpoint:', endpoint)
       
       const response = await fetch(endpoint)
       
@@ -81,8 +77,6 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
       }
       
       const data = await response.json()
-      console.log('Alert API response:', data)
-      
       setAlerts(data.alerts || [])
       
     } catch (err) {
@@ -99,16 +93,12 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
     if (!user) return
 
     try {
-      console.log('Fetching alert stats for user:', user.email)
-      
       const response = await fetch(`/api/alerts/stats?userId=${user.email}`)
       
       if (response.ok) {
         const data = await response.json()
-        console.log('Alert stats response:', data)
         setAlertStats(data)
       } else {
-        console.warn('Alert stats API failed, generating from current alerts')
         generateStatsFromAlerts()
       }
       
@@ -134,7 +124,6 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
     })
   }
 
-  // FIXED: Generate fallback alerts with proper urgency property
   const generateFallbackAlerts = (): Alert[] => {
     return [
       {
@@ -150,7 +139,7 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
         impact: {
           revenue_at_risk: 5500,
           time_to_critical: 3,
-          urgency: 10 // FIXED: Added missing urgency property
+          urgency: 10
         },
         data: {
           current_stock: 25,
@@ -188,7 +177,7 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
           revenue_at_risk: 0,
           profit_opportunity: 2800,
           time_to_critical: 0,
-          urgency: 8 // FIXED: Added missing urgency property
+          urgency: 8
         },
         data: {
           current_stock: 180,
@@ -225,7 +214,7 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
         impact: {
           revenue_at_risk: 1200,
           time_to_critical: 14,
-          urgency: 6 // FIXED: Added missing urgency property
+          urgency: 6
         },
         data: {
           current_stock: 80,
@@ -327,17 +316,15 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
     }
   }
 
-  // Show loading if user not loaded yet
   if (!user) {
     return (
       <div className="text-center py-12">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-gray-600">Loading user context...</p>
+        <div className="w-8 h-8 border-4 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-white/60">Loading user context...</p>
       </div>
     )
   }
 
-  // Filter alerts properly
   const filteredAlerts = alerts.filter(alert => {
     if (alert.resolved && filter !== 'all') return false
     
@@ -355,21 +342,21 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
 
   const getSeverityBg = (severity: Alert['severity']) => {
     switch (severity) {
-      case 'critical': return 'bg-red-50 border-red-200'
-      case 'high': return 'bg-orange-50 border-orange-200'
-      case 'medium': return 'bg-yellow-50 border-yellow-200'
-      case 'low': return 'bg-blue-50 border-blue-200'
-      default: return 'bg-gray-50 border-gray-200'
+      case 'critical': return 'bg-red-500/10 border-red-500/20'
+      case 'high': return 'bg-orange-500/10 border-orange-500/20'
+      case 'medium': return 'bg-yellow-500/10 border-yellow-500/20'
+      case 'low': return 'bg-white/5 border-white/20'
+      default: return 'bg-white/5 border-white/20'
     }
   }
 
   const getSeverityTextColor = (severity: Alert['severity']) => {
     switch (severity) {
-      case 'critical': return 'text-red-600'
-      case 'high': return 'text-orange-600'
-      case 'medium': return 'text-yellow-600'
-      case 'low': return 'text-blue-600'
-      default: return 'text-gray-600'
+      case 'critical': return 'text-red-400'
+      case 'high': return 'text-orange-400'
+      case 'medium': return 'text-yellow-400'
+      case 'low': return 'text-white/70'
+      default: return 'text-white/70'
     }
   }
 
@@ -399,12 +386,12 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
       <div className="space-y-6 animate-pulse">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-32 bg-gray-200 rounded-xl"></div>
+            <div key={i} className="h-32 bg-white/5 border border-white/20 rounded"></div>
           ))}
         </div>
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-24 bg-gray-200 rounded-xl"></div>
+            <div key={i} className="h-24 bg-white/5 border border-white/20 rounded"></div>
           ))}
         </div>
       </div>
@@ -413,18 +400,18 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6">
         <div className="flex items-center space-x-2 mb-2">
-          <AlertTriangle className="h-5 w-5 text-red-600" />
-          <h3 className="font-medium text-red-900">Error Loading Alerts</h3>
+          <AlertTriangle className="h-5 w-5 text-red-400" />
+          <h3 className="font-medium text-red-300">Error Loading Alerts</h3>
         </div>
-        <p className="text-red-700 mb-3">{error}</p>
+        <p className="text-red-200 mb-3">{error}</p>
         <button 
           onClick={() => {
             fetchRealAlerts()
             fetchRealAlertStats()
           }}
-          className="text-red-600 hover:text-red-800 text-sm underline"
+          className="text-red-300 hover:text-red-100 text-sm underline"
         >
           Try Again
         </button>
@@ -436,60 +423,60 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
     <div className="space-y-6">
       {/* Alert Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+        <div className="bg-white/5 border border-white/20 rounded p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total Alerts</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm text-white/60">Total Alerts</p>
+              <p className="text-2xl font-light text-white">
                 {alertStats?.totalAlerts || alerts.length}
               </p>
             </div>
-            <Bell className="h-8 w-8 text-blue-600" />
+            <Bell className="h-8 w-8 text-white/60" />
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+        <div className="bg-red-500/10 border border-red-500/20 rounded p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Critical Alerts</p>
-              <p className="text-2xl font-bold text-red-600">
+              <p className="text-sm text-red-300">Critical Alerts</p>
+              <p className="text-2xl font-light text-red-400">
                 {alertStats?.criticalAlerts || alerts.filter(a => a.severity === 'critical').length}
               </p>
             </div>
-            <AlertTriangle className="h-8 w-8 text-red-600" />
+            <AlertTriangle className="h-8 w-8 text-red-400" />
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+        <div className="bg-green-500/10 border border-green-500/20 rounded p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Resolution Rate</p>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-sm text-green-300">Resolution Rate</p>
+              <p className="text-2xl font-light text-green-400">
                 {Math.round(alertStats?.resolutionRate || 0)}%
               </p>
             </div>
-            <CheckCircle className="h-8 w-8 text-green-600" />
+            <CheckCircle className="h-8 w-8 text-green-400" />
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+        <div className="bg-orange-500/10 border border-orange-500/20 rounded p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Unread Alerts</p>
-              <p className="text-2xl font-bold text-orange-600">
+              <p className="text-sm text-orange-300">Unread Alerts</p>
+              <p className="text-2xl font-light text-orange-400">
                 {alertStats?.unreadAlerts || alerts.filter(a => !a.acknowledged && !a.resolved).length}
               </p>
             </div>
-            <Clock className="h-8 w-8 text-orange-600" />
+            <Clock className="h-8 w-8 text-orange-400" />
           </div>
         </div>
       </div>
 
       {/* Filter Controls and Alert List */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900">Alerts ({filteredAlerts.length})</h2>
+        <h2 className="text-xl font-light text-white">Alerts ({filteredAlerts.length})</h2>
         <div className="flex items-center space-x-2">
-          <div className="flex items-center space-x-1 bg-white rounded-lg border border-gray-200 p-1">
+          <div className="flex items-center space-x-1 bg-white/10 rounded p-1">
             {[
               { key: 'all', label: 'All', count: alerts.filter(a => !a.resolved).length },
               { key: 'critical', label: 'Critical', count: alerts.filter(a => a.severity === 'critical').length },
@@ -500,10 +487,10 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
                 key={filterOption.key}
                 onClick={() => setFilter(filterOption.key as any)}
                 className={cn(
-                  "px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                  "px-3 py-2 rounded text-sm font-medium transition-colors",
                   filter === filterOption.key
-                    ? "bg-blue-600 text-white"
-                    : "text-gray-700 hover:bg-gray-100"
+                    ? "bg-white text-black"
+                    : "text-white/60 hover:text-white hover:bg-white/10"
                 )}
               >
                 {filterOption.label}
@@ -519,7 +506,7 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
               fetchRealAlerts()
               fetchRealAlertStats()
             }}
-            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded transition-colors"
           >
             <RefreshCw className="h-5 w-5" />
           </button>
@@ -529,10 +516,10 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
       {/* Alert List */}
       <div className="space-y-4">
         {filteredAlerts.length === 0 ? (
-          <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
-            <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Alerts</h3>
-            <p className="text-gray-600">
+          <div className="bg-white/5 border border-white/20 rounded-lg p-8 text-center">
+            <Bell className="h-12 w-12 text-white/30 mx-auto mb-4" />
+            <h3 className="text-lg font-light text-white mb-2">No Alerts</h3>
+            <p className="text-white/60 text-sm">
               {alerts.length === 0 
                 ? "Upload a CSV file to generate alerts for your alcohol inventory."
                 : "All alerts have been filtered out based on your current selection."
@@ -547,15 +534,15 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
               <div
                 key={alert.id}
                 className={cn(
-                  "bg-white rounded-xl p-6 border-l-4 shadow-sm hover:shadow-md transition-all",
+                  "bg-white/5 border rounded-lg p-6 hover:bg-white/8 transition-all",
                   getSeverityBg(alert.severity),
-                  !alert.acknowledged && !alert.resolved && "ring-2 ring-blue-100"
+                  !alert.acknowledged && !alert.resolved && "ring-2 ring-white/20"
                 )}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-4 flex-1">
                     <div className={cn(
-                      "w-10 h-10 rounded-xl flex items-center justify-center",
+                      "w-10 h-10 rounded flex items-center justify-center",
                       getSeverityBg(alert.severity)
                     )}>
                       <AlertIcon className={cn("h-5 w-5", getSeverityTextColor(alert.severity))} />
@@ -563,50 +550,53 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
                     
                     <div className="flex-1 space-y-3">
                       <div className="flex items-center space-x-3">
-                        <h3 className="font-semibold text-gray-900">{alert.title}</h3>
+                        <h3 className="font-medium text-white">{alert.title}</h3>
                         <span className={cn(
-                          "px-2 py-1 rounded-full text-xs font-medium uppercase",
-                          getSeverityTextColor(alert.severity)
+                          "px-2 py-1 rounded text-xs font-medium uppercase border",
+                          alert.severity === 'critical' ? 'bg-red-500/20 text-red-300 border-red-500/30' :
+                          alert.severity === 'high' ? 'bg-orange-500/20 text-orange-300 border-orange-500/30' :
+                          alert.severity === 'medium' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' :
+                          'bg-white/10 text-white/70 border-white/20'
                         )}>
                           {alert.severity}
                         </span>
-                        <span className="text-gray-500 text-sm">{getTimeAgo(alert.created_at)}</span>
+                        <span className="text-white/50 text-sm">{getTimeAgo(alert.created_at)}</span>
                       </div>
                       
-                      <p className="text-gray-700">{alert.message}</p>
+                      <p className="text-white/70 text-sm">{alert.message}</p>
                       
-                      <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="bg-white/5 border border-white/20 rounded p-3">
                         <div className="flex items-center space-x-2 mb-2">
-                          <Zap className="h-4 w-4 text-blue-600" />
-                          <span className="font-medium text-gray-900">Recommended Action:</span>
+                          <Zap className="h-4 w-4 text-white/60" />
+                          <span className="font-medium text-white text-sm">Recommended Action:</span>
                         </div>
-                        <p className="text-gray-700 font-medium">{alert.action_required}</p>
+                        <p className="text-white/80 font-medium text-sm">{alert.action_required}</p>
                       </div>
                       
                       {/* Impact Summary */}
                       {(alert.impact.revenue_at_risk || alert.impact.profit_opportunity || alert.impact.time_to_critical) && (
                         <div className="flex items-center space-x-4 text-sm">
                           {alert.impact.revenue_at_risk && alert.impact.revenue_at_risk > 0 && (
-                            <span className="text-red-600">Risk: £{alert.impact.revenue_at_risk.toLocaleString()}</span>
+                            <span className="text-red-400">Risk: £{alert.impact.revenue_at_risk.toLocaleString()}</span>
                           )}
                           {alert.impact.profit_opportunity && alert.impact.profit_opportunity > 0 && (
-                            <span className="text-green-600">Opportunity: £{alert.impact.profit_opportunity.toLocaleString()}</span>
+                            <span className="text-green-400">Opportunity: £{alert.impact.profit_opportunity.toLocaleString()}</span>
                           )}
                           {alert.impact.time_to_critical && alert.impact.time_to_critical > 0 && (
-                            <span className="text-orange-600">{alert.impact.time_to_critical} days to critical</span>
+                            <span className="text-orange-400">{alert.impact.time_to_critical} days to critical</span>
                           )}
-                          <span className="text-blue-600">Urgency: {alert.impact.urgency}/10</span>
+                          <span className="text-white/60">Urgency: {alert.impact.urgency}/10</span>
                         </div>
                       )}
                       
                       {/* Alcohol-specific context */}
                       {alert.alcohol_context && (
-                        <div className="bg-blue-50 rounded-lg p-3">
+                        <div className="bg-white/5 border border-white/20 rounded p-3">
                           <div className="flex items-center space-x-2 mb-2">
-                            <Brain className="h-4 w-4 text-blue-600" />
-                            <span className="font-medium text-gray-900">Product Details:</span>
+                            <Brain className="h-4 w-4 text-white/60" />
+                            <span className="font-medium text-white text-sm">Product Details:</span>
                           </div>
-                          <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
+                          <div className="grid grid-cols-2 gap-2 text-xs text-white/60">
                             {alert.alcohol_context.abv && (
                               <span>ABV: {alert.alcohol_context.abv}%</span>
                             )}
@@ -616,9 +606,9 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
                           </div>
                           {alert.alcohol_context.compliance_notes && alert.alcohol_context.compliance_notes.length > 0 && (
                             <div className="mt-2">
-                              <p className="text-xs text-gray-600 font-medium">Compliance Notes:</p>
+                              <p className="text-xs text-white/60 font-medium">Compliance Notes:</p>
                               {alert.alcohol_context.compliance_notes.map((note, idx) => (
-                                <p key={idx} className="text-xs text-gray-600">• {note}</p>
+                                <p key={idx} className="text-xs text-white/50">• {note}</p>
                               ))}
                             </div>
                           )}
@@ -633,7 +623,7 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
                       {!alert.acknowledged && (
                         <button
                           onClick={() => handleAcknowledge(alert.id)}
-                          className="flex items-center space-x-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm"
+                          className="flex items-center space-x-1 px-3 py-2 bg-white/10 text-white border border-white/20 rounded hover:bg-white/15 transition-colors text-sm"
                         >
                           <CheckCircle className="h-4 w-4" />
                           <span>Acknowledge</span>
@@ -641,18 +631,18 @@ export function AlertDashboard({ analysisId, onAcknowledge, onResolve, onDelete 
                       )}
                       <button
                         onClick={() => handleResolve(alert.id)}
-                        className="flex items-center space-x-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                        className="flex items-center space-x-1 px-3 py-2 bg-green-500/20 text-green-300 border border-green-500/30 rounded hover:bg-green-500/30 transition-colors text-sm"
                       >
-                        <X className="h-4 w-4" />
+                        <CheckCircle className="h-4 w-4" />
                         <span>Resolve</span>
                       </button>
                       <button
                         onClick={() => handleDelete(alert.id)}
                         disabled={deleting === alert.id}
-                        className="flex items-center space-x-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm disabled:opacity-50"
+                        className="flex items-center space-x-1 px-3 py-2 bg-red-500/20 text-red-300 border border-red-500/30 rounded hover:bg-red-500/30 transition-colors text-sm disabled:opacity-50"
                       >
                         {deleting === alert.id ? (
-                          <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                          <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
                         ) : (
                           <Trash2 className="h-4 w-4" />
                         )}

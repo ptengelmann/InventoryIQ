@@ -25,7 +25,8 @@ import {
   CheckCircle,
   XCircle,
   Target,
-  Zap
+  Zap,
+  Activity
 } from 'lucide-react'
 
 interface HistoryAnalysis {
@@ -234,12 +235,12 @@ export default function HistoryPage() {
   // Show loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-purple-50">
+      <div className="min-h-screen bg-black">
         <Navbar onLogin={handleLogin} onSignup={handleSignup} />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center">
-            <div className="w-8 h-8 border-4 border-amber-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading...</p>
+            <div className="w-8 h-8 border-4 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-white/60">Loading...</p>
           </div>
         </div>
       </div>
@@ -249,7 +250,7 @@ export default function HistoryPage() {
   // Redirect to auth if not logged in
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-purple-50">
+      <div className="min-h-screen bg-black">
         <Navbar onLogin={handleLogin} onSignup={handleSignup} />
         
         <AuthModal
@@ -262,11 +263,11 @@ export default function HistoryPage() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center space-y-6">
-            <h2 className="text-3xl font-bold text-gray-900">Access Required</h2>
-            <p className="text-gray-600">Please sign in to view your analysis history.</p>
+            <h2 className="text-3xl font-light text-white">Access Required</h2>
+            <p className="text-white/60">Please sign in to view your analysis history.</p>
             <button
               onClick={handleLogin}
-              className="bg-gradient-to-r from-amber-600 to-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:from-amber-700 hover:to-purple-700 transition-all duration-200"
+              className="px-6 py-3 bg-white text-black font-medium rounded hover:bg-gray-100 transition-colors"
             >
               Sign In
             </button>
@@ -279,7 +280,7 @@ export default function HistoryPage() {
   const filteredAnalyses = getFilteredAnalyses()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-purple-50">
+    <div className="min-h-screen bg-black">
       <Navbar onLogin={handleLogin} onSignup={handleSignup} />
 
       <AuthModal
@@ -292,25 +293,36 @@ export default function HistoryPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-12">
+          <div className="inline-flex items-center space-x-2 px-3 py-1 border border-white/20 rounded mb-8">
+            <div className="w-1.5 h-1.5 bg-green-400 rounded-full" />
+            <span className="text-white/60 text-sm">Analysis tracking & insights</span>
+          </div>
+
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Analysis History</h1>
-              <p className="text-gray-600 mt-2">Track your alcohol inventory optimization journey</p>
+              <h1 className="text-4xl md:text-6xl font-light text-white leading-tight mb-4">
+                Analysis history
+                <br />
+                <span className="text-white/60">optimization journey</span>
+              </h1>
+              <p className="text-base md:text-lg text-white/60 leading-relaxed">
+                Track your alcohol inventory optimization journey and measure impact over time.
+              </p>
             </div>
             <div className="flex items-center space-x-3">
               <button
                 onClick={fetchHistoryData}
-                className="inline-flex items-center space-x-2 px-4 py-2 bg-white text-gray-700 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors"
+                className="inline-flex items-center space-x-2 px-4 py-3 bg-white/10 text-white border border-white/20 rounded hover:bg-white/15 transition-colors"
               >
                 <RefreshCw className="h-4 w-4" />
                 <span>Refresh</span>
               </button>
               <button
                 onClick={() => router.push('/analytics')}
-                className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-amber-600 to-purple-600 text-white font-medium rounded-xl hover:from-amber-700 hover:to-purple-700 transition-all duration-200"
+                className="inline-flex items-center space-x-2 px-6 py-3 bg-white text-black font-medium rounded hover:bg-gray-100 transition-colors"
               >
-                <Wine className="h-5 w-5" />
+                <Activity className="h-5 w-5" />
                 <span>New Analysis</span>
               </button>
             </div>
@@ -318,15 +330,15 @@ export default function HistoryPage() {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-8">
+          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6 mb-8">
             <div className="flex items-center space-x-2 mb-2">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
-              <h3 className="font-medium text-red-900">Error Loading History</h3>
+              <AlertTriangle className="h-5 w-5 text-red-400" />
+              <h3 className="font-medium text-red-300">Error Loading History</h3>
             </div>
-            <p className="text-red-700 mb-4">{error}</p>
+            <p className="text-red-200 mb-4">{error}</p>
             <button 
               onClick={fetchHistoryData}
-              className="text-red-600 hover:text-red-800 text-sm underline"
+              className="text-red-300 hover:text-red-100 text-sm underline"
             >
               Try Again
             </button>
@@ -336,62 +348,62 @@ export default function HistoryPage() {
         {/* Statistics Overview */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="bg-white/5 border border-white/20 rounded p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Total Analyses</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalAnalyses}</p>
+                  <p className="text-sm text-white/60">Total Analyses</p>
+                  <p className="text-2xl font-light text-white">{stats.totalAnalyses}</p>
                 </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                  <BarChart3 className="h-6 w-6 text-blue-600" />
+                <div className="w-12 h-12 bg-white/10 rounded flex items-center justify-center">
+                  <BarChart3 className="h-6 w-6 text-white/60" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="bg-white/5 border border-white/20 rounded p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">SKUs Analyzed</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalSKUsAnalyzed.toLocaleString()}</p>
+                  <p className="text-sm text-white/60">SKUs Analyzed</p>
+                  <p className="text-2xl font-light text-white">{stats.totalSKUsAnalyzed.toLocaleString()}</p>
                 </div>
-                <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
-                  <Package className="h-6 w-6 text-amber-600" />
+                <div className="w-12 h-12 bg-white/10 rounded flex items-center justify-center">
+                  <Package className="h-6 w-6 text-white/60" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="bg-green-500/10 border border-green-500/20 rounded p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Revenue Potential</p>
-                  <p className="text-2xl font-bold text-gray-900">£{Math.round(stats.totalRevenuePotential).toLocaleString()}</p>
+                  <p className="text-sm text-green-300">Revenue Potential</p>
+                  <p className="text-2xl font-light text-green-400">£{Math.round(stats.totalRevenuePotential).toLocaleString()}</p>
                 </div>
-                <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                  <DollarSign className="h-6 w-6 text-green-600" />
+                <div className="w-12 h-12 bg-green-500/20 rounded flex items-center justify-center">
+                  <DollarSign className="h-6 w-6 text-green-400" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="bg-red-500/10 border border-red-500/20 rounded p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Alerts Generated</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.alertsGenerated}</p>
+                  <p className="text-sm text-red-300">Alerts Generated</p>
+                  <p className="text-2xl font-light text-red-400">{stats.alertsGenerated}</p>
                 </div>
-                <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
-                  <AlertTriangle className="h-6 w-6 text-red-600" />
+                <div className="w-12 h-12 bg-red-500/20 rounded flex items-center justify-center">
+                  <AlertTriangle className="h-6 w-6 text-red-400" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="bg-white/5 border border-white/20 rounded p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Avg Processing</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.avgProcessingTime}s</p>
+                  <p className="text-sm text-white/60">Avg Processing</p>
+                  <p className="text-2xl font-light text-white">{stats.avgProcessingTime}s</p>
                 </div>
-                <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                  <Clock className="h-6 w-6 text-purple-600" />
+                <div className="w-12 h-12 bg-white/10 rounded flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-white/60" />
                 </div>
               </div>
             </div>
@@ -399,29 +411,29 @@ export default function HistoryPage() {
         )}
 
         {/* Filters */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-8">
+        <div className="bg-white/5 border border-white/20 rounded-lg p-6 mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-6">
             {/* Search */}
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/40" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search analyses..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded text-white placeholder-white/40 focus:border-white/40 focus:outline-none"
                 />
               </div>
             </div>
 
             {/* Date Filter */}
             <div className="flex items-center space-x-2">
-              <Calendar className="h-5 w-5 text-gray-400" />
+              <Calendar className="h-5 w-5 text-white/40" />
               <select
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value as any)}
-                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                className="bg-white/10 border border-white/20 rounded px-3 py-3 text-white focus:border-white/40 focus:outline-none"
               >
                 <option value="all">All Time</option>
                 <option value="7d">Last 7 Days</option>
@@ -432,11 +444,11 @@ export default function HistoryPage() {
 
             {/* Sort */}
             <div className="flex items-center space-x-2">
-              <Filter className="h-5 w-5 text-gray-400" />
+              <Filter className="h-5 w-5 text-white/40" />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
-                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                className="bg-white/10 border border-white/20 rounded px-3 py-3 text-white focus:border-white/40 focus:outline-none"
               >
                 <option value="date">Sort by Date</option>
                 <option value="revenue">Sort by Revenue</option>
@@ -449,15 +461,15 @@ export default function HistoryPage() {
         {/* Analysis List */}
         <div className="space-y-4">
           {loading ? (
-            <div className="bg-white rounded-xl p-8 text-center">
-              <div className="w-8 h-8 border-4 border-amber-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading analyses...</p>
+            <div className="bg-white/5 border border-white/20 rounded-lg p-8 text-center">
+              <div className="w-8 h-8 border-4 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-white/60">Loading analyses...</p>
             </div>
           ) : filteredAnalyses.length === 0 ? (
-            <div className="bg-white rounded-xl p-12 text-center">
-              <Wine className="h-16 w-16 text-amber-600 mx-auto mb-6" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">No Analyses Found</h3>
-              <p className="text-gray-600 mb-8">
+            <div className="bg-white/5 border border-white/20 rounded-lg p-12 text-center">
+              <Activity className="h-16 w-16 text-white/40 mx-auto mb-6" />
+              <h3 className="text-xl font-light text-white mb-4">No analyses found</h3>
+              <p className="text-white/60 mb-8 text-sm">
                 {analyses.length === 0 
                   ? "Start by uploading your first alcohol inventory file to see your optimization journey."
                   : "No analyses match your current filters. Try adjusting your search criteria."
@@ -465,9 +477,9 @@ export default function HistoryPage() {
               </p>
               <button
                 onClick={() => router.push('/analytics')}
-                className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-amber-600 to-purple-600 text-white font-medium rounded-xl hover:from-amber-700 hover:to-purple-700 transition-all duration-200"
+                className="inline-flex items-center space-x-2 px-6 py-3 bg-white text-black font-medium rounded hover:bg-gray-100 transition-colors"
               >
-                <Wine className="h-5 w-5" />
+                <Activity className="h-5 w-5" />
                 <span>Create First Analysis</span>
                 <ArrowRight className="h-5 w-5" />
               </button>
@@ -476,19 +488,19 @@ export default function HistoryPage() {
             filteredAnalyses.map((analysis) => (
               <div
                 key={analysis._id}
-                className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+                className="bg-white/5 border border-white/20 rounded-lg p-6 hover:bg-white/8 transition-colors"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">{analysis.fileName}</h3>
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      <h3 className="text-lg font-medium text-white">{analysis.fileName}</h3>
+                      <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-500/20 text-green-300 border border-green-500/30">
                         <CheckCircle className="w-3 h-3 mr-1" />
                         Completed
                       </span>
                     </div>
                     
-                    <div className="flex items-center space-x-6 text-sm text-gray-600 mb-4">
+                    <div className="flex items-center space-x-6 text-sm text-white/60 mb-4">
                       <span className="flex items-center space-x-1">
                         <Clock className="h-4 w-4" />
                         <span>{new Date(analysis.processedAt).toLocaleDateString()}</span>
@@ -510,19 +522,19 @@ export default function HistoryPage() {
                     </div>
 
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center p-3 bg-green-50 rounded-lg">
-                        <div className="text-lg font-bold text-green-600">{analysis.summary.priceIncreases}</div>
-                        <div className="text-xs text-gray-600">Price Increases</div>
+                      <div className="text-center p-3 bg-green-500/10 border border-green-500/20 rounded">
+                        <div className="text-lg font-light text-green-400">{analysis.summary.priceIncreases}</div>
+                        <div className="text-xs text-green-300">Price Increases</div>
                       </div>
-                      <div className="text-center p-3 bg-red-50 rounded-lg">
-                        <div className="text-lg font-bold text-red-600">{analysis.summary.priceDecreases}</div>
-                        <div className="text-xs text-gray-600">Price Decreases</div>
+                      <div className="text-center p-3 bg-red-500/10 border border-red-500/20 rounded">
+                        <div className="text-lg font-light text-red-400">{analysis.summary.priceDecreases}</div>
+                        <div className="text-xs text-red-300">Price Decreases</div>
                       </div>
-                      <div className="text-center p-3 bg-amber-50 rounded-lg">
-                        <div className="text-lg font-bold text-amber-600">
+                      <div className="text-center p-3 bg-white/5 border border-white/20 rounded">
+                        <div className="text-lg font-light text-white">
                           {analysis.summary.totalSKUs - analysis.summary.priceIncreases - analysis.summary.priceDecreases}
                         </div>
-                        <div className="text-xs text-gray-600">No Change</div>
+                        <div className="text-xs text-white/60">No Change</div>
                       </div>
                     </div>
                   </div>
@@ -530,7 +542,7 @@ export default function HistoryPage() {
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => router.push(`/dashboard?analysis=${analysis.uploadId}`)}
-                      className="inline-flex items-center space-x-1 px-3 py-2 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition-colors text-sm"
+                      className="inline-flex items-center space-x-1 px-3 py-2 bg-white/10 text-white border border-white/20 rounded hover:bg-white/15 transition-colors text-sm"
                     >
                       <Eye className="h-4 w-4" />
                       <span>View</span>
@@ -538,7 +550,7 @@ export default function HistoryPage() {
                     
                     <button
                       onClick={() => downloadAnalysisReport(analysis)}
-                      className="inline-flex items-center space-x-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm"
+                      className="inline-flex items-center space-x-1 px-3 py-2 bg-white/10 text-white border border-white/20 rounded hover:bg-white/15 transition-colors text-sm"
                     >
                       <Download className="h-4 w-4" />
                       <span>Export</span>
@@ -547,10 +559,10 @@ export default function HistoryPage() {
                     <button
                       onClick={() => handleDeleteAnalysis(analysis._id)}
                       disabled={deleting === analysis._id}
-                      className="inline-flex items-center space-x-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm disabled:opacity-50"
+                      className="inline-flex items-center space-x-1 px-3 py-2 bg-red-500/20 text-red-300 border border-red-500/30 rounded hover:bg-red-500/30 transition-colors text-sm disabled:opacity-50"
                     >
                       {deleting === analysis._id ? (
-                        <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                        <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
                       ) : (
                         <Trash2 className="h-4 w-4" />
                       )}

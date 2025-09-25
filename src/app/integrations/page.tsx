@@ -5,7 +5,7 @@ import { Navbar } from '@/components/ui/navbar'
 import { AuthModal } from '@/components/ui/auth-modals'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@/contexts/UserContext'
-import { Zap, ShoppingBag, Code, Bell, Settings, Plus } from 'lucide-react'
+import { Zap, ShoppingBag, Code, Bell, Settings, Plus, Database, ArrowRight, CheckCircle, Activity, Layers, RefreshCw, Target, TrendingUp, Package } from 'lucide-react'
 
 export default function IntegrationsPage() {
   const router = useRouter()
@@ -32,53 +32,8 @@ export default function IntegrationsPage() {
     setAuthMode(authMode === 'login' ? 'signup' : 'login')
   }
 
-  // Show loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <Navbar onLogin={handleLogin} onSignup={handleSignup} />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="text-center">
-            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading...</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Redirect to auth if not logged in
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <Navbar onLogin={handleLogin} onSignup={handleSignup} />
-        
-        <AuthModal
-          isOpen={authModalOpen}
-          onClose={() => setAuthModalOpen(false)}
-          mode={authMode}
-          onSwitchMode={switchAuthMode}
-          onSuccess={handleAuthSuccess}
-        />
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="text-center space-y-6">
-            <h2 className="text-3xl font-bold text-gray-900">Access Required</h2>
-            <p className="text-gray-600">Please sign in to view integrations.</p>
-            <button
-              onClick={handleLogin}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
-            >
-              Sign In
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-black">
       <Navbar onLogin={handleLogin} onSignup={handleSignup} />
 
       <AuthModal
@@ -90,167 +45,289 @@ export default function IntegrationsPage() {
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Integrations</h1>
-          <p className="text-gray-600 mt-2">Connect InventoryIQ with your favorite e-commerce platforms and tools.</p>
+        {/* Header */}
+        <div className="text-center space-y-6 mb-16">
+          <div className="inline-flex items-center space-x-2 px-3 py-1 border border-white/20 rounded">
+            <div className="w-1.5 h-1.5 bg-orange-400 rounded-full animate-pulse" />
+            <span className="text-white/60 text-sm">Integration roadmap 2025</span>
+          </div>
+
+          <h1 className="text-4xl md:text-6xl font-light text-white leading-tight">
+            Integrations roadmap
+            <br />
+            <span className="text-white/60">connecting your systems</span>
+          </h1>
+
+          <p className="text-base md:text-lg text-white/60 leading-relaxed max-w-2xl mx-auto">
+            We're building powerful integrations with the platforms you already use. 
+            Here's what's coming and when you can expect it.
+          </p>
         </div>
 
-        <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 text-center mb-12">
-          <Zap className="h-16 w-16 text-blue-600 mx-auto mb-6" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Powerful Integrations Coming Soon</h2>
-          <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-            We're building seamless integrations with the most popular e-commerce platforms. 
-            Soon you'll be able to automatically sync your inventory data and receive real-time recommendations.
+        {/* Roadmap Timeline */}
+        <div className="relative mb-16">
+          {/* Timeline line */}
+          <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-white/20"></div>
+          
+          <div className="space-y-12">
+            {/* Q1 2025 - Shopify */}
+            <div className="relative flex items-start space-x-8">
+              {/* Timeline dot */}
+              <div className="relative z-10 w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center border-4 border-green-500/30">
+                <ShoppingBag className="h-8 w-8 text-green-400" />
+              </div>
+              
+              {/* Content */}
+              <div className="flex-1 bg-white/5 border border-white/20 rounded-lg p-8">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <div className="flex items-center space-x-3 mb-2">
+                      <h3 className="text-2xl font-light text-white">Shopify Integration</h3>
+                      <span className="px-3 py-1 bg-green-500/20 text-green-300 text-sm font-medium rounded border border-green-500/30">
+                        Q1 2025
+                      </span>
+                    </div>
+                    <p className="text-white/60">Direct e-commerce platform connection</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-green-400 font-medium">90% Complete</div>
+                    <div className="w-24 h-2 bg-white/20 rounded-full mt-1">
+                      <div className="w-[90%] h-2 bg-green-400 rounded-full"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <h4 className="font-medium text-white mb-3">What's Included:</h4>
+                    <ul className="space-y-2 text-sm text-white/70">
+                      <li className="flex items-center space-x-2">
+                        <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                        <span>Real-time inventory sync</span>
+                      </li>
+                      <li className="flex items-center space-x-2">
+                        <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                        <span>Automated price updates</span>
+                      </li>
+                      <li className="flex items-center space-x-2">
+                        <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                        <span>Sales performance tracking</span>
+                      </li>
+                      <li className="flex items-center space-x-2">
+                        <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                        <span>Product catalog management</span>
+                      </li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-white mb-3">Business Impact:</h4>
+                    <ul className="space-y-2 text-sm text-white/70">
+                      <li className="flex items-center space-x-2">
+                        <TrendingUp className="w-4 h-4 text-green-400 flex-shrink-0" />
+                        <span>15-30% revenue increase</span>
+                      </li>
+                      <li className="flex items-center space-x-2">
+                        <Activity className="w-4 h-4 text-green-400 flex-shrink-0" />
+                        <span>80% reduction in manual work</span>
+                      </li>
+                      <li className="flex items-center space-x-2">
+                        <Target className="w-4 h-4 text-green-400 flex-shrink-0" />
+                        <span>24/7 competitive monitoring</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-4">
+                  <button className="inline-flex items-center space-x-2 px-4 py-2 bg-green-500/20 text-green-300 border border-green-500/30 rounded font-medium hover:bg-green-500/30 transition-colors">
+                    <Bell className="h-4 w-4" />
+                    <span>Get Notified</span>
+                  </button>
+                  <span className="text-white/50 text-sm">Expected: January 2025</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Q2 2025 - Mintsoft */}
+            <div className="relative flex items-start space-x-8">
+              {/* Timeline dot */}
+              <div className="relative z-10 w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center border-4 border-blue-500/30">
+                <Package className="h-8 w-8 text-blue-400" />
+              </div>
+              
+              {/* Content */}
+              <div className="flex-1 bg-white/5 border border-white/20 rounded-lg p-8">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <div className="flex items-center space-x-3 mb-2">
+                      <h3 className="text-2xl font-light text-white">Mintsoft Integration</h3>
+                      <span className="px-3 py-1 bg-blue-500/20 text-blue-300 text-sm font-medium rounded border border-blue-500/30">
+                        Q2 2025
+                      </span>
+                    </div>
+                    <p className="text-white/60">Advanced warehouse management system</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-blue-400 font-medium">60% Complete</div>
+                    <div className="w-24 h-2 bg-white/20 rounded-full mt-1">
+                      <div className="w-[60%] h-2 bg-blue-400 rounded-full"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <h4 className="font-medium text-white mb-3">Advanced Features:</h4>
+                    <ul className="space-y-2 text-sm text-white/70">
+                      <li className="flex items-center space-x-2">
+                        <Package className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                        <span>Live warehouse stock levels</span>
+                      </li>
+                      <li className="flex items-center space-x-2">
+                        <RefreshCw className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                        <span>Automated reorder triggers</span>
+                      </li>
+                      <li className="flex items-center space-x-2">
+                        <Activity className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                        <span>Expiry date optimization</span>
+                      </li>
+                      <li className="flex items-center space-x-2">
+                        <Target className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                        <span>Seasonal demand forecasting</span>
+                      </li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-white mb-3">Operational Benefits:</h4>
+                    <ul className="space-y-2 text-sm text-white/70">
+                      <li className="flex items-center space-x-2">
+                        <TrendingUp className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                        <span>90% reduction in stockouts</span>
+                      </li>
+                      <li className="flex items-center space-x-2">
+                        <Package className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                        <span>Optimized storage efficiency</span>
+                      </li>
+                      <li className="flex items-center space-x-2">
+                        <Activity className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                        <span>Improved cash flow</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-4">
+                  <button className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded font-medium hover:bg-blue-500/30 transition-colors">
+                    <Bell className="h-4 w-4" />
+                    <span>Get Notified</span>
+                  </button>
+                  <span className="text-white/50 text-sm">Expected: April 2025</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Q3 2025 - Custom API */}
+            <div className="relative flex items-start space-x-8">
+              {/* Timeline dot */}
+              <div className="relative z-10 w-16 h-16 bg-white/20 rounded-full flex items-center justify-center border-4 border-white/30">
+                <Code className="h-8 w-8 text-white/60" />
+              </div>
+              
+              {/* Content */}
+              <div className="flex-1 bg-white/5 border border-white/20 rounded-lg p-8">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <div className="flex items-center space-x-3 mb-2">
+                      <h3 className="text-2xl font-light text-white">Enterprise API</h3>
+                      <span className="px-3 py-1 bg-white/20 text-white/70 text-sm font-medium rounded border border-white/30">
+                        Q3 2025
+                      </span>
+                    </div>
+                    <p className="text-white/60">Custom integrations & enterprise solutions</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-white/70 font-medium">25% Complete</div>
+                    <div className="w-24 h-2 bg-white/20 rounded-full mt-1">
+                      <div className="w-[25%] h-2 bg-white/60 rounded-full"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <h4 className="font-medium text-white mb-3">API Capabilities:</h4>
+                    <ul className="space-y-2 text-sm text-white/70">
+                      <li className="flex items-center space-x-2">
+                        <Code className="w-4 h-4 text-white/60 flex-shrink-0" />
+                        <span>RESTful API endpoints</span>
+                      </li>
+                      <li className="flex items-center space-x-2">
+                        <Database className="w-4 h-4 text-white/60 flex-shrink-0" />
+                        <span>Real-time webhooks</span>
+                      </li>
+                      <li className="flex items-center space-x-2">
+                        <Settings className="w-4 h-4 text-white/60 flex-shrink-0" />
+                        <span>Custom field mapping</span>
+                      </li>
+                      <li className="flex items-center space-x-2">
+                        <Bell className="w-4 h-4 text-white/60 flex-shrink-0" />
+                        <span>Event-driven automation</span>
+                      </li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-white mb-3">Enterprise Features:</h4>
+                    <ul className="space-y-2 text-sm text-white/70">
+                      <li className="flex items-center space-x-2">
+                        <Target className="w-4 h-4 text-white/60 flex-shrink-0" />
+                        <span>Dedicated support</span>
+                      </li>
+                      <li className="flex items-center space-x-2">
+                        <Activity className="w-4 h-4 text-white/60 flex-shrink-0" />
+                        <span>Custom rate limits</span>
+                      </li>
+                      <li className="flex items-center space-x-2">
+                        <Zap className="w-4 h-4 text-white/60 flex-shrink-0" />
+                        <span>Priority processing</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-4">
+                  <button className="inline-flex items-center space-x-2 px-4 py-2 bg-white/20 text-white/70 border border-white/30 rounded font-medium hover:bg-white/30 transition-colors">
+                    <Bell className="h-4 w-4" />
+                    <span>Get Notified</span>
+                  </button>
+                  <span className="text-white/50 text-sm">Expected: July 2025</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Early Access CTA */}
+        <div className="bg-white/5 border border-white/20 rounded-lg p-8 text-center">
+          <h3 className="text-2xl font-light text-white mb-4">Want early access?</h3>
+          <p className="text-white/60 mb-6 max-w-2xl mx-auto">
+            Join our beta program and get first access to new integrations. Help us build the features you need 
+            and get exclusive early access before general availability.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={() => router.push('/analytics')}
-              className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
+            <button 
+              onClick={handleSignup}
+              className="inline-flex items-center space-x-2 px-8 py-4 bg-white text-black font-medium rounded hover:bg-gray-100 transition-colors"
             >
-              <Plus className="h-5 w-5" />
-              <span>Upload CSV For Now</span>
+              <span>Join Beta Program</span>
+              <ArrowRight className="h-4 w-4" />
             </button>
             
-            <button className="inline-flex items-center space-x-2 px-6 py-3 bg-white text-gray-700 font-medium rounded-xl border border-gray-300 hover:border-gray-400 transition-colors">
-              <Bell className="h-5 w-5" />
-              <span>Get Notified When Ready</span>
+            <button className="inline-flex items-center space-x-2 px-8 py-4 bg-white/10 text-white border border-white/20 font-medium rounded hover:bg-white/15 transition-colors">
+              <Bell className="h-4 w-4" />
+              <span>Get Updates</span>
             </button>
           </div>
-        </div>
-
-        {/* Coming Soon Integrations */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-white rounded-xl p-6 border border-gray-100 hover:shadow-lg transition-shadow relative overflow-hidden">
-            <div className="absolute top-4 right-4">
-              <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded-full">
-                Coming Soon
-              </span>
-            </div>
-            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
-              <ShoppingBag className="h-6 w-6 text-green-600" />
-            </div>
-            <h3 className="font-semibold text-gray-900 mb-2">Shopify</h3>
-            <p className="text-gray-600 text-sm mb-4">
-              Direct integration with your Shopify store. Auto-sync inventory, prices, and sales data.
-            </p>
-            <ul className="text-xs text-gray-500 space-y-1">
-              <li>• Real-time inventory sync</li>
-              <li>• Automatic price updates</li>
-              <li>• Sales velocity tracking</li>
-            </ul>
-          </div>
-          
-          <div className="bg-white rounded-xl p-6 border border-gray-100 hover:shadow-lg transition-shadow relative overflow-hidden">
-            <div className="absolute top-4 right-4">
-              <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded-full">
-                Coming Soon
-              </span>
-            </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
-              <ShoppingBag className="h-6 w-6 text-purple-600" />
-            </div>
-            <h3 className="font-semibold text-gray-900 mb-2">WooCommerce</h3>
-            <p className="text-gray-600 text-sm mb-4">
-              Seamless WordPress integration. Perfect for custom e-commerce setups.
-            </p>
-            <ul className="text-xs text-gray-500 space-y-1">
-              <li>• WordPress plugin</li>
-              <li>• Custom field mapping</li>
-              <li>• Bulk price updates</li>
-            </ul>
-          </div>
-          
-          <div className="bg-white rounded-xl p-6 border border-gray-100 hover:shadow-lg transition-shadow relative overflow-hidden">
-            <div className="absolute top-4 right-4">
-              <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded-full">
-                Coming Soon
-              </span>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
-              <ShoppingBag className="h-6 w-6 text-blue-600" />
-            </div>
-            <h3 className="font-semibold text-gray-900 mb-2">BigCommerce</h3>
-            <p className="text-gray-600 text-sm mb-4">
-              Enterprise-grade integration for scaling businesses.
-            </p>
-            <ul className="text-xs text-gray-500 space-y-1">
-              <li>• API-first integration</li>
-              <li>• Multi-store support</li>
-              <li>• Advanced analytics</li>
-            </ul>
-          </div>
-          
-          <div className="bg-white rounded-xl p-6 border border-gray-100 hover:shadow-lg transition-shadow relative overflow-hidden">
-            <div className="absolute top-4 right-4">
-              <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded-full">
-                Coming Soon
-              </span>
-            </div>
-            <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mb-4">
-              <Code className="h-6 w-6 text-red-600" />
-            </div>
-            <h3 className="font-semibold text-gray-900 mb-2">REST API</h3>
-            <p className="text-gray-600 text-sm mb-4">
-              Powerful API for custom integrations and enterprise solutions.
-            </p>
-            <ul className="text-xs text-gray-500 space-y-1">
-              <li>• RESTful endpoints</li>
-              <li>• Webhook support</li>
-              <li>• Rate limiting</li>
-            </ul>
-          </div>
-          
-          <div className="bg-white rounded-xl p-6 border border-gray-100 hover:shadow-lg transition-shadow relative overflow-hidden">
-            <div className="absolute top-4 right-4">
-              <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded-full">
-                Coming Soon
-              </span>
-            </div>
-            <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-4">
-              <Bell className="h-6 w-6 text-orange-600" />
-            </div>
-            <h3 className="font-semibold text-gray-900 mb-2">Slack Notifications</h3>
-            <p className="text-gray-600 text-sm mb-4">
-              Get instant alerts in your Slack channels when critical inventory events occur.
-            </p>
-            <ul className="text-xs text-gray-500 space-y-1">
-              <li>• Real-time alerts</li>
-              <li>• Custom channels</li>
-              <li>• Rich formatting</li>
-            </ul>
-          </div>
-          
-          <div className="bg-white rounded-xl p-6 border border-gray-100 hover:shadow-lg transition-shadow relative overflow-hidden">
-            <div className="absolute top-4 right-4">
-              <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded-full">
-                Coming Soon
-              </span>
-            </div>
-            <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mb-4">
-              <Settings className="h-6 w-6 text-gray-600" />
-            </div>
-            <h3 className="font-semibold text-gray-900 mb-2">Zapier</h3>
-            <p className="text-gray-600 text-sm mb-4">
-              Connect with 5000+ apps through Zapier automation platform.
-            </p>
-            <ul className="text-xs text-gray-500 space-y-1">
-              <li>• No-code automation</li>
-              <li>• Trigger-based actions</li>
-              <li>• Multi-step workflows</li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Request Integration */}
-        <div className="mt-12 bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-8 text-center border border-blue-200">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">Need a Different Integration?</h3>
-          <p className="text-gray-600 mb-6">
-            We're always adding new integrations. Let us know which platform you'd like to see next!
-          </p>
-          <button className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200">
-            <span>Request Integration</span>
-          </button>
         </div>
       </main>
     </div>
