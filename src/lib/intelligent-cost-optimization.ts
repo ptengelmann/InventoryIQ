@@ -1,192 +1,168 @@
 // src/lib/intelligent-cost-optimization.ts
-// Optimize Claude + GPT-4 usage for maximum value at minimum cost
+// Claude-only cost optimization for competitive intelligence
 
-import { AlcoholSKU, CompetitorPrice } from '@/types'
 import { RealCompetitiveScraping } from './real-competitive-scraping'
+
+// Simple type definitions
+interface AlcoholSKU {
+  sku_code: string
+  product_name?: string
+  brand?: string
+  subcategory?: string
+  category: string
+  price: number
+  weekly_sales: number
+  inventory_level: number
+}
+
+interface CompetitorPrice {
+  sku: string
+  competitor: string
+  competitor_price: number
+  our_price: number
+  price_difference: number
+  price_difference_percentage: number
+  availability: boolean
+  last_updated: Date
+  source: string
+  url?: string
+  product_name?: string
+  relevance_score?: number
+  promotional?: boolean
+  promotion_details?: string
+}
 
 interface CostBudget {
   monthly_budget_gbp: number
   claude_cost_per_1k_tokens: number
-  gpt4_cost_per_1k_tokens: number
   scraping_cost_per_request: number
 }
 
-interface IntelligentAnalysisRequest {
+interface OptimizedAnalysisRequest {
   skus: AlcoholSKU[]
   budget_remaining: number
-  analysis_depth: 'quick' | 'standard' | 'deep'
   priority_categories: string[]
+  max_skus_to_analyze?: number
+}
+
+interface PrioritizedSKU extends AlcoholSKU {
+  priority_score: number
 }
 
 export class IntelligentCostOptimization {
   
   private static COST_CONFIG: CostBudget = {
-    monthly_budget_gbp: 200,  // Your target budget
-    claude_cost_per_1k_tokens: 0.008,  // Claude Sonnet pricing
-    gpt4_cost_per_1k_tokens: 0.06,     // GPT-4 Turbo pricing
-    scraping_cost_per_request: 0.02    // Estimated scraping cost (time + resources)
+    monthly_budget_gbp: 200,
+    claude_cost_per_1k_tokens: 0.008,  // Claude Sonnet 3.5 pricing
+    scraping_cost_per_request: 0.02    // Estimated scraping cost
   }
 
-  // Smart routing: Claude for discovery, GPT-4 for complex analysis
-  static async optimizedCompetitiveIntelligence(
-    request: IntelligentAnalysisRequest
+  /**
+   * Optimized competitive analysis using only Claude
+   */
+  static async optimizedCompetitiveAnalysis(
+    request: OptimizedAnalysisRequest
   ): Promise<{
     competitive_data: CompetitorPrice[]
-    ai_insights: any[]
-    cost_breakdown: any
-    recommendations: any[]
+    cost_breakdown: {
+      total_cost_gbp: number
+      claude_cost: number
+      scraping_cost: number
+      budget_remaining: number
+      skus_analyzed: number
+      skus_skipped: number
+    }
+    priority_insights: any[]
   }> {
     const startTime = Date.now()
-    const costs = { claude: 0, gpt4: 0, scraping: 0 }
+    let claudeCost = 0
+    let scrapingCost = 0
     
-    console.log(`🎯 Starting optimized analysis for ${request.skus.length} SKUs`)
-    console.log(`💰 Budget remaining: £${request.budget_remaining}`)
+    console.log(`Starting optimized analysis for ${request.skus.length} SKUs`)
+    console.log(`Budget remaining: £${request.budget_remaining}`)
     
-    // Step 1: Intelligent SKU prioritization using business rules
+    // Step 1: Smart SKU prioritization
     const prioritizedSKUs = this.prioritizeSKUsForAnalysis(request.skus, request.priority_categories)
-    const topSKUs = this.selectSKUsWithinBudget(prioritizedSKUs, request.budget_remaining)
+    const selectedSKUs = this.selectSKUsWithinBudget(prioritizedSKUs, request.budget_remaining, request.max_skus_to_analyze)
     
-    console.log(`📊 Analyzing top ${topSKUs.length} priority SKUs (${prioritizedSKUs.length} total)`)
+    console.log(`Selected ${selectedSKUs.length} high-priority SKUs for analysis`)
     
-    // Step 2: Batch competitor data collection (cached + fresh)
+    // Step 2: Collect competitive data efficiently
     const competitorData: CompetitorPrice[] = []
+    let skusAnalyzed = 0
+    let skusSkipped = 0
     
-    for (const sku of topSKUs) {
+    for (const sku of selectedSKUs) {
       try {
-        // Use cached data when possible (24hr cache for cost efficiency)
-        const skuCompetitors = await RealCompetitiveScraping.getCachedOrScrape(
-          `${sku.brand} ${sku.subcategory}`,
-          sku.category,
-          24  // 24 hour cache
-        )
-        
-        competitorData.push(...skuCompetitors)
-        costs.scraping += this.COST_CONFIG.scraping_cost_per_request
-        
-        // Respect budget limits
-        if (this.calculateCurrentCost(costs) > request.budget_remaining * 0.8) {
-          console.log(`⚠️  Approaching budget limit, stopping competitor collection`)
+        // Check budget before each scraping request
+        const estimatedCost = scrapingCost + this.COST_CONFIG.scraping_cost_per_request
+        if (estimatedCost > request.budget_remaining * 0.8) {
+          console.log(`Budget limit approaching, skipping remaining ${selectedSKUs.length - skusAnalyzed} SKUs`)
+          skusSkipped = selectedSKUs.length - skusAnalyzed
           break
         }
+
+        // Use the new scrapeWithProductContext method
+        const skuCompetitors = await RealCompetitiveScraping.scrapeWithProductContext({
+          sku_code: sku.sku_code,
+          product_name: sku.product_name,
+          brand: sku.brand,
+          subcategory: sku.subcategory,
+          category: sku.category,
+          price: sku.price,
+          weekly_sales: sku.weekly_sales
+        }, 3, false) // Max 3 retailers per SKU, no AI insights to save costs
+        
+        // Calculate price differences
+        const enhancedCompetitors = skuCompetitors.map(competitor => ({
+          ...competitor,
+          our_price: sku.price,
+          price_difference: competitor.competitor_price - sku.price,
+          price_difference_percentage: ((competitor.competitor_price - sku.price) / sku.price) * 100
+        }))
+        
+        competitorData.push(...enhancedCompetitors)
+        scrapingCost += this.COST_CONFIG.scraping_cost_per_request
+        skusAnalyzed++
+        
+        // Rate limiting to avoid overwhelming SERP API
+        await this.delay(800)
         
       } catch (error) {
-        console.error(`Failed to get competitor data for ${sku.sku}:`, error)
+        console.error(`Failed to analyze ${sku.sku_code}:`, error)
+        skusSkipped++
       }
     }
     
-    // Step 3: Claude-powered rapid analysis for all SKUs
-    const rapidInsights = await this.claudeRapidAnalysis(topSKUs, competitorData)
-    costs.claude += this.estimateClaudeTokens(topSKUs, competitorData) * this.COST_CONFIG.claude_cost_per_1k_tokens / 1000
+    // Step 3: Generate priority insights using business logic (no Claude API calls needed)
+    const priorityInsights = this.generatePriorityInsights(selectedSKUs, competitorData)
     
-    // Step 4: GPT-4 deep analysis only for high-value SKUs
-    const highValueSKUs = this.identifyHighValueSKUs(topSKUs, rapidInsights)
-    const deepInsights = await this.gpt4DeepAnalysis(highValueSKUs, competitorData)
-    costs.gpt4 += this.estimateGPT4Tokens(highValueSKUs) * this.COST_CONFIG.gpt4_cost_per_1k_tokens / 1000
+    const totalCost = claudeCost + scrapingCost
     
-    // Step 5: Combine insights efficiently
-    const recommendations = this.combineInsights(rapidInsights, deepInsights, competitorData)
-    
-    const totalCost = costs.claude + costs.gpt4 + costs.scraping
-    
-    console.log(`✅ Analysis complete in ${Date.now() - startTime}ms`)
-    console.log(`💰 Total cost: £${totalCost.toFixed(3)} (Claude: £${costs.claude.toFixed(3)}, GPT-4: £${costs.gpt4.toFixed(3)}, Scraping: £${costs.scraping.toFixed(3)})`)
+    console.log(`Analysis complete in ${Date.now() - startTime}ms`)
+    console.log(`Total cost: £${totalCost.toFixed(3)} (Scraping: £${scrapingCost.toFixed(3)})`)
     
     return {
       competitive_data: competitorData,
-      ai_insights: [...rapidInsights, ...deepInsights],
       cost_breakdown: {
         total_cost_gbp: totalCost,
-        claude_cost: costs.claude,
-        gpt4_cost: costs.gpt4,
-        scraping_cost: costs.scraping,
+        claude_cost: claudeCost,
+        scraping_cost: scrapingCost,
         budget_remaining: request.budget_remaining - totalCost,
-        efficiency_score: this.calculateEfficiencyScore(recommendations.length, totalCost)
+        skus_analyzed: skusAnalyzed,
+        skus_skipped: skusSkipped
       },
-      recommendations
+      priority_insights: priorityInsights
     }
   }
 
-  // Claude: Fast analysis for all SKUs
-  private static async claudeRapidAnalysis(
-    skus: AlcoholSKU[],
-    competitorData: CompetitorPrice[]
-  ): Promise<any[]> {
-    console.log(`🔍 Claude rapid analysis for ${skus.length} SKUs`)
-    
-    // Use Claude for efficient pattern detection and rapid recommendations
-    const analysis = {
-      overpriced_products: skus.filter(sku => {
-        const competitors = competitorData.filter(c => c.sku === sku.sku)
-        if (competitors.length === 0) return false
-        const avgCompPrice = competitors.reduce((sum, c) => sum + c.competitor_price, 0) / competitors.length
-        return parseFloat(sku.price) > avgCompPrice * 1.15
-      }),
-      underpriced_products: skus.filter(sku => {
-        const competitors = competitorData.filter(c => c.sku === sku.sku)
-        if (competitors.length === 0) return false
-        const avgCompPrice = competitors.reduce((sum, c) => sum + c.competitor_price, 0) / competitors.length
-        return parseFloat(sku.price) < avgCompPrice * 0.85
-      }),
-      stockout_risks: skus.filter(sku => {
-        const weeksOfStock = parseInt(sku.inventory_level) / parseFloat(sku.weekly_sales)
-        return weeksOfStock < 2
-      }),
-      slow_movers: skus.filter(sku => parseFloat(sku.weekly_sales) < 1)
-    }
-    
-    return [
-      {
-        type: 'rapid_pricing_analysis',
-        source: 'claude',
-        findings: analysis,
-        confidence: 0.8,
-        processing_time_ms: 50
-      }
-    ]
-  }
-
-  // GPT-4: Deep analysis only for high-value SKUs
-  private static async gpt4DeepAnalysis(
-    highValueSKUs: AlcoholSKU[],
-    competitorData: CompetitorPrice[]
-  ): Promise<any[]> {
-    if (highValueSKUs.length === 0) return []
-    
-    console.log(`🧠 GPT-4 deep analysis for ${highValueSKUs.length} high-value SKUs`)
-    
-    // This would call your existing GPTCommerceIntelligence.generateCreativeRecommendations
-    // but only for the most valuable SKUs to control costs
-    
-    const slowMovers = highValueSKUs.filter(sku => parseFloat(sku.weekly_sales) < 1)
-    
-    if (slowMovers.length > 0) {
-      // Use your existing GPT-4 creative recommendations but limit scope
-      return [
-        {
-          type: 'creative_strategies',
-          source: 'gpt4',
-          strategies: [
-            {
-              title: 'Premium Bundle Strategy',
-              description: `Create curated bundles for ${slowMovers.length} slow-moving premium products`,
-              estimated_impact: slowMovers.length * 15.99,
-              implementation_complexity: 'medium'
-            }
-          ],
-          confidence: 0.9,
-          processing_time_ms: 2000
-        }
-      ]
-    }
-    
-    return []
-  }
-
-  // Smart SKU prioritization based on business impact
+  /**
+   * Smart SKU prioritization based on business impact
+   */
   private static prioritizeSKUsForAnalysis(
     skus: AlcoholSKU[],
     priorityCategories: string[]
-  ): AlcoholSKU[] {
+  ): PrioritizedSKU[] {
     return skus
       .map(sku => ({
         ...sku,
@@ -195,156 +171,244 @@ export class IntelligentCostOptimization {
       .sort((a, b) => b.priority_score - a.priority_score)
   }
 
+  /**
+   * Calculate business priority score for each SKU
+   */
   private static calculatePriorityScore(sku: AlcoholSKU, priorityCategories: string[]): number {
     let score = 0
     
     // Revenue impact (weekly sales * price)
-    const weeklyRevenue = parseFloat(sku.weekly_sales) * parseFloat(sku.price)
-    score += weeklyRevenue * 0.4
+    const weeklyRevenue = sku.weekly_sales * sku.price
+    score += weeklyRevenue * 2 // High weight on revenue
     
-    // Inventory value (inventory * price)
-    const inventoryValue = parseInt(sku.inventory_level) * parseFloat(sku.price)
-    score += inventoryValue * 0.0001  // Scale down inventory impact
+    // Inventory value risk
+    const inventoryValue = sku.inventory_level * sku.price
+    score += inventoryValue * 0.01
     
-    // Category priority
+    // Category priority boost
     if (priorityCategories.includes(sku.category)) {
-      score += 100
+      score += 1000
     }
     
-    // High-margin products (spirits typically higher margin)
-    if (sku.category === 'spirits' && parseFloat(sku.price) > 30) {
-      score += 50
+    // High-value product boost
+    if (sku.price > 30) {
+      score += 500
     }
     
-    // Fast movers (higher priority for competitive analysis)
-    if (parseFloat(sku.weekly_sales) > 5) {
-      score += 30
+    // Fast-moving product boost
+    if (sku.weekly_sales > 5) {
+      score += 300
     }
     
-    // Risk factors (low stock = higher priority)
-    const weeksOfStock = parseInt(sku.inventory_level) / parseFloat(sku.weekly_sales)
+    // Stock risk (low stock = higher priority)
+    const weeksOfStock = sku.inventory_level / Math.max(sku.weekly_sales, 0.1)
     if (weeksOfStock < 4) {
-      score += 25
+      score += 200
     }
     
-    return score
-  }
-
-  private static selectSKUsWithinBudget(
-    prioritizedSKUs: AlcoholSKU[],
-    budgetRemaining: number
-  ): AlcoholSKU[] {
-    const estimatedCostPerSKU = 0.15  // £0.15 per SKU (scraping + AI analysis)
-    const maxSKUs = Math.floor(budgetRemaining / estimatedCostPerSKU)
+    // Slow mover with high inventory (liquidation priority)
+    if (sku.weekly_sales < 1 && inventoryValue > 200) {
+      score += 400
+    }
     
-    return prioritizedSKUs.slice(0, Math.min(maxSKUs, 50))  // Cap at 50 SKUs per analysis
+    return Math.round(score)
   }
 
-  private static identifyHighValueSKUs(
-    skus: AlcoholSKU[],
-    rapidInsights: any[]
-  ): AlcoholSKU[] {
-    // Only use expensive GPT-4 for SKUs that could benefit from creative strategies
-    return skus.filter(sku => {
-      const weeklyRevenue = parseFloat(sku.weekly_sales) * parseFloat(sku.price)
-      const inventoryValue = parseInt(sku.inventory_level) * parseFloat(sku.price)
-      
-      return (
-        weeklyRevenue < 10 &&  // Slow movers
-        inventoryValue > 200 && // High inventory value
-        parseFloat(sku.price) > 20  // Premium products
-      )
-    }).slice(0, 10)  // Limit to top 10 for cost control
+  /**
+   * Select SKUs within budget constraints
+   */
+  private static selectSKUsWithinBudget(
+    prioritizedSKUs: PrioritizedSKU[],
+    budgetRemaining: number,
+    maxSKUs?: number
+  ): PrioritizedSKU[] {
+    const estimatedCostPerSKU = this.COST_CONFIG.scraping_cost_per_request
+    const budgetBasedLimit = Math.floor(budgetRemaining / estimatedCostPerSKU)
+    
+    const limit = maxSKUs ? Math.min(maxSKUs, budgetBasedLimit) : budgetBasedLimit
+    const cappedLimit = Math.min(limit, 25) // Cap at 25 SKUs to prevent runaway costs
+    
+    console.log(`Budget allows ${budgetBasedLimit} SKUs, selecting top ${cappedLimit}`)
+    
+    return prioritizedSKUs.slice(0, cappedLimit)
   }
 
-  private static combineInsights(
-    rapidInsights: any[],
-    deepInsights: any[],
+  /**
+   * Generate business insights without expensive AI calls
+   */
+  private static generatePriorityInsights(
+    analyzedSKUs: PrioritizedSKU[],
     competitorData: CompetitorPrice[]
   ): any[] {
-    const recommendations = []
+    const insights = []
     
-    // Extract actionable recommendations from both analysis types
-    for (const insight of rapidInsights) {
-      if (insight.findings?.overpriced_products?.length > 0) {
-        recommendations.push({
-          type: 'price_reduction',
-          urgency: 'high',
-          affected_skus: insight.findings.overpriced_products.length,
-          estimated_impact: insight.findings.overpriced_products.length * 25,
-          source: 'claude_rapid'
-        })
-      }
+    // Pricing insights
+    const overpriced = analyzedSKUs.filter(sku => {
+      const competitors = competitorData.filter(c => c.sku === sku.sku_code)
+      if (competitors.length === 0) return false
+      const avgCompPrice = competitors.reduce((sum, c) => sum + c.competitor_price, 0) / competitors.length
+      return sku.price > avgCompPrice * 1.15
+    })
+    
+    const underpriced = analyzedSKUs.filter(sku => {
+      const competitors = competitorData.filter(c => c.sku === sku.sku_code)
+      if (competitors.length === 0) return false
+      const avgCompPrice = competitors.reduce((sum, c) => sum + c.competitor_price, 0) / competitors.length
+      return sku.price < avgCompPrice * 0.85
+    })
+    
+    // Stock insights
+    const stockRisks = analyzedSKUs.filter(sku => {
+      const weeksOfStock = sku.inventory_level / Math.max(sku.weekly_sales, 0.1)
+      return weeksOfStock < 2
+    })
+    
+    const slowMovers = analyzedSKUs.filter(sku => 
+      sku.weekly_sales < 1 && (sku.inventory_level * sku.price) > 200
+    )
+    
+    // Generate actionable insights
+    if (overpriced.length > 0) {
+      const totalRevenuAtRisk = overpriced.reduce((sum, sku) => 
+        sum + (sku.weekly_sales * sku.price * 52), 0
+      )
       
-      if (insight.findings?.stockout_risks?.length > 0) {
-        recommendations.push({
-          type: 'reorder_urgently',
-          urgency: 'critical',
-          affected_skus: insight.findings.stockout_risks.length,
-          estimated_impact: insight.findings.stockout_risks.length * 100,
-          source: 'claude_rapid'
-        })
-      }
+      insights.push({
+        type: 'pricing_alert',
+        priority: 'high',
+        title: `${overpriced.length} products overpriced vs competitors`,
+        description: `Annual revenue at risk: £${Math.round(totalRevenuAtRisk).toLocaleString()}`,
+        affected_skus: overpriced.map(s => s.sku_code),
+        immediate_actions: [
+          'Review pricing for top 5 overpriced products',
+          'Consider promotional pricing to match competitors',
+          'Analyze cost structure for price reduction opportunities'
+        ],
+        estimated_impact: Math.round(totalRevenuAtRisk * 0.1) // 10% revenue recovery
+      })
     }
     
-    // Add GPT-4 creative strategies
-    for (const insight of deepInsights) {
-      if (insight.strategies) {
-        recommendations.push(...insight.strategies.map((strategy: any) => ({
-          ...strategy,
-          type: 'creative_strategy',
-          urgency: 'medium',
-          source: 'gpt4_deep'
-        })))
-      }
+    if (underpriced.length > 0) {
+      const totalOpportunity = underpriced.reduce((sum, sku) => {
+        const competitors = competitorData.filter(c => c.sku === sku.sku_code)
+        if (competitors.length === 0) return sum
+        const avgCompPrice = competitors.reduce((s, c) => s + c.competitor_price, 0) / competitors.length
+        const priceGap = avgCompPrice - sku.price
+        return sum + (priceGap * sku.weekly_sales * 52)
+      }, 0)
+      
+      insights.push({
+        type: 'revenue_opportunity',
+        priority: 'medium',
+        title: `${underpriced.length} products underpriced - revenue opportunity`,
+        description: `Annual revenue opportunity: £${Math.round(totalOpportunity).toLocaleString()}`,
+        affected_skus: underpriced.map(s => s.sku_code),
+        immediate_actions: [
+          'Test price increases on underpriced products',
+          'Monitor competitor pricing changes',
+          'Implement dynamic pricing strategy'
+        ],
+        estimated_impact: Math.round(totalOpportunity * 0.5) // 50% price increase adoption
+      })
     }
     
-    return recommendations
+    if (stockRisks.length > 0) {
+      insights.push({
+        type: 'stock_alert',
+        priority: 'critical',
+        title: `${stockRisks.length} products at risk of stockout`,
+        description: 'Products with less than 2 weeks of inventory',
+        affected_skus: stockRisks.map(s => s.sku_code),
+        immediate_actions: [
+          'Place urgent reorders for at-risk products',
+          'Consider temporary price increases to slow demand',
+          'Identify substitute products for customers'
+        ],
+        estimated_impact: stockRisks.reduce((sum, sku) => 
+          sum + (sku.weekly_sales * sku.price * 4), 0 // 4 weeks of lost sales
+        )
+      })
+    }
+    
+    if (slowMovers.length > 0) {
+      insights.push({
+        type: 'liquidation_opportunity',
+        priority: 'medium',
+        title: `${slowMovers.length} slow-moving products with high inventory value`,
+        description: 'Consider promotional strategies to move inventory',
+        affected_skus: slowMovers.map(s => s.sku_code),
+        immediate_actions: [
+          'Create bundled offers with slow-moving products',
+          'Implement progressive discount strategy',
+          'Consider B2B bulk sales opportunities'
+        ],
+        estimated_impact: slowMovers.reduce((sum, sku) => 
+          sum + (sku.inventory_level * sku.price * 0.1), 0 // 10% inventory value recovery
+        )
+      })
+    }
+    
+    return insights
   }
 
-  private static estimateClaudeTokens(skus: AlcoholSKU[], competitorData: CompetitorPrice[]): number {
-    // Estimate tokens for Claude analysis
-    return skus.length * 50 + competitorData.length * 30
-  }
-
-  private static estimateGPT4Tokens(skus: AlcoholSKU[]): number {
-    // Estimate tokens for GPT-4 creative analysis
-    return skus.length * 200  // More tokens for creative analysis
-  }
-
-  private static calculateCurrentCost(costs: { claude: number, gpt4: number, scraping: number }): number {
-    return costs.claude + costs.gpt4 + costs.scraping
-  }
-
-  private static calculateEfficiencyScore(recommendationsCount: number, totalCost: number): number {
-    if (totalCost === 0) return 0
-    return recommendationsCount / totalCost  // Recommendations per £1
-  }
-
-  // Budget monitoring and alerts
+  /**
+   * Check monthly budget status
+   */
   static async checkBudgetStatus(userId: string): Promise<{
     monthly_spent: number
     budget_remaining: number
-    projected_monthly_cost: number
     recommendations: string[]
   }> {
-    // This would query your database for user's monthly AI usage costs
-    const monthlySpent = 45.67  // Example: query from database
+    // In a real implementation, this would query your database
+    const monthlySpent = 0 // Query from your usage tracking
     const budgetRemaining = this.COST_CONFIG.monthly_budget_gbp - monthlySpent
     
     const recommendations = []
     if (budgetRemaining < 50) {
-      recommendations.push('Approaching budget limit - prioritize high-value SKUs only')
+      recommendations.push('Budget running low - prioritize only high-value SKUs')
     }
-    if (monthlySpent > 150) {
-      recommendations.push('Consider upgrading budget or reducing analysis frequency')
+    if (budgetRemaining < 20) {
+      recommendations.push('Critical: Less than £20 budget remaining')
     }
     
     return {
       monthly_spent: monthlySpent,
       budget_remaining: budgetRemaining,
-      projected_monthly_cost: monthlySpent * 1.2,  // Project based on current usage
       recommendations
     }
+  }
+
+  /**
+   * Get estimated cost for analyzing specific SKUs
+   */
+  static estimateAnalysisCost(skuCount: number): {
+    estimated_cost_gbp: number
+    max_skus_within_budget: number
+    recommendation: string
+  } {
+    const estimatedCost = skuCount * this.COST_CONFIG.scraping_cost_per_request
+    const maxSKUs = Math.floor(this.COST_CONFIG.monthly_budget_gbp / this.COST_CONFIG.scraping_cost_per_request)
+    
+    let recommendation = ''
+    if (skuCount > 25) {
+      recommendation = 'Consider analyzing in batches to optimize costs'
+    } else if (estimatedCost > 50) {
+      recommendation = 'High cost analysis - ensure high-value SKUs are prioritized'
+    } else {
+      recommendation = 'Cost-efficient analysis size'
+    }
+    
+    return {
+      estimated_cost_gbp: estimatedCost,
+      max_skus_within_budget: maxSKUs,
+      recommendation
+    }
+  }
+
+  /**
+   * Simple delay utility
+   */
+  private static delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
   }
 }
