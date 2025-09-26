@@ -1,7 +1,7 @@
 // src/app/dashboard/page.tsx - COMPLETE ENHANCED DASHBOARD
 'use client'
 
-import React, { Suspense, useState, useEffect, useMemo } from 'react'
+import React, { Suspense, useState, useEffect, useMemo, useRef } from 'react'
 import { Navbar } from '@/components/ui/navbar'
 import { AuthModal } from '@/components/ui/auth-modals'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -189,6 +189,9 @@ function DashboardContent() {
   const [expandedInsights, setExpandedInsights] = useState<Set<string>>(new Set())
   const [refreshing, setRefreshing] = useState(false)
   const [autoRefresh, setAutoRefresh] = useState(true)
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const lastRefreshRef = useRef<number>(0)
+
   
   // Auth state
   const [authModalOpen, setAuthModalOpen] = useState(false)
@@ -209,20 +212,56 @@ function DashboardContent() {
     return getSeasonalStrategies(analysisDetails)
   }, [analysisDetails])
 
-  // Auto-refresh competitive intelligence every 5 minutes
-  useEffect(() => {
-    let interval: NodeJS.Timeout
+// Improved auto-refresh with tab visibility detection
+useEffect(() => {
+  const startAutoRefresh = () => {
+    // Clear any existing interval
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
 
     if (autoRefresh && activeTab === 'live-intelligence' && user) {
-      interval = setInterval(() => {
-        fetchCompetitiveIntelligence(true)
-      }, 5 * 60 * 1000) // 5 minutes
+      console.log('Starting auto-refresh interval')
+      
+      intervalRef.current = setInterval(() => {
+        // Only refresh if tab is visible and enough time has passed
+        if (!document.hidden) {
+          const timeSinceLastRefresh = Date.now() - lastRefreshRef.current
+          if (timeSinceLastRefresh >= 4 * 60 * 1000) { // 4 minutes minimum
+            console.log('Auto-refresh triggered')
+            lastRefreshRef.current = Date.now()
+            fetchCompetitiveIntelligence(true)
+          }
+        }
+      }, 5 * 60 * 1000)
     }
+  }
 
-    return () => {
-      if (interval) clearInterval(interval)
+  // Handle tab visibility changes
+  const handleVisibilityChange = () => {
+    if (!document.hidden && activeTab === 'live-intelligence') {
+      // Tab became visible - refresh if it's been a while
+      const timeSinceLastRefresh = Date.now() - lastRefreshRef.current
+      if (timeSinceLastRefresh >= 3 * 60 * 1000) { // 3 minutes
+        console.log('Tab visible - refreshing stale data')
+        lastRefreshRef.current = Date.now()
+        fetchCompetitiveIntelligence(true)
+      }
     }
-  }, [autoRefresh, activeTab, user])
+  }
+
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+  startAutoRefresh()
+
+  return () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+    document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }
+}, [autoRefresh, activeTab, user])
 
   useEffect(() => {
     if (searchParams) {
@@ -277,14 +316,21 @@ function DashboardContent() {
     }
   }
 
-  const fetchCompetitiveIntelligence = async (isRefresh = false) => {
-    if (!user) return
-    
-    if (isRefresh) {
-      setRefreshing(true)
-    } else {
-      setCompetitiveLoading(true)
+const fetchCompetitiveIntelligence = async (isRefresh = false) => {
+  if (!user) return
+  
+  // Prevent rapid successive calls
+  if (isRefresh) {
+    const timeSinceLastCall = Date.now() - lastRefreshRef.current
+    if (timeSinceLastCall < 90 * 1000) { // 90 seconds minimum between refreshes
+      console.log('Refresh throttled - too soon since last call')
+      return
     }
+    setRefreshing(true)
+    lastRefreshRef.current = Date.now()
+  } else {
+    setCompetitiveLoading(true)
+  }
     
     setCompetitiveError(null)
 
