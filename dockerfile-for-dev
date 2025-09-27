@@ -1,0 +1,23 @@
+
+
+FROM node:20-bullseye
+
+RUN apt-get update && \
+	apt-get install -y \
+		vim \
+		git \
+		zsh \
+		iputils-ping \
+		net-tools \
+		curl \
+		sudo \
+	&& rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+CMD ["sleep", "infinity"]
