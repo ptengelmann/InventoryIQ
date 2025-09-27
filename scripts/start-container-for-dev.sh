@@ -1,19 +1,25 @@
+
 #!/bin/zsh
+
+# Source shared container environment utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")" && pwd)"
+source "$SCRIPT_DIR/container-env-utils.sh"
 
 
 set -euo pipefail
 
 # Usage/help
 function show_help {
-  echo "Usage: $0 [-c <container_name>] [-i <image_name>] [-f <dockerfile>] [-p <host_port>] [-d] [-I]"
-  echo "       $0 [--container-name <name>] [--image-name <name>] [--dockerfile <file>] [--port <host_port>] [--debug] [--interactive]"
+  echo "Usage: $0 [-c <container_name>] [-i <image_name>] [-f <dockerfile>] [-p <host_port>] [-d] [-I] [-r]"
+  echo "       $0 [--container-name <name>] [--image-name <name>] [--dockerfile <file>] [--port <host_port>] [--debug] [--interactive] [--refresh]"
   echo "  -c, --container-name   Name for the container (required)"
   echo "  -i, --image-name       Name for the image (required)"
   echo "  -f, --dockerfile       Dockerfile to use (required)"
   echo "  -d, --debug            Enable debug mode"
+  echo "  -r, --refresh          Remove existing image and rebuild unconditionally before running"
   echo "  -I, --interactive      Run container in interactive mode (default is detached for VS Code)"
   echo "  -h, --help             Show this help message"
-  echo "\nDetached mode is now the default. Use --interactive/-I for shell access."
+  echo "\nDetached mode is now the default. Use --interactive/-I for shell access. Use -r/--refresh to force rebuild."
   exit 1
 }
 
@@ -24,6 +30,7 @@ INTERACTIVE=0
 CONTAINER_NAME=""
 IMAGE_NAME=""
 DOCKERFILE=""
+REFRESH=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -35,6 +42,8 @@ while [[ $# -gt 0 ]]; do
       DOCKERFILE="$2"; shift 2 ;;
     -d|--debug)
       DEBUG=1; shift ;;
+    -r|--refresh)
+      REFRESH=1; shift ;;
     -I|--interactive)
       INTERACTIVE=1; shift ;;
     -h|--help)
@@ -59,46 +68,37 @@ if [[ $DEBUG -eq 1 ]]; then
 fi
 
 
-# Detect container engine function
-function detect_engine {
-  if command -v podman >/dev/null 2>&1; then
-    echo "podman"
-  elif command -v docker >/dev/null 2>&1; then
-    echo "docker"
-  else
-    echo "Error: Neither Podman nor Docker is installed. Please install one of them." >&2
-    exit 3
-  fi
-}
 
 ENGINE="$(detect_engine)"
 
 # Build image if not exists
-if ! $ENGINE image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
-  echo "Building image $IMAGE_NAME from $DOCKERFILE..."
+if [[ $REFRESH -eq 1 ]]; then
+  echo "Refresh requested: removing existing image (if any) and rebuilding $IMAGE_NAME from $DOCKERFILE..."
+  if $ENGINE image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
+    $ENGINE image rm -f "$IMAGE_NAME" || true
+  fi
   # Pass host user/group IDs to match permissions
   HOST_UID=$(id -u)
   HOST_GID=$(id -g)
-  $ENGINE build --build-arg USER_ID=$HOST_UID --build-arg GROUP_ID=$HOST_GID -t "$IMAGE_NAME" -f "$DOCKERFILE" .
+  $ENGINE build --no-cache --build-arg USER_ID=$HOST_UID --build-arg GROUP_ID=$HOST_GID -t "$IMAGE_NAME" -f "$DOCKERFILE" .
+else
+  if ! $ENGINE image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
+    echo "Building image $IMAGE_NAME from $DOCKERFILE..."
+    # Pass host user/group IDs to match permissions
+    HOST_UID=$(id -u)
+    HOST_GID=$(id -g)
+    $ENGINE build --build-arg USER_ID=$HOST_UID --build-arg GROUP_ID=$HOST_GID -t "$IMAGE_NAME" -f "$DOCKERFILE" .
+  fi
 fi
 
 
-# Detect OS for volume mount
+
+# Use shared get_volume_opt for correct mapping
 WORKSPACE_PATH="$(pwd)"
 if [[ $DEBUG -eq 1 ]]; then
   echo "WORKSPACE_PATH='$WORKSPACE_PATH'"
 fi
-WORKSPACE_PATH="${WORKSPACE_PATH// /}" # Remove spaces for test
-if [[ "$(uname -s)" == "Linux" ]]; then
-  VOLUME_OPT="-v \"${WORKSPACE_PATH}:/workspace:Z\""
-elif [[ "$(uname -s)" == "Darwin" ]]; then
-  VOLUME_OPT="-v \"${WORKSPACE_PATH}:/workspace\""
-elif [[ "$(uname -s)" == "MINGW"* || "$(uname -s)" == "CYGWIN"* || "$(uname -s)" == "MSYS"* || "$(uname -s)" == "Windows_NT" ]]; then
-  VOLUME_OPT="-v \"${WORKSPACE_PATH}:/workspace\""
-  echo "Warning: Podman support on Windows is experimental. Docker Desktop is recommended."
-else
-  VOLUME_OPT="-v \"${WORKSPACE_PATH}:/workspace\""
-fi
+VOLUME_OPT="$(get_volume_opt "$WORKSPACE_PATH" "/workspace")"
 
 # Run container
 if [[ $INTERACTIVE -eq 1 ]]; then
