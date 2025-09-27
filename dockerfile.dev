@@ -1,0 +1,35 @@
+# syntax=docker/dockerfile:1
+
+# ---- Base stage: dev tools ----
+FROM node:24.9-bookworm-slim AS node-dev-base
+
+LABEL maintainer="ptengelmann"
+LABEL description="InventoryIQ base dev image with Node and diagnostic tools"
+
+RUN apt-get update && \
+    apt-get install -y \
+        zsh \
+        vim \
+        git \
+        curl \
+        iputils-ping \
+        net-tools \
+        sudo \
+    && rm -rf /var/lib/apt/lists/*
+
+# ---- App stage ----
+FROM node-dev-base as node-dev
+
+WORKDIR /workspace
+
+# Copy package files and prisma schema before npm install
+COPY package*.json ./
+COPY prisma ./prisma
+RUN npm install
+
+# Copy rest of the workspace
+COPY . .
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"]
