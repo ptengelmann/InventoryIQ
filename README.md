@@ -34,3 +34,22 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## AI Engines configuration
+
+This project supports an external AI engines configuration file that describes available AI engine entries and the default engine to use.
+
+- Environment variable: `AI_ENGINES_CONFIG`
+	- If set, the loader will read the JSON config from the provided path.
+	- If not set, the loader falls back to `ai-engines.config.json` at the project root.
+
+Config format (example in `ai-engines.config.json`):
+
+{
+	"default": "mock-default",
+	"engines": [
+		{ "id": "mock-default", "provider": "mock", "params": { ... } }
+	]
+}
+
+The loader validates that the `default` value matches one of the engines' `id` fields and will throw an error if the file is missing or invalid.

@@ -10,5 +10,7 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1'
   },
   setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
-  testTimeout: 10000
+  testTimeout: 10000,
+  coverageDirectory: 'coverage',
+  coverageReporters: ['json', 'lcov', 'text', 'html']
 }

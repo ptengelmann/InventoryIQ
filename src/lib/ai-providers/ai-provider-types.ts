@@ -5,16 +5,14 @@
  * Renamed from `types.ts` to `ai-provider-types.ts` for clarity.
  */
 
-export enum AIProviderType {
-  CLAUDE = 'claude',
-  OPENAI = 'openai',
-  GEMINI = 'gemini',
-  GROK = 'grok',
-  MISTRAL = 'mistral',
-  DEEPSEEK = 'deepseek',
-  LLAMA_CPP = 'llama_cpp',
-  MOCK = 'mock'
-}
+/**
+ * Provider type strings are now driven by the runtime configuration file.
+ * To remain flexible we use a string alias for provider identifiers. Code
+ * should prefer deriving known provider strings from the configuration
+ * (via `getProviderTypesFromConfig`) rather than relying on a compile-time
+ * enum.
+ */
+export type AIProviderType = string
 
 export interface AIUsage {
   prompt_tokens?: number
@@ -29,7 +27,7 @@ export interface AIResponse {
   usage?: AIUsage
   /** The model identifier used (provider-specific) */
   model?: string
-  /** Which provider produced this response */
+  /** Which provider produced this response (string identifier from config) */
   provider: AIProviderType
   /** Timestamp when the response was produced */
   timestamp: string

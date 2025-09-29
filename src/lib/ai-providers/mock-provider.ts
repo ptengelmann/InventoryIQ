@@ -1,6 +1,5 @@
 import {
   AIProviderInterface,
-  AIProviderType,
   AIResponse,
   AIStructuredResponse,
   AIProviderConfig
@@ -19,13 +18,13 @@ export class MockAIProvider implements AIProviderInterface {
       content: 'mock response',
       usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
       model: 'mock-model',
-      provider: AIProviderType.MOCK,
+  provider: 'mock',
       timestamp: new Date().toISOString()
     }
   }
 
-  getProviderType(): AIProviderType {
-    return AIProviderType.MOCK
+  getProviderType(): string {
+    return 'mock'
   }
 
   async isAvailable(): Promise<boolean> {
@@ -59,7 +58,7 @@ export class MockAIProvider implements AIProviderInterface {
       content: (resolved as any).content ?? JSON.stringify((resolved as any).parsed ?? ''),
       usage: (resolved as any).usage,
       model: (resolved as any).model,
-      provider: AIProviderType.MOCK,
+  provider: 'mock',
       timestamp: new Date().toISOString()
     }
 
@@ -81,7 +80,7 @@ export class MockAIProvider implements AIProviderInterface {
         raw_content: (resolved as any).raw_content ?? (resolved as any).content,
         usage: (resolved as any).usage,
         model: (resolved as any).model,
-        provider: AIProviderType.MOCK,
+  provider: 'mock',
         timestamp: new Date().toISOString()
       }
     }
@@ -102,7 +101,7 @@ export class MockAIProvider implements AIProviderInterface {
       raw_content: content,
       usage: (resolved as any).usage,
       model: (resolved as any).model,
-      provider: AIProviderType.MOCK,
+  provider: 'mock',
       timestamp: new Date().toISOString()
     }
   }
