@@ -24,7 +24,10 @@
       "id": "claude-1",
       "provider": "claude",
       "description": "Anthropic Claude example",
-      "params": { "model": "claude-2", "temperature": 0.2 }
+      "params": { "model": "claude-2", "temperature": 0.2 },
+      "credentials": {
+        "apiKey": ""
+      }
     },
     {
       "id": "gemini-1",

@@ -6,7 +6,8 @@ const EngineEntrySchema = z.object({
   id: z.string(),
   provider: z.string(),
   description: z.string().optional(),
-  params: z.record(z.any()).optional()
+  params: z.record(z.any()).optional(),
+  credentials: z.record(z.any()).optional()
 })
 
 const AIEnginesConfigSchema = z.object({
