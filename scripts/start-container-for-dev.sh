@@ -53,12 +53,29 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ -z "$CONTAINER_NAME" || -z "$IMAGE_NAME" || -z "$DOCKERFILE" ]]; then
-  echo "Error: --container-name, --image-name, and --dockerfile are required."
+
+
+# Only require dockerfile if we need to build
+if [[ -z "$CONTAINER_NAME" || -z "$IMAGE_NAME" ]]; then
+  echo "Error: --container-name and --image-name are required."
   show_help
 fi
 
-if [[ ! -f "$DOCKERFILE" ]]; then
+ENGINE="$(detect_engine)"
+
+NEED_BUILD=0
+if [[ $REFRESH -eq 1 ]]; then
+  NEED_BUILD=1
+elif ! $ENGINE image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
+  NEED_BUILD=1
+fi
+
+if [[ $NEED_BUILD -eq 1 && -z "$DOCKERFILE" ]]; then
+  echo "Error: --dockerfile is required when building the image."
+  show_help
+fi
+
+if [[ $NEED_BUILD -eq 1 && ! -f "$DOCKERFILE" ]]; then
   echo "Error: Dockerfile '$DOCKERFILE' not found."
   exit 2
 fi
@@ -66,8 +83,6 @@ fi
 if [[ $DEBUG -eq 1 ]]; then
   set -x
 fi
-
-
 
 ENGINE="$(detect_engine)"
 

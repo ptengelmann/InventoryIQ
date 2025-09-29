@@ -15,7 +15,8 @@
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
     "migrate-data": "tsx scripts/migrate-data.ts",
-    "scraper-test": "tsx scripts/test-scraper.ts"
+    "scraper-test": "tsx scripts/test-scraper.ts",
+    "test": "jest --runInBand --detectOpenHandles --colors"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.61.0",
@@ -55,13 +56,16 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
+    "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/lodash": "^4.17.20",
     "@types/nodemailer": "^6.4.19",
     "@types/papaparse": "^5.3.16",
     "@types/puppeteer": "^7.0.4",
     "@types/uuid": "^9.0.8",
+    "jest": "^30.2.0",
     "prisma": "^5.22.0",
+    "ts-jest": "^29.4.4",
     "tsx": "^4.20.5"
   }
 }
