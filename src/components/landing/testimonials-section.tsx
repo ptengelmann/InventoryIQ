@@ -24,12 +24,18 @@ export const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-2xl md:text-3xl font-light text-white mb-6">
-            What brand teams are saying
+            How AI intelligence transforms alcohol brands
           </h2>
-          <div className="flex items-center justify-center space-x-1">
+          <p className="text-white/70 mb-6">
+            Real results from brands using our enterprise AI platform
+          </p>
+          <div className="flex items-center justify-center space-x-1 mb-4">
             {[...Array(5)].map((_, i) => (
               <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
             ))}
+          </div>
+          <div className="inline-flex items-center space-x-2 px-4 py-2 bg-white/5 border border-white/20 rounded">
+            <span className="text-white/60 text-sm">Average ROI: 847% within 6 months</span>
           </div>
         </div>
 

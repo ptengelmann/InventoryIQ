@@ -674,11 +674,11 @@ const fetchCompetitiveIntelligence = async (isRefresh = false) => {
                 </div>
                 <div>
                   <h2 className="text-2xl font-light text-white">Live Competitive Intelligence</h2>
-                  <p className="text-white/60 text-sm">Powered by Claude AI & Real-time Scraping</p>
+                  <p className="text-white/60 text-sm">Powered by AI Intelligence & Real-time Scraping</p>
                 </div>
               </div>
               
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-4"> 
                 {/* Monitoring Toggle */}
                 {monitoringStatus && (
                   <div className="flex items-center space-x-2">

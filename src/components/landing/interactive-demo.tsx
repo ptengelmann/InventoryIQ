@@ -12,11 +12,15 @@ export const InteractiveDemo: React.FC<InteractiveDemoProps> = ({ animatedNumber
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-2xl md:text-3xl font-light text-white mb-4">
-            Live dashboard preview
+            Live AI intelligence dashboard
           </h2>
-          <p className="text-sm text-white/60">
-            See what alcohol brand managers see in real-time
+          <p className="text-base text-white/70 mb-4">
+            This is what £2M revenue opportunities look like in real-time
           </p>
+          <div className="inline-flex items-center space-x-2 px-3 py-1 bg-green-500/10 border border-green-400/30 rounded">
+            <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse"></div>
+            <span className="text-green-300 text-xs">Live data from UK alcohol retailers</span>
+          </div>
         </div>
 
         <div className="bg-white/5 border border-white/20 rounded-lg overflow-hidden">
@@ -39,69 +43,89 @@ export const InteractiveDemo: React.FC<InteractiveDemoProps> = ({ animatedNumber
           </div>
 
           <div className="p-6">
-            {/* Key metrics - simplified */}
+            {/* AI Intelligence metrics */}
             <div className="grid grid-cols-3 gap-4 mb-8">
               <div className="bg-white/5 border border-white/20 rounded p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-white/60 text-xs">Coverage</span>
-                  <Store className="h-4 w-4 text-white/40" />
+                  <span className="text-white/60 text-xs">Portfolio Health</span>
+                  <Store className="h-4 w-4 text-green-400" />
                 </div>
-                <div className="text-2xl font-light text-white">{animatedNumber}%</div>
-                <div className="text-white/60 text-xs">UK retailers</div>
-              </div>
-              
-              <div className="bg-white/5 border border-white/20 rounded p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-white/60 text-xs">Position</span>
-                  <Target className="h-4 w-4 text-white/40" />
-                </div>
-                <div className="text-2xl font-light text-white">+12%</div>
-                <div className="text-white/60 text-xs">vs average</div>
+                <div className="text-2xl font-light text-white">{Math.min(animatedNumber/10, 10).toFixed(1)}/10</div>
+                <div className="text-green-300 text-xs">AI Health Score</div>
               </div>
 
               <div className="bg-white/5 border border-white/20 rounded p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-white/60 text-xs">Share</span>
-                  <PieChart className="h-4 w-4 text-white/40" />
+                  <span className="text-white/60 text-xs">Revenue Impact</span>
+                  <Target className="h-4 w-4 text-orange-400" />
                 </div>
-                <div className="text-2xl font-light text-white">15.2%</div>
-                <div className="text-white/60 text-xs">premium segment</div>
+                <div className="text-2xl font-light text-white">£{Math.round(animatedNumber * 25)}k</div>
+                <div className="text-orange-300 text-xs">Monthly potential</div>
+              </div>
+
+              <div className="bg-white/5 border border-white/20 rounded p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-white/60 text-xs">Competitive Edge</span>
+                  <PieChart className="h-4 w-4 text-blue-400" />
+                </div>
+                <div className="text-2xl font-light text-white">+{Math.round(animatedNumber/7)}%</div>
+                <div className="text-blue-300 text-xs">vs market average</div>
               </div>
             </div>
 
-            {/* Live feed - simplified */}
+            {/* Enhanced AI intelligence feed */}
             <div className="bg-white/5 border border-white/20 rounded p-4">
-              <div className="flex items-center space-x-2 mb-4">
-                <Activity className="h-4 w-4 text-white/60" />
-                <span className="text-white/80 text-sm">Live intelligence</span>
-                <div className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded border border-green-400/30">
-                  Real-time
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <Activity className="h-4 w-4 text-white/60" />
+                  <span className="text-white/80 text-sm font-medium">AI Strategic Intelligence</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded border border-green-400/30">
+                    Live AI Analysis
+                  </div>
+                  <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse"></div>
                 </div>
               </div>
-              
+
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-red-500/5 rounded border border-red-400/20">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-1 h-1 bg-red-400 rounded-full animate-pulse" />
-                    <span className="text-white/80 text-sm">Grey Goose price dropped 8% at Tesco</span>
+                <div className="p-3 bg-red-500/5 rounded border border-red-400/20">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <AlertTriangle className="h-3 w-3 text-red-400" />
+                      <span className="text-red-300 text-xs font-medium">Critical Revenue Threat</span>
+                    </div>
+                    <span className="text-red-200 text-xs">2 mins ago</span>
                   </div>
-                  <span className="text-red-300 text-xs">2m</span>
+                  <div className="text-white/80 text-sm font-medium">Grey Goose undercuts you by 12% at Tesco</div>
+                  <div className="text-white/60 text-xs">£28.50 → £24.99 • Risk: £47k monthly revenue</div>
+                  <div className="text-red-300 text-xs font-medium mt-1">AI Rec: Match price within 48 hours</div>
                 </div>
-                
-                <div className="flex items-center justify-between p-3 bg-orange-500/5 rounded border border-orange-400/20">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-1 h-1 bg-orange-400 rounded-full animate-pulse" />
-                    <span className="text-white/80 text-sm">Belvedere out of stock at Majestic</span>
+
+                <div className="p-3 bg-green-500/5 rounded border border-green-400/20">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <TrendingUp className="h-3 w-3 text-green-400" />
+                      <span className="text-green-300 text-xs font-medium">Revenue Opportunity</span>
+                    </div>
+                    <span className="text-green-200 text-xs">5 mins ago</span>
                   </div>
-                  <span className="text-orange-300 text-xs">5m</span>
+                  <div className="text-white/80 text-sm font-medium">Premium vodka gap detected at Majestic</div>
+                  <div className="text-white/60 text-xs">Belvedere stock-out in £40-50 segment</div>
+                  <div className="text-green-300 text-xs font-medium mt-1">AI Rec: 15% price increase = £23k boost</div>
                 </div>
-                
-                <div className="flex items-center justify-between p-3 bg-green-500/5 rounded border border-green-400/20">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse" />
-                    <span className="text-white/80 text-sm">Recommendation: Lower price by £2 at Waitrose</span>
+
+                <div className="p-3 bg-blue-500/5 rounded border border-blue-400/20">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <Package className="h-3 w-3 text-blue-400" />
+                      <span className="text-blue-300 text-xs font-medium">AI Seasonal Strategy</span>
+                    </div>
+                    <span className="text-blue-200 text-xs">12 mins ago</span>
                   </div>
-                  <span className="text-green-300 text-xs">12m</span>
+                  <div className="text-white/80 text-sm font-medium">Summer gin campaign strategy generated</div>
+                  <div className="text-white/60 text-xs">Premium segment targeting with 3-phase rollout</div>
+                  <div className="text-blue-300 text-xs font-medium mt-1">AI Projection: £180k revenue over 8 weeks</div>
                 </div>
               </div>
             </div>

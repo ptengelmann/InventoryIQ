@@ -14,16 +14,16 @@ interface FeaturesSectionProps {
 export const FeaturesSection: React.FC<FeaturesSectionProps> = ({ features, scrollY }) => {
   const capabilities = [
     {
-      category: "Price Intelligence",
-      items: ["Live price tracking", "Competitor analysis", "Price elasticity modeling", "Promotion detection"]
+      category: "AI Strategic Advisory",
+      items: ["Revenue impact predictions", "Competitive threat analysis", "Market positioning intelligence", "Portfolio health scoring (1-10)"]
     },
     {
-      category: "Stock Monitoring", 
-      items: ["Out-of-stock alerts", "Availability tracking", "Distribution gaps", "Shelf-share analysis"]
+      category: "Real-time Market Warfare",
+      items: ["Live competitor price monitoring", "Stock-out opportunity alerts", "Promotional pressure detection", "Distribution gap analysis"]
     },
     {
-      category: "Strategic Insights",
-      items: ["AI recommendations", "Market positioning", "Revenue optimization", "Growth opportunities"]
+      category: "Revenue Optimization Engine",
+      items: ["AI-generated seasonal strategies", "Price elasticity modeling", "Market share opportunity detection", "Profit maximization algorithms"]
     }
   ]
 
@@ -32,11 +32,14 @@ export const FeaturesSection: React.FC<FeaturesSectionProps> = ({ features, scro
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-2xl md:text-3xl font-light text-white mb-4">
-            Complete competitive intelligence platform
+            Enterprise AI built for alcohol retail warfare
           </h2>
-          <p className="text-sm text-white/60">
-            Everything alcohol brands need to dominate their market
+          <p className="text-base text-white/70 mb-6">
+            Get McKinsey-level strategic intelligence for the price of a Netflix subscription
           </p>
+          <div className="inline-flex items-center space-x-2 px-4 py-2 bg-white/5 border border-white/20 rounded">
+            <span className="text-white/60 text-sm">Powered by the same AI that serves Fortune 500 companies</span>
+          </div>
         </div>
 
         {/* Main capabilities grid with connecting illustration */}
@@ -133,36 +136,62 @@ export const FeaturesSection: React.FC<FeaturesSectionProps> = ({ features, scro
           </div>
         </div>
 
-        {/* Key differentiator */}
+        {/* Key differentiator with enhanced positioning */}
         <div className="mt-16 bg-white/5 border border-white/10 rounded-lg p-8">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div>
-              <h3 className="text-white font-medium mb-4">Why alcohol brands choose OscarAI</h3>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" style={{animationDelay: '0s'}}></div>
-                  <span className="text-white/70 text-sm">Built specifically for alcohol retail</span>
+              <h3 className="text-white font-medium mb-2">The unfair advantage alcohol brands need</h3>
+              <p className="text-white/60 text-sm mb-6">While competitors use spreadsheets, you get AI-powered market warfare</p>
+              <div className="space-y-4">
+                <div className="flex items-start space-x-3">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse mt-2" style={{animationDelay: '0s'}}></div>
+                  <div>
+                    <div className="text-white/80 text-sm font-medium">Enterprise AI trained on alcohol market data</div>
+                    <div className="text-white/50 text-xs">Same technology used by Fortune 500 companies</div>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
-                  <span className="text-white/70 text-sm">Covers all major UK retailers</span>
+                <div className="flex items-start space-x-3">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse mt-2" style={{animationDelay: '0.5s'}}></div>
+                  <div>
+                    <div className="text-white/80 text-sm font-medium">Real-time competitive warfare intelligence</div>
+                    <div className="text-white/50 text-xs">Know your competitors' moves before they cost you sales</div>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
-                  <span className="text-white/70 text-sm">AI trained on alcohol market data</span>
+                <div className="flex items-start space-x-3">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse mt-2" style={{animationDelay: '1s'}}></div>
+                  <div>
+                    <div className="text-white/80 text-sm font-medium">Revenue predictions with £ precision</div>
+                    <div className="text-white/50 text-xs">See exact impact of every pricing decision before you make it</div>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" style={{animationDelay: '1.5s'}}></div>
-                  <span className="text-white/70 text-sm">Enterprise-grade security & compliance</span>
+                <div className="flex items-start space-x-3">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse mt-2" style={{animationDelay: '1.5s'}}></div>
+                  <div>
+                    <div className="text-white/80 text-sm font-medium">McKinsey-level strategic intelligence</div>
+                    <div className="text-white/50 text-xs">Get consultant-quality insights for a fraction of the cost</div>
+                  </div>
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-white/5 border border-white/10 rounded p-6">
-              <div className="text-center">
-                <div className="text-2xl font-light text-white mb-2">20+</div>
-                <div className="text-white/60 text-sm mb-4">UK retailers monitored</div>
-                <div className="w-full h-px bg-white/10 mb-4"></div>
+              <div className="text-center space-y-6">
+                <div>
+                  <div className="text-3xl font-light text-white mb-2">£2M+</div>
+                  <div className="text-white/60 text-sm">Revenue opportunities detected</div>
+                </div>
+                <div className="w-full h-px bg-white/10"></div>
+                <div className="grid grid-cols-2 gap-4 text-center">
+                  <div>
+                    <div className="text-xl font-light text-white">20+</div>
+                    <div className="text-white/60 text-xs">UK retailers</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-light text-white">24/7</div>
+                    <div className="text-white/60 text-xs">Live monitoring</div>
+                  </div>
+                </div>
+                <div className="w-full h-px bg-white/10"></div>
                 <div className="text-xs text-white/50">
                   Majestic Wine • Tesco • Waitrose • ASDA<br />
                   Morrisons • Sainsbury's • and more
