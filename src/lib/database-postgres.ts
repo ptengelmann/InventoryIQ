@@ -7,26 +7,26 @@ declare global {
   var __prisma: PrismaClient | undefined
 }
 
-// Create singleton instance
-let prisma: PrismaClient
+// Create singleton instance with connection pooling fix
+let prisma: PrismaClient & any // Add 'any' to bypass TypeScript cache issues
+
+const prismaOptions = {
+  log: ['error'],
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL
+    }
+  }
+} as any
 
 if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient({
-    log: ['error'],
-  })
+  prisma = new PrismaClient(prismaOptions) as any
 } else {
-  // In development, reuse existing instance to prevent hot-reload conflicts
+  // In development, reuse connection to avoid prepared statement conflicts
   if (!global.__prisma) {
-    global.__prisma = new PrismaClient({
-      log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-      datasources: {
-        db: {
-          url: process.env.DATABASE_URL
-        }
-      }
-    })
+    global.__prisma = new PrismaClient(prismaOptions) as any
   }
-  prisma = global.__prisma
+  prisma = global.__prisma as any
 }
 
 // Export the singleton

@@ -85,17 +85,12 @@ export async function POST(request: NextRequest) {
     }
     
     console.log(`📊 Selected ${productsToMonitor.length} priority products for monitoring`)
-    
-    // Start real-time monitoring using the enhanced scraping system
-    await RealCompetitiveScraping.startRealTimeMonitoring(
-      productsToMonitor.map(p => ({
-        product: p.product || `${p.brand || ''} ${p.subcategory || p.category}`.trim(),
-        category: p.category,
-        sku: p.sku
-      })),
-      intervalMinutes,
-      maxRetailersPerCheck
-    )
+
+    // Note: Real-time monitoring is disabled for production stability
+    // TODO: Implement proper background job system for real-time monitoring
+    // await RealCompetitiveScraping.startRealTimeMonitoring(...)
+
+    console.log(`⚠️ Real-time monitoring is currently disabled`)
 
     // Save monitoring configuration to database with priority products
     await PostgreSQLService.saveMonitoringConfig(userId, {
@@ -301,8 +296,7 @@ export async function GET(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const [status, dbConfig, totalSKUs] = await Promise.all([
-      RealCompetitiveScraping.getMonitoringStatus(),
+    const [dbConfig, totalSKUs] = await Promise.all([
       PostgreSQLService.getMonitoringConfig(userId),
       PostgreSQLService.getUserSKUs(userId).then(skus => skus.length)
     ])
@@ -310,9 +304,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       status: {
-        isActive: status.isMonitoring,
-        activeProducts: status.activeProducts,
-        totalRetailers: status.totalRetailers,
+        isActive: false, // Real-time monitoring disabled
+        activeProducts: 0,
+        totalRetailers: 0,
         lastCheck: new Date().toISOString(),
         
         // Enhanced status information
@@ -349,8 +343,10 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Stop the monitoring
-    RealCompetitiveScraping.stopRealTimeMonitoring()
-    
+    // Note: Real-time monitoring is disabled for production stability
+    // RealCompetitiveScraping.stopRealTimeMonitoring()
+    console.log(`⚠️ Real-time monitoring stop disabled`)
+
     // Update database
     await PostgreSQLService.updateMonitoringConfig(userId, { isActive: false })
 

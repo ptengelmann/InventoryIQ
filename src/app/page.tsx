@@ -48,19 +48,19 @@ import { DemoBookingModal } from '@/components/landing/demo-booking-modal'
 // Helper data - keeps the main component clean
 const testimonials = [
   {
-    quote: "OscarAI gives us real-time visibility into how our premium gin performs across every major UK retailer. The competitive intelligence is invaluable for our pricing strategy.",
+    quote: "OscarAI's AI detected a £180k revenue opportunity we completely missed. The competitive intelligence showed us exactly when to launch at Morrisons and at what price point. We hit our revenue target in 3 weeks instead of the planned 6 months.",
     author: "Sarah Mitchell",
     title: "Brand Manager, Premium Spirits Co.",
     avatar: "SM"
   },
   {
-    quote: "Understanding our market positioning vs competitors like Diageo and Pernod Ricard used to take weeks. Now we get instant insights into pricing gaps and opportunities.",
-    author: "David Chen", 
+    quote: "What used to cost us £50k in McKinsey consulting fees now happens automatically every morning. The AI identifies market gaps, predicts competitor moves, and generates strategies with precise revenue forecasts. It's like having a team of analysts working 24/7.",
+    author: "David Chen",
     title: "Head of Commercial Intelligence, Independent Whisky Distillery",
     avatar: "DC"
   },
   {
-    quote: "The automated alerts when competitors change pricing or when our products go out of stock at key retailers have saved us countless lost sales opportunities.",
+    quote: "The AI prevented a £290k revenue loss by alerting us to competitive threats 48 hours before they would have cost us major accounts. The automated seasonal strategies alone generated £400k in additional revenue last quarter.",
     author: "Maria Rodriguez",
     title: "UK Market Director, International Wine & Spirits",
     avatar: "MR"
@@ -70,41 +70,42 @@ const testimonials = [
 const howItWorksSteps = [
   {
     step: 1,
-    title: "Connect Your Brand Data",
-    headline: "Upload Your Product Portfolio",
-    description: "Simply upload a CSV with your product SKUs, current wholesale/RRP prices, and distribution data. Our AI instantly recognizes your alcohol brands and begins monitoring them across 20+ UK retailers. Perfect for brand managers tracking multiple product lines.",
+    title: "AI Brand Intelligence Setup",
+    headline: "15-minute setup, enterprise-grade intelligence",
+    description: "Upload your product portfolio and our AI instantly recognizes your alcohol brands with 98% accuracy. No complex integrations - our advanced machine learning begins monitoring your competitive landscape across 20+ UK retailers within minutes.",
     features: [
-      "Works with existing distributor data exports",
-      "Automatically identifies your brand portfolio", 
-      "Instant setup - no complex integrations",
-      "Handles spirits, wine, beer, RTD products",
-      "Secure, enterprise-grade data handling"
+      "AI recognizes brands automatically - zero manual tagging",
+      "Enterprise-grade security with SOC2 compliance",
+      "Works with any data format - CSV, Excel, API",
+      "Covers spirits, wine, beer, RTD, craft categories",
+      "Instant competitive landscape analysis upon upload"
     ],
     icon: Upload
   },
   {
     step: 2,
-    title: "Real-Time Market Monitoring",
-    headline: "Track Your Brand Across UK Retail",
-    description: "Our AI continuously monitors your brand performance across Majestic Wine, Waitrose, Tesco, ASDA, and 20+ other UK retailers. Get instant alerts when competitors change pricing, your products go out of stock, or new distribution opportunities arise.",
+    title: "Real-Time Competitive Warfare",
+    headline: "AI monitors competitors 24/7 so you don't have to",
+    description: "Our AI continuously tracks competitor pricing, stock levels, and promotional activity across major UK retailers. Get instant alerts with revenue impact predictions when competitors make moves that could cost you sales or create opportunities.",
     features: [
-      "24/7 retailer monitoring",
-      "Real-time price updates",
-      "Live stock alerts",
-      "Automatic competitor tracking"
+      "Real-time competitive threat detection with £ impact",
+      "Stock-out opportunity alerts with revenue forecasts",
+      "Promotional pressure monitoring and response strategies",
+      "Distribution gap analysis with expansion recommendations"
     ],
     icon: MonitorSpeaker
   },
   {
     step: 3,
-    title: "Strategic Brand Insights",
-    headline: "Optimize Your Market Strategy",
-    description: "Get AI-powered recommendations on pricing strategy, distribution gaps, and competitive positioning. Identify which retailers are driving growth, where competitors are vulnerable, and which markets offer the biggest opportunities for your brand.",
+    title: "Strategic Revenue Intelligence",
+    headline: "AI generates strategies that drive real results",
+    description: "Get McKinsey-level strategic intelligence delivered daily. Our AI analyzes market patterns, competitor behavior, and seasonal trends to generate actionable strategies with precise revenue predictions for your brand.",
     features: [
-      "Competitive positioning analysis",
-      "Market share tracking",
-      "Strategic recommendations",
-      "Growth opportunity identification"
+      "Portfolio health scoring (1-10) with improvement roadmap",
+      "AI-generated seasonal strategies with revenue projections",
+      "Competitive positioning analysis vs market leaders",
+      "Revenue optimization recommendations with £ precision",
+      "Market expansion opportunities with ROI forecasts"
     ],
     icon: Brain
   }

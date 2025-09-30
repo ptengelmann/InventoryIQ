@@ -116,10 +116,20 @@ export function AuthModal({ isOpen, onClose, mode, onSwitchMode, onSwitchToReset
       const data = await response.json()
 
       if (!response.ok) {
+        // Show detailed error messages from backend
+        if (data.details && Array.isArray(data.details)) {
+          throw new Error(data.details.join(', '))
+        }
         throw new Error(data.error || 'Authentication failed')
       }
 
       // Success - user is now in database
+      // Store JWT token if provided
+      if (data.token) {
+        localStorage.setItem('auth_token', data.token)
+        console.log('✅ Auth token saved')
+      }
+
       onSuccess(data.user)
       onClose()
       

@@ -7,7 +7,7 @@ import { UserProvider } from '@/contexts/UserContext'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'InventoryIQ - AI-Powered Inventory Optimization',
+  title: 'OscarAI - AI-Powered Inventory Optimization',
   description: 'Optimize your inventory with AI-powered price recommendations and risk alerts',
 }
 

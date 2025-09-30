@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 
 interface User {
+  id?: string  // Add ID from JWT
   name: string
   email: string
   company?: string
@@ -28,12 +29,23 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const savedUser = localStorage.getItem('inventoryiq_user')
+      const savedToken = localStorage.getItem('auth_token')
+
       if (savedUser) {
-        setUser(JSON.parse(savedUser))
+        const parsedUser = JSON.parse(savedUser)
+        setUser(parsedUser)
+
+        // If we have a token, verify it's still valid
+        if (savedToken) {
+          // Token validation happens automatically via middleware
+          // If token is invalid, middleware will return 401 and user will be logged out
+          console.log('✅ User restored from localStorage:', parsedUser.email)
+        }
       }
     } catch (error) {
       console.error('Error parsing saved user:', error)
       localStorage.removeItem('inventoryiq_user')
+      localStorage.removeItem('auth_token')
     }
     setIsLoading(false)
   }, [])
@@ -44,15 +56,31 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('inventoryiq_user', JSON.stringify(user))
     } else {
       localStorage.removeItem('inventoryiq_user')
+      localStorage.removeItem('auth_token')
     }
   }, [user])
 
   const login = (userData: User) => {
     setUser(userData)
+    console.log('✅ User logged in:', userData.email)
   }
 
-  const logout = () => {
-    setUser(null)
+  const logout = async () => {
+    try {
+      // Call logout endpoint to clear HTTP-only cookie
+      await fetch('/api/auth', {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+    } catch (error) {
+      console.error('Logout API error:', error)
+    } finally {
+      // Clear local state regardless of API success
+      setUser(null)
+      localStorage.removeItem('inventoryiq_user')
+      localStorage.removeItem('auth_token')
+      console.log('✅ User logged out')
+    }
   }
 
   return (
