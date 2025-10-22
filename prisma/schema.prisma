@@ -498,3 +498,147 @@ model SeasonalStrategy {
   @@index([type, created_at(sort: Desc)])
   @@map("seasonal_strategies")
 }
+
+// ENTERPRISE ACTION SYSTEM
+// Tracks all user actions with full audit trail, rollback capability, and approval workflow
+
+model Action {
+  id                String    @id @default(cuid())
+  user_id           String
+  action_type       String    // price_update, reorder_stock, launch_campaign, bulk_update
+  target_sku        String?   // Single SKU (null for batch actions)
+  target_skus       Json?     // Multiple SKUs for batch actions
+
+  // Action details
+  action_payload    Json      // Complete action data with all parameters
+  reason            String    // Human-readable reason for audit trail
+  expected_impact   Float?    // Expected revenue impact (£)
+  confidence_score  Float?    // AI confidence (0-1)
+
+  // Execution tracking
+  status            String    @default("pending") // pending, validating, executing, completed, failed, rolled_back
+  initiated_by      String    // user email or 'ai_autopilot'
+  initiated_at      DateTime  @default(now())
+  validated_at      DateTime?
+  executed_at       DateTime?
+  completed_at      DateTime?
+
+  // Approval workflow
+  requires_approval Boolean   @default(false)
+  approved_by       String?
+  approved_at       DateTime?
+  approval_notes    String?
+  rejected_by       String?
+  rejected_at       DateTime?
+  rejection_reason  String?
+
+  // Results tracking
+  actual_impact     Float?    // Actual revenue impact measured
+  success_metrics   Json?     // Detailed success metrics
+  error_message     String?
+  error_stack       String?
+
+  // Rollback capability
+  rollback_data     Json      // Original values for undo
+  rolled_back       Boolean   @default(false)
+  rolled_back_at    DateTime?
+  rolled_back_by    String?
+  rollback_reason   String?
+
+  // System integration tracking
+  external_refs     Json?     // { shopify_order_id, email_campaign_id, etc }
+  affected_systems  String[]  // ['database', 'shopify', 'email', 'supplier']
+  sync_status       Json?     // Status of external system syncs
+
+  // Batch operations
+  batch_id          String?   // Link to ActionBatch if part of bulk operation
+  batch             ActionBatch? @relation(fields: [batch_id], references: [id])
+
+  @@index([user_id, status, initiated_at(sort: Desc)])
+  @@index([action_type, status])
+  @@index([batch_id])
+  @@index([target_sku, user_id])
+  @@map("actions")
+}
+
+model ActionValidationRule {
+  id              String    @id @default(cuid())
+  user_id         String
+  action_type     String    // price_update, reorder_stock, launch_campaign
+  rule_type       String    // approval_threshold, margin_minimum, budget_limit, change_limit
+  rule_config     Json      // Flexible rule configuration
+  enabled         Boolean   @default(true)
+  priority        Int       @default(0) // Higher priority rules evaluated first
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  created_by      String
+
+  @@index([user_id, action_type, enabled])
+  @@map("action_validation_rules")
+}
+
+model ActionBatch {
+  id              String    @id @default(cuid())
+  user_id         String
+  batch_name      String
+  batch_type      String    // bulk_price_update, bulk_reorder, campaign_launch
+  action_ids      String[]  // Array of action IDs in this batch
+  total_actions   Int
+  completed       Int       @default(0)
+  failed          Int       @default(0)
+  pending         Int
+  status          String    @default("pending") // pending, executing, completed, partially_completed, failed
+
+  // Batch execution settings
+  execute_parallel Boolean   @default(false)
+  max_concurrent  Int       @default(5)
+  stop_on_error   Boolean   @default(false)
+
+  // Tracking
+  created_at      DateTime  @default(now())
+  started_at      DateTime?
+  completed_at    DateTime?
+  estimated_duration Int?    // seconds
+  actual_duration Int?       // seconds
+
+  // Results
+  total_expected_impact Float?
+  total_actual_impact   Float?
+  success_rate          Float?
+
+  actions         Action[]
+
+  @@index([user_id, status, created_at(sort: Desc)])
+  @@map("action_batches")
+}
+
+model ActionApproval {
+  id              String    @id @default(cuid())
+  action_id       String    @unique
+  requester_id    String    // User who initiated the action
+  approver_id     String?   // User who can approve
+  approval_status String    @default("pending") // pending, approved, rejected
+
+  // Approval context
+  approval_reason String
+  risk_level      String    // low, medium, high, critical
+  estimated_impact Float?
+
+  // Decision tracking
+  reviewed_at     DateTime?
+  review_notes    String?
+  auto_approved   Boolean   @default(false) // True if approved by AI/rules
+
+  // Notifications
+  notification_sent Boolean   @default(false)
+  notification_sent_at DateTime?
+  reminder_count  Int       @default(0)
+  last_reminder   DateTime?
+
+  created_at      DateTime  @default(now())
+  expires_at      DateTime? // Auto-reject if not reviewed
+
+  @@index([approver_id, approval_status])
+  @@index([requester_id, created_at(sort: Desc)])
+  @@map("action_approvals")
+}
