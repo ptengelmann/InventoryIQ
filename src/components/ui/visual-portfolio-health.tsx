@@ -54,17 +54,96 @@ export function VisualPortfolioHealth({ healthScore, portfolioAssessment, dataCo
     boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
   }
 
-  // Custom tooltip component
+  // Enhanced tooltip component with more details
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
         <div style={customTooltipStyle}>
-          <p className="font-semibold mb-1">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} style={{ color: entry.color }} className="text-sm">
-              {entry.name}: {entry.value}
-            </p>
-          ))}
+          <p className="font-semibold mb-2 text-white border-b border-white/20 pb-2">{label}</p>
+          <div className="space-y-1">
+            {payload.map((entry: any, index: number) => (
+              <div key={index} className="flex items-center justify-between space-x-4">
+                <div className="flex items-center space-x-2">
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: entry.color }}
+                  />
+                  <span className="text-xs text-white/70">{entry.name}:</span>
+                </div>
+                <span className="text-sm font-bold" style={{ color: entry.color }}>
+                  {typeof entry.value === 'number' && entry.value > 100
+                    ? entry.value.toLocaleString()
+                    : entry.value}
+                </span>
+              </div>
+            ))}
+          </div>
+          {/* Add percentage if applicable */}
+          {payload[0]?.payload?.percentage && (
+            <div className="mt-2 pt-2 border-t border-white/20 text-xs text-white/50">
+              {payload[0].payload.percentage}% of total
+            </div>
+          )}
+        </div>
+      )
+    }
+    return null
+  }
+
+  // Enhanced tooltip for velocity chart
+  const VelocityTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const total = velocityData.reduce((sum, item) => sum + item.count, 0)
+      const percentage = ((payload[0].value / total) * 100).toFixed(1)
+
+      return (
+        <div style={customTooltipStyle}>
+          <p className="font-semibold mb-2 text-white">{label} Products</p>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between space-x-4">
+              <span className="text-xs text-white/70">Count:</span>
+              <span className="text-lg font-bold" style={{ color: payload[0].fill }}>
+                {payload[0].value}
+              </span>
+            </div>
+            <div className="flex items-center justify-between space-x-4">
+              <span className="text-xs text-white/70">% of Portfolio:</span>
+              <span className="text-sm font-bold text-white">
+                {percentage}%
+              </span>
+            </div>
+          </div>
+          <div className="mt-2 pt-2 border-t border-white/20 text-xs text-white/50">
+            {label === 'Fast-Moving' && '5+ units sold weekly'}
+            {label === 'Moderate' && '1-5 units sold weekly'}
+            {label === 'Slow-Moving' && '<1 unit sold weekly'}
+          </div>
+        </div>
+      )
+    }
+    return null
+  }
+
+  // Enhanced tooltip for revenue chart
+  const RevenueTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const value = Math.abs(payload[0].value)
+      return (
+        <div style={customTooltipStyle}>
+          <p className="font-semibold mb-2 text-white">{label}</p>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between space-x-4">
+              <span className="text-xs text-white/70">Amount:</span>
+              <span className="text-xl font-bold" style={{ color: payload[0].fill }}>
+                ${value}K
+              </span>
+            </div>
+            <div className="mt-2 pt-2 border-t border-white/20 text-xs text-white/50">
+              {label === 'Opportunity' && 'Potential revenue from price increases'}
+              {label === 'At Risk' && 'Revenue threatened by overpricing'}
+              {label === 'Current' && 'Baseline revenue level'}
+            </div>
+          </div>
         </div>
       )
     }
@@ -160,42 +239,59 @@ export function VisualPortfolioHealth({ healthScore, portfolioAssessment, dataCo
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header with Overall Health Score */}
-      <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-white/20 rounded-lg p-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-3xl font-light text-white mb-2">Portfolio Health Assessment</h2>
-            <p className="text-white/60">AI-powered competitive intelligence analysis</p>
-          </div>
-          <div className="text-right">
-            <div className="text-5xl font-bold text-white mb-1">{healthScore}/10</div>
-            <div className="text-sm text-white/60">Health Score</div>
+    <div className="space-y-6" style={{ userSelect: 'none' }}>
+      {/* Data Source Indicator */}
+      {dataContext && (
+        <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+              <div>
+                <span className="text-sm font-medium text-white">Analyzing Your Complete Portfolio</span>
+                <p className="text-xs text-white/60 mt-1">
+                  Data from all {dataContext.inventory_size} products across {dataContext.categories_analyzed} categories •
+                  Last 7 days • {dataContext.brands_analyzed} brands tracked
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-xs text-white/50">Coverage</div>
+              <div className="text-lg font-bold text-blue-400">{dataContext.competitive_coverage_percentage}%</div>
+            </div>
           </div>
         </div>
+      )}
 
-        {/* Health Gauge */}
-        <div className="h-48">
-          <ResponsiveContainer width="100%" height="100%">
-            <RadialBarChart
-              cx="50%"
-              cy="50%"
-              innerRadius="60%"
-              outerRadius="90%"
-              data={healthGaugeData}
-              startAngle={180}
-              endAngle={0}
-            >
-              <RadialBar
-                background
-                dataKey="value"
-                cornerRadius={10}
-              />
-              <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="fill-white text-4xl font-bold">
-                {healthScore >= 7 ? 'Healthy' : healthScore >= 5 ? 'Moderate' : 'Critical'}
-              </text>
-            </RadialBarChart>
-          </ResponsiveContainer>
+      {/* Simple Health Score Header */}
+      <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-white/20 rounded-lg p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-light text-white mb-1">Portfolio Health Assessment</h2>
+            <p className="text-sm text-white/50">AI-powered competitive intelligence analysis</p>
+          </div>
+          <div className="text-right">
+            <div className="flex items-center space-x-4">
+              <div className="text-right">
+                <div className="text-xs text-white/50 mb-1">Overall Health</div>
+                <div className={`text-6xl font-bold ${
+                  healthScore >= 7 ? 'text-green-400' :
+                  healthScore >= 5 ? 'text-yellow-400' :
+                  'text-red-400'
+                }`}>
+                  {healthScore}<span className="text-3xl text-white/40">/10</span>
+                </div>
+              </div>
+              <div className={`px-4 py-2 rounded-lg border ${
+                healthScore >= 7 ? 'bg-green-500/20 border-green-500/50 text-green-400' :
+                healthScore >= 5 ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400' :
+                'bg-red-500/20 border-red-500/50 text-red-400'
+              }`}>
+                <div className="text-sm font-bold">
+                  {healthScore >= 7 ? '✓ Healthy' : healthScore >= 5 ? '⚠ Moderate' : '✗ At Risk'}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -228,7 +324,7 @@ export function VisualPortfolioHealth({ healthScore, portfolioAssessment, dataCo
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Category Revenue Breakdown (Donut Chart) */}
-        <div className="bg-white/5 border border-white/20 rounded-lg p-6">
+        <div className="bg-white/5 border border-white/20 rounded-lg p-6" style={{ userSelect: 'none' }}>
           <div className="mb-4">
             <h3 className="text-xl font-light text-white mb-1">Revenue by Category</h3>
             <p className="text-xs text-white/50">Portfolio composition by revenue contribution</p>
@@ -284,7 +380,7 @@ export function VisualPortfolioHealth({ healthScore, portfolioAssessment, dataCo
                   style={{ fontSize: '12px' }}
                   tick={{ fill: 'rgba(255,255,255,0.7)' }}
                 />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
+                <Tooltip content={<VelocityTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
                 <Bar dataKey="count" radius={[8, 8, 0, 0]}>
                   {velocityData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -317,7 +413,7 @@ export function VisualPortfolioHealth({ healthScore, portfolioAssessment, dataCo
                   tick={{ fill: 'rgba(255,255,255,0.7)' }}
                   label={{ value: '$K', angle: -90, position: 'insideLeft', fill: 'rgba(255,255,255,0.5)' }}
                 />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
+                <Tooltip content={<RevenueTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
                 <Bar dataKey="value" radius={[8, 8, 0, 0]}>
                   {opportunityData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
