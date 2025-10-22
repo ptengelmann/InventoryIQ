@@ -186,17 +186,16 @@ export async function POST(request: NextRequest) {
     let priceRecommendations: any[] = []
     try {
       // Try to load AI price recommendations
-      const { AIPriceRecommendations } = await import('@/lib/ai-price-recommendations')
-      
-      priceRecommendations = await AIPriceRecommendations.generateIntelligentPricing(
-        alcoholSKUs,
-        competitorData
-      )
-      
-      console.log(`💰 Generated ${priceRecommendations.length} Claude-powered price recommendations`)
-      
+      // COMMENTED OUT - Using fallback for now
+      // const { AIPriceRecommendations } = await import('@/lib/ai-price-recommendations')
+      // priceRecommendations = await AIPriceRecommendations.generateIntelligentPricing(alcoholSKUs, competitorData)
+      // console.log(`💰 Generated ${priceRecommendations.length} Claude-powered price recommendations`)
+
+      // Force fallback path
+      throw new Error('Using fallback pricing logic')
+
     } catch (pricingError) {
-      console.error('❌ AI price recommendations failed, using fallback:', pricingError)
+      console.log('💰 Using fallback price recommendations')
       
       // Basic fallback recommendations
       priceRecommendations = alcoholSKUs.slice(0, 25).map(sku => {
@@ -331,19 +330,16 @@ export async function POST(request: NextRequest) {
     
     let marketInsights: any[] = []
     try {
-      const { AIMarketInsights } = await import('@/lib/ai-market-insights')
-      
-      marketInsights = await AIMarketInsights.generateMarketInsights(
-        alcoholSKUs,
-        priceRecommendations,
-        competitorData,
-        seasonalRecommendations
-      )
-      
-      console.log(`🧠 Generated ${marketInsights.length} AI market insights`)
-      
+      // COMMENTED OUT - Using fallback for now
+      // const { AIMarketInsights } = await import('@/lib/ai-market-insights')
+      // marketInsights = await AIMarketInsights.generateMarketInsights(alcoholSKUs, priceRecommendations, competitorData, seasonalRecommendations)
+      // console.log(`🧠 Generated ${marketInsights.length} AI market insights`)
+
+      // Force fallback path
+      throw new Error('Using fallback market insights')
+
     } catch (insightsError) {
-      console.error('❌ AI market insights failed, using fallback:', insightsError)
+      console.log('🧠 Using fallback market insights')
       
       marketInsights = [{
         id: `fallback-insight-${Date.now()}`,
