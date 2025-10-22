@@ -2,13 +2,28 @@
 'use client'
 
 import React, { Suspense, useState, useEffect, useMemo, useRef } from 'react'
+import dynamic from 'next/dynamic'
 import { Navbar } from '@/components/ui/navbar'
 import { AuthModal } from '@/components/ui/auth-modals'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useUser } from '@/contexts/UserContext'
-import { 
-  BarChart3, TrendingUp, AlertTriangle, Download, Upload, Calendar, DollarSign, Package, Clock, CheckCircle, Filter, Eye, RefreshCw, Target, Brain, Lightbulb, FileText, ArrowRight, Zap, Tag, Crown, Gift, Wine, Info, X, ChevronDown, ChevronUp, Activity, Play, Pause, ExternalLink, Shield
+import {
+  BarChart3, TrendingUp, AlertTriangle, Download, Upload, Calendar, DollarSign, Package, Clock, CheckCircle, Filter, Eye, RefreshCw, Target, Brain, Lightbulb, FileText, ArrowRight, Zap, Tag, Crown, Gift, Wine, Info, X, ChevronDown, ChevronUp, Activity, Play, Pause, ExternalLink, Shield, Loader2
 } from 'lucide-react'
+
+// Lazy load visual components for better performance
+const VisualPortfolioHealth = dynamic(
+  () => import('@/components/ui/visual-portfolio-health').then(mod => ({ default: mod.VisualPortfolioHealth })),
+  {
+    loading: () => (
+      <div className="bg-white/5 border border-white/20 rounded-lg p-12 text-center">
+        <Loader2 className="h-8 w-8 text-purple-400 animate-spin mx-auto mb-3" />
+        <p className="text-white/60">Loading visual analytics...</p>
+      </div>
+    ),
+    ssr: false
+  }
+)
 
 interface DashboardStats {
   totalAnalyses: number
@@ -758,30 +773,11 @@ const fetchCompetitiveIntelligence = async (isRefresh = false) => {
               <div className="space-y-6">
                 {/* Portfolio Assessment */}
                 {feedData.portfolio_assessment && (
-                  <div className="bg-white/5 border border-white/20 rounded-lg p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-medium text-white flex items-center space-x-2">
-                        <Shield className="h-5 w-5 text-white/60" />
-                        <span>Portfolio Health Assessment</span>
-                      </h3>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-white/60">Health Score:</span>
-                        <span className={`text-xl font-bold ${
-                          feedData.portfolio_assessment.health_score >= 8 ? 'text-green-400' :
-                          feedData.portfolio_assessment.health_score >= 6 ? 'text-yellow-400' :
-                          'text-red-400'
-                        }`}>
-                          {feedData.portfolio_assessment.health_score}/10
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-white/5 border border-white/20 rounded p-4">
-                      <div className="text-white/80 text-sm leading-relaxed whitespace-pre-line">
-                        {feedData.portfolio_assessment.claude_assessment}
-                      </div>
-                    </div>
-                  </div>
+                  <VisualPortfolioHealth
+                    healthScore={feedData.portfolio_assessment.health_score || 7}
+                    portfolioAssessment={feedData.portfolio_assessment}
+                    dataContext={feedData.data_context}
+                  />
                 )}
 
                 {/* Claude AI Strategic Insights */}
