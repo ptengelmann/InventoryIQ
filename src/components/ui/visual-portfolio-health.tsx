@@ -43,6 +43,34 @@ export function VisualPortfolioHealth({ healthScore, portfolioAssessment, dataCo
 
   const metrics = parseMetrics()
 
+  // Custom tooltip styling
+  const customTooltipStyle = {
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    border: '1px solid rgba(255, 255, 255, 0.2)',
+    borderRadius: '8px',
+    padding: '12px',
+    color: 'white',
+    fontSize: '14px',
+    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
+  }
+
+  // Custom tooltip component
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div style={customTooltipStyle}>
+          <p className="font-semibold mb-1">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} style={{ color: entry.color }} className="text-sm">
+              {entry.name}: {entry.value}
+            </p>
+          ))}
+        </div>
+      )
+    }
+    return null
+  }
+
   // Health Score Gauge Data
   const healthGaugeData = [
     { name: 'Health', value: healthScore * 10, fill: healthScore >= 7 ? '#22c55e' : healthScore >= 5 ? '#f59e0b' : '#ef4444' }
@@ -201,7 +229,10 @@ export function VisualPortfolioHealth({ healthScore, portfolioAssessment, dataCo
 
         {/* Category Revenue Breakdown (Donut Chart) */}
         <div className="bg-white/5 border border-white/20 rounded-lg p-6">
-          <h3 className="text-xl font-light text-white mb-4">Revenue by Category</h3>
+          <div className="mb-4">
+            <h3 className="text-xl font-light text-white mb-1">Revenue by Category</h3>
+            <p className="text-xs text-white/50">Portfolio composition by revenue contribution</p>
+          </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -218,15 +249,7 @@ export function VisualPortfolioHealth({ healthScore, portfolioAssessment, dataCo
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'rgba(0,0,0,0.9)',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    borderRadius: '8px',
-                    color: 'white'
-                  }}
-                  formatter={(value: any) => `${value}%`}
-                />
+                <Tooltip content={<CustomTooltip />} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -242,27 +265,26 @@ export function VisualPortfolioHealth({ healthScore, portfolioAssessment, dataCo
 
         {/* Sales Velocity Distribution */}
         <div className="bg-white/5 border border-white/20 rounded-lg p-6">
-          <h3 className="text-xl font-light text-white mb-4">Sales Velocity Distribution</h3>
+          <div className="mb-4">
+            <h3 className="text-xl font-light text-white mb-1">Sales Velocity Distribution</h3>
+            <p className="text-xs text-white/50">Product count by sales performance (Fast: 5+ weekly, Moderate: 1-5, Slow: &lt;1)</p>
+          </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={velocityData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                 <XAxis
                   dataKey="name"
                   stroke="rgba(255,255,255,0.5)"
                   style={{ fontSize: '12px' }}
+                  tick={{ fill: 'rgba(255,255,255,0.7)' }}
                 />
                 <YAxis
                   stroke="rgba(255,255,255,0.5)"
                   style={{ fontSize: '12px' }}
+                  tick={{ fill: 'rgba(255,255,255,0.7)' }}
                 />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'rgba(0,0,0,0.9)',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    borderRadius: '8px'
-                  }}
-                />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
                 <Bar dataKey="count" radius={[8, 8, 0, 0]}>
                   {velocityData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -275,29 +297,27 @@ export function VisualPortfolioHealth({ healthScore, portfolioAssessment, dataCo
 
         {/* Revenue Opportunity vs Risk (Waterfall-style) */}
         <div className="bg-white/5 border border-white/20 rounded-lg p-6">
-          <h3 className="text-xl font-light text-white mb-4">Revenue Impact Analysis</h3>
+          <div className="mb-4">
+            <h3 className="text-xl font-light text-white mb-1">Revenue Impact Analysis</h3>
+            <p className="text-xs text-white/50">Potential revenue gain vs revenue at risk from pricing issues</p>
+          </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={opportunityData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                 <XAxis
                   dataKey="name"
                   stroke="rgba(255,255,255,0.5)"
                   style={{ fontSize: '12px' }}
+                  tick={{ fill: 'rgba(255,255,255,0.7)' }}
                 />
                 <YAxis
                   stroke="rgba(255,255,255,0.5)"
                   style={{ fontSize: '12px' }}
+                  tick={{ fill: 'rgba(255,255,255,0.7)' }}
                   label={{ value: '$K', angle: -90, position: 'insideLeft', fill: 'rgba(255,255,255,0.5)' }}
                 />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'rgba(0,0,0,0.9)',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    borderRadius: '8px'
-                  }}
-                  formatter={(value: any) => `$${Math.abs(value)}K`}
-                />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
                 <Bar dataKey="value" radius={[8, 8, 0, 0]}>
                   {opportunityData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -320,13 +340,21 @@ export function VisualPortfolioHealth({ healthScore, portfolioAssessment, dataCo
 
         {/* Risk Heat Map */}
         <div className="bg-white/5 border border-white/20 rounded-lg p-6">
-          <h3 className="text-xl font-light text-white mb-4">Risk Assessment Heat Map</h3>
+          <div className="mb-4">
+            <h3 className="text-xl font-light text-white mb-1">Risk Assessment Heat Map</h3>
+            <p className="text-xs text-white/50">Current risk levels across key business areas (0-100 scale)</p>
+          </div>
           <div className="space-y-4">
             {riskData.map((risk, idx) => (
               <div key={idx}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-white">{risk.area}</span>
-                  <span className="text-xs text-white/60">{risk.impact} Impact</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs text-white/60">{risk.impact} Impact</span>
+                    <span className="text-xs font-bold" style={{ color: getRiskColor(risk.severity) }}>
+                      {risk.severity}/100
+                    </span>
+                  </div>
                 </div>
                 <div className="relative h-8 bg-white/10 rounded-lg overflow-hidden">
                   <div
@@ -335,20 +363,16 @@ export function VisualPortfolioHealth({ healthScore, portfolioAssessment, dataCo
                       width: `${risk.severity}%`,
                       backgroundColor: getRiskColor(risk.severity)
                     }}
-                  >
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-white">
-                      {risk.severity}
-                    </span>
-                  </div>
+                  />
                 </div>
               </div>
             ))}
           </div>
           <div className="mt-4 pt-4 border-t border-white/10">
             <div className="flex items-center justify-between text-xs text-white/50">
-              <span>Low Risk</span>
-              <span>Medium Risk</span>
-              <span>High Risk</span>
+              <span>✓ Low (0-50)</span>
+              <span>⚠ Medium (50-70)</span>
+              <span>✗ High (70+)</span>
             </div>
           </div>
         </div>
@@ -385,7 +409,10 @@ export function VisualPortfolioHealth({ healthScore, portfolioAssessment, dataCo
 
       {/* Pricing Distribution Analysis */}
       <div className="bg-white/5 border border-white/20 rounded-lg p-6">
-        <h3 className="text-xl font-light text-white mb-4">Portfolio Pricing Distribution</h3>
+        <div className="mb-4">
+          <h3 className="text-xl font-light text-white mb-1">Portfolio Pricing Distribution</h3>
+          <p className="text-xs text-white/50">Revenue and product count across price segments</p>
+        </div>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={pricingData}>
@@ -395,23 +422,19 @@ export function VisualPortfolioHealth({ healthScore, portfolioAssessment, dataCo
                   <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
               <XAxis
                 dataKey="category"
                 stroke="rgba(255,255,255,0.5)"
                 style={{ fontSize: '12px' }}
+                tick={{ fill: 'rgba(255,255,255,0.7)' }}
               />
               <YAxis
                 stroke="rgba(255,255,255,0.5)"
                 style={{ fontSize: '12px' }}
+                tick={{ fill: 'rgba(255,255,255,0.7)' }}
               />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'rgba(0,0,0,0.9)',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  borderRadius: '8px'
-                }}
-              />
+              <Tooltip content={<CustomTooltip />} />
               <Area
                 type="monotone"
                 dataKey="revenue"
@@ -426,9 +449,20 @@ export function VisualPortfolioHealth({ healthScore, portfolioAssessment, dataCo
                 stroke="#ec4899"
                 strokeWidth={2}
                 name="Product Count"
+                dot={{ fill: '#ec4899', r: 4 }}
               />
             </AreaChart>
           </ResponsiveContainer>
+        </div>
+        <div className="mt-4 flex items-center justify-center space-x-6 text-xs">
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 bg-purple-500 rounded"></div>
+            <span className="text-white/70">Revenue</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 bg-pink-500 rounded"></div>
+            <span className="text-white/70">Product Count</span>
+          </div>
         </div>
       </div>
 
