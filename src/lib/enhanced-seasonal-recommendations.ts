@@ -1,9 +1,10 @@
 // src/lib/enhanced-seasonal-recommendations.ts
-// INTELLIGENT SEASONAL ENGINE - Dynamic Holiday Detection + Strategic Fallbacks
-// Claude dynamically detects holidays/events + strategic fallbacks for comprehensive coverage
+// ULTRA-INTELLIGENT SEASONAL ENGINE - Comprehensive UK Events Calendar + AI Intelligence
+// Tracks 150+ UK events with detailed alcohol sales intelligence per event
 
 import { AlcoholSKU, AlcoholBrand } from '@/types'
 import Anthropic from '@anthropic-ai/sdk'
+import { UKEventsCalendar } from './uk-events-calendar'
 
 // Initialize Anthropic client
 const anthropic = new Anthropic({
@@ -25,6 +26,8 @@ interface SeasonalContext {
   detectedHolidays: string[] // Claude will detect these dynamically
   weatherContext: string
   ukMarketEvents: string[]
+  comprehensiveEvents: any[] // Full UK events calendar with alcohol intelligence
+  upcomingEventsFormatted: string // Formatted for AI consumption
 }
 
 interface StrategicRecommendation {
@@ -181,7 +184,7 @@ Example format: ["Valentine's Day (February 14, 7 days away)", "Six Nations Rugb
       
       const response = await anthropic.messages.create({
         model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 6000, // Increased for more strategies
+        max_tokens: 12000, // Significantly increased to support 10-20+ strategies
         temperature: 0.7,
         messages: [{
           role: 'user',
@@ -256,59 +259,91 @@ Example format: ["Valentine's Day (February 14, 7 days away)", "Six Nations Rugb
     }
   }
 
-  // ENHANCED SEASONAL CONTEXT with dynamic detection
+  // ULTRA-ENHANCED SEASONAL CONTEXT with comprehensive UK events calendar
   private static async getEnhancedSeasonalContext(): Promise<SeasonalContext> {
     const baseContext = this.getCurrentSeasonalContext()
-    
-    // Get dynamic holidays from Claude
+
+    // Get comprehensive UK events (next 90 days)
+    const comprehensiveEvents = UKEventsCalendar.getUpcomingEvents(90)
+
+    // Format events for AI consumption
+    const upcomingEventsFormatted = UKEventsCalendar.formatEventsForAI(comprehensiveEvents)
+
+    // Get dynamic holidays from Claude (as backup/supplement)
     const detectedHolidays = await this.detectCurrentHolidays()
-    
+
     // Get strategic fallback holidays
     const strategicHolidays = this.getStrategicHolidays(baseContext)
-    
+
+    console.log(`📅 Loaded ${comprehensiveEvents.length} UK events with alcohol intelligence`)
+
     return {
       ...baseContext,
       detectedHolidays,
       ukMarketEvents: [...strategicHolidays, ...this.getMarketEvents(baseContext.currentMonth)],
-      weatherContext: this.getWeatherContext(baseContext.currentSeason, baseContext.currentMonth)
+      weatherContext: this.getWeatherContext(baseContext.currentSeason, baseContext.currentMonth),
+      comprehensiveEvents,
+      upcomingEventsFormatted
     }
   }
 
-  // INTELLIGENT PROMPT BUILDER - Uses dynamic holidays
+  // ULTRA-INTELLIGENT PROMPT BUILDER - Uses comprehensive UK events calendar with alcohol intelligence
   private static buildIntelligentSeasonalPrompt(productAnalysis: any, seasonalContext: SeasonalContext): string {
     const slowMovingProducts = productAnalysis.slowMoving.slice(0, 12)
     const premiumProducts = productAnalysis.premiumProducts.slice(0, 10)
     const allProducts = productAnalysis.all.slice(0, 25)
-    
-    return `You are an expert UK alcohol retail strategist. Generate 5-6 specific, actionable seasonal strategies for an alcohol business.
 
-CURRENT UK CONTEXT:
-- Date: ${seasonalContext.currentDate.toDateString()}
-- Season: ${seasonalContext.currentSeason}
-- Days to Christmas: ${seasonalContext.daysToChristmas}
-- Weather: ${seasonalContext.weatherContext}
+    // Count high-priority events
+    const highPriorityEvents = seasonalContext.comprehensiveEvents.filter((e: any) =>
+      e.competitorActivity === 'extreme' || e.competitorActivity === 'high'
+    ).length
 
-DETECTED HOLIDAYS & EVENTS:
-${seasonalContext.detectedHolidays.map(h => `- ${h}`).join('\n')}
+    return `You are an EXPERT UK alcohol retail strategist with deep knowledge of:
+- UK seasonal events and their alcohol sales impact
+- Consumer psychology around holidays and celebrations
+- Which alcohol categories sell best for specific occasions and WHY
 
-STRATEGIC MARKET EVENTS:
-${seasonalContext.ukMarketEvents.map(e => `- ${e}`).join('\n')}
+Generate 10-20 SPECIFIC, ACTIONABLE seasonal strategies for this UK alcohol business.
 
-INVENTORY ANALYSIS:
+========================================
+🗓️ COMPREHENSIVE UK EVENTS CALENDAR
+========================================
+${seasonalContext.upcomingEventsFormatted}
+
+📊 YOUR INVENTORY ANALYSIS:
 Total products: ${productAnalysis.all.length}
-Categories: ${Object.keys(productAnalysis.byCategory).join(', ')}
-Slow-moving items (${slowMovingProducts.length}): ${slowMovingProducts.map((p: any) => `${p.sku} (£${p.price}, ${p.inventory_level} units)`).slice(0, 8).join(', ')}
-Premium products (${premiumProducts.length}): ${premiumProducts.map((p: any) => `${p.sku} (£${p.price})`).slice(0, 6).join(', ')}
+Categories available: ${Object.keys(productAnalysis.byCategory).join(', ')}
 
-REQUIREMENTS:
-- Generate as many relevant strategies as you can identify (typically 6-12)
-- Each strategy must connect to specific detected holidays/events
-- Include ALL major UK commercial opportunities: Black Friday, Boxing Day, Back to School, Easter, Summer holidays, etc.
-- Cover weather-responsive and market-event strategies
-- Target different customer segments and product categories
-- Don't limit yourself - if you see 15 opportunities, create 15 strategies
+Slow-moving items (${slowMovingProducts.length}):
+${slowMovingProducts.map((p: any) => `- ${p.sku}: £${p.price}, ${p.inventory_level} units, category: ${p.category || 'unknown'}`).slice(0, 10).join('\n')}
 
-Return ONLY this JSON format (generate as many strategies as relevant, typically 8-15):
+Premium products (${premiumProducts.length}):
+${premiumProducts.map((p: any) => `- ${p.sku}: £${p.price}, category: ${p.category || 'unknown'}`).slice(0, 8).join('\n')}
+
+========================================
+🎯 YOUR MISSION:
+========================================
+1. Generate strategies for EVERY relevant event in the calendar above (aim for 10-20 strategies)
+2. Each strategy MUST be tied to a SPECIFIC event with SPECIFIC dates
+3. Use the "Alcohol Intel" from each event to understand:
+   - Which products sell best (primary categories)
+   - WHY consumers buy (consumer behavior)
+   - Expected sales lift (%)
+   - Whether it's gifting or social drinking
+   - Price sensitivity
+4. Match YOUR INVENTORY to the best opportunities
+5. Create urgency based on days until event
+6. Be SPECIFIC about which SKUs to use and why
+7. Include revenue estimates based on the sales lift data
+8. Prioritize ${highPriorityEvents} HIGH-PRIORITY events (extreme/high competition)
+
+⚠️ CRITICAL REQUIREMENTS:
+- Generate AT LEAST one strategy per major event (${seasonalContext.comprehensiveEvents.length} events = ${seasonalContext.comprehensiveEvents.length} opportunities)
+- Do NOT artificially limit yourself - if you see 15-20 opportunities, create 15-20 strategies
+- Each must reference the specific event, alcohol categories that sell, and consumer behavior
+- Use the actual revenue lift data (e.g., Valentine's Day = +300% for champagne)
+
+Return ONLY this JSON format (10-20 strategies based on events):
 
 {
   "seasonal_strategies": [
@@ -670,7 +705,9 @@ CRITICAL: Cover ALL detected holidays and major UK retail events. Don't limit st
       isSummerSeason: currentMonth >= 5 && currentMonth <= 8,
       detectedHolidays: [],
       weatherContext: '',
-      ukMarketEvents: []
+      ukMarketEvents: [],
+      comprehensiveEvents: [],
+      upcomingEventsFormatted: ''
     }
   }
 

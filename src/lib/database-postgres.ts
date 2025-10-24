@@ -231,7 +231,7 @@ export class PostgreSQLService {
       
       // Then save smart alerts if provided
       if (analysisData.smart_alerts && analysisData.smart_alerts.length > 0) {
-        await this.saveSmartAlerts(analysisData.userEmail, analysisData.uploadId, analysisData.smart_alerts)
+        await this.saveSmartAlerts(analysisData.smart_alerts, analysisData.uploadId, analysisData.userEmail)
       }
       
       console.log(`✅ Enhanced analysis save complete with ${analysisData.smart_alerts?.length || 0} smart alerts`)
@@ -243,48 +243,6 @@ export class PostgreSQLService {
     }
   }
 
-  /**
-   * CRITICAL: Save smart alerts to the smart_alerts table
-   */
-  static async saveSmartAlerts(
-    userIdOrEmail: string,
-    analysisId: string,
-    smartAlerts: SmartAlert[]
-  ): Promise<void> {
-    try {
-      console.log(`💾 Saving ${smartAlerts.length} smart alerts`)
-      
-      if (!smartAlerts || smartAlerts.length === 0) {
-        console.log('⚠️ No smart alerts to save')
-        return
-      }
-      
-      // Save each smart alert
-      for (const alert of smartAlerts) {
-        await prisma.smartAlert.create({
-          data: {
-            analysis_id: analysisId,
-            type: alert.type,
-            severity: alert.severity,
-            message: alert.message,
-            recommendation: alert.recommendation,
-            auto_generated: alert.auto_generated,
-            requires_human: alert.requires_human,
-            escalation_path: alert.escalation_path ? alert.escalation_path : undefined, // FIXED: Use undefined instead of null
-            acknowledged: false,
-            resolved: false,
-            auto_resolved: false
-          }
-        })
-      }
-      
-      console.log(`✅ Saved ${smartAlerts.length} smart alerts`)
-      
-    } catch (error) {
-      console.error('❌ Error saving smart alerts:', error)
-      throw error
-    }
-  }
 
   /**
    * Get smart alerts for an analysis
@@ -418,14 +376,14 @@ export class PostgreSQLService {
   }
   
   // Save inventory alerts with proper typing
-  public static async saveAlerts(    
-    userId: string, 
-    analysisId: string, 
+  public static async saveAlerts(
+    userId: string,
+    analysisId: string,
     alerts: InventoryAlert[]
   ): Promise<void> {
     try {
       console.log(`💾 Saving ${alerts.length} alerts`)
-      
+
       for (const alert of alerts) {
         await prisma.alert.create({
           data: {
@@ -441,11 +399,82 @@ export class PostgreSQLService {
           }
         })
       }
-      
+
       console.log(`✅ Saved ${alerts.length} alerts`)
-      
+
     } catch (error) {
       console.error('Error saving alerts:', error)
+      throw error
+    }
+  }
+
+  // Save SMART ACTIONABLE ALERTS with full recommendation structure
+  public static async saveSmartAlerts(
+    smartAlerts: any[],
+    analysisId: string,
+    userEmail: string
+  ): Promise<void> {
+    try {
+      console.log(`💾 Saving ${smartAlerts.length} SMART ACTIONABLE alerts`)
+
+      // Get user first
+      const user = await prisma.user.findUnique({
+        where: { email: userEmail }
+      })
+
+      if (!user) {
+        console.error('User not found for smart alerts:', userEmail)
+        return
+      }
+
+      for (const alert of smartAlerts) {
+        await prisma.alert.create({
+          data: {
+            user_id: user.id,
+            analysis_id: analysisId,
+            sku_code: alert.sku_code,
+            type: alert.type,
+            severity: alert.severity,
+            category: alert.product_context?.category || null,
+            title: alert.title,
+            message: alert.message,
+            short_description: alert.short_description || null,
+
+            // Actionable AI recommendations
+            ai_recommendation: alert.primary_action || null,
+            alternative_actions: alert.alternative_actions || null,
+            estimated_impact: alert.estimated_impact,
+            confidence_level: alert.confidence_level,
+
+            // Business metrics
+            urgency_score: alert.urgency_score,
+            revenue_at_risk: alert.revenue_at_risk,
+            cost_to_resolve: alert.cost_to_resolve,
+            time_to_resolve: alert.time_to_critical ? parseInt(alert.time_to_critical.split(' ')[0]) : null,
+
+            // Product context
+            product_data: alert.product_context || null,
+
+            // Automation flags
+            can_auto_resolve: alert.can_auto_resolve || false,
+            auto_resolve_conditions: alert.auto_resolve_conditions || null,
+            escalate_after_hours: alert.escalate_if_not_resolved_hours || null,
+
+            // Claude AI analysis
+            claude_insight: alert.claude_analysis || null,
+
+            // Status flags
+            acknowledged: false,
+            resolved: false,
+            snoozed: false
+          }
+        })
+      }
+
+      console.log(`✅ Saved ${smartAlerts.length} SMART ACTIONABLE alerts to database`)
+
+    } catch (error) {
+      console.error('Error saving smart alerts:', error)
       throw error
     }
   }

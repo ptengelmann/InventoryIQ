@@ -58,6 +58,82 @@ export async function GET(request: NextRequest) {
 
     console.log(`🧠 ADVANCED competitive intelligence for ${userId} (depth: ${analysisDepth})`)
 
+    // CHECK CACHE FIRST (unless force refresh requested)
+    if (!forceRefresh) {
+      const prisma = new (await import('@prisma/client')).PrismaClient()
+      try {
+        const cachedInsights = await prisma.claudeInsight.findMany({
+          where: {
+            user_id: userId,
+            analysis_depth: analysisDepth,
+            expires_at: { gte: new Date() } // Not expired
+          },
+          orderBy: { generated_at: 'desc' }
+        })
+
+        if (cachedInsights.length > 0) {
+          console.log(`✅ CACHE HIT: Returning ${cachedInsights.length} cached insights (${Math.round((Date.now() - cachedInsights[0].generated_at.getTime()) / 1000 / 60)} minutes old)`)
+
+          // Update view count
+          await prisma.claudeInsight.updateMany({
+            where: { id: { in: cachedInsights.map(i => i.id) } },
+            data: {
+              view_count: { increment: 1 },
+              last_viewed_at: new Date()
+            }
+          })
+
+          const formattedInsights = cachedInsights.map(insight => ({
+            id: insight.id,
+            type: insight.insight_type,
+            priority: insight.priority,
+            title: insight.title,
+            claude_analysis: insight.claude_analysis,
+            strategic_recommendations: insight.strategic_recommendations,
+            immediate_actions: insight.immediate_actions,
+            revenue_impact_estimate: insight.revenue_impact_estimate,
+            confidence_score: insight.confidence_score,
+            affected_products: insight.affected_products,
+            competitors_involved: insight.competitors_involved,
+            market_context: insight.market_context,
+            urgency_timeline: insight.urgency_timeline,
+            timestamp: insight.generated_at,
+            cached: true,
+            cache_age_minutes: Math.round((Date.now() - insight.generated_at.getTime()) / 1000 / 60)
+          }))
+
+          await prisma.$disconnect()
+
+          // CRITICAL FIX: Generate portfolio_assessment from cached data
+          const cachedDataContext = cachedInsights[0].data_snapshot as any
+          const portfolioAssessmentFromCache = {
+            health_score: cachedDataContext?.competitive_coverage_percentage > 50 ? 8 :
+                         cachedDataContext?.competitive_coverage_percentage > 30 ? 6 : 5,
+            claude_assessment: `Portfolio analysis based on ${cachedDataContext?.inventory_size || 0} products with ${cachedDataContext?.competitive_coverage_percentage || 0}% competitive coverage.`,
+            top_threats: formattedInsights.filter((i: any) => i.priority === 'critical' || i.priority === 'high').slice(0, 3).map((i: any) => i.title),
+            top_opportunities: formattedInsights.filter((i: any) => i.type === 'market_opportunity').slice(0, 3).map((i: any) => i.title),
+            strategic_roadmap: ['Monitor competitive pricing', 'Expand coverage', 'Optimize pricing strategy']
+          }
+
+          return NextResponse.json({
+            success: true,
+            claude_insights: formattedInsights,
+            portfolio_assessment: portfolioAssessmentFromCache,
+            cached: true,
+            generated_at: cachedInsights[0].generated_at,
+            expires_at: cachedInsights[0].expires_at,
+            data_context: cachedInsights[0].data_snapshot
+          })
+        }
+      } catch (cacheError) {
+        console.warn('Cache check failed, proceeding with fresh generation:', cacheError)
+      } finally {
+        await prisma.$disconnect()
+      }
+    }
+
+    console.log('🔄 CACHE MISS or FORCE REFRESH: Generating fresh insights...')
+
     // ENHANCED: Get ALL user data for comprehensive analysis
     const [existingCompetitorData, userSKUs, recentAnalyses] = await Promise.all([
       PostgreSQLService.getCompetitorData(userId, 7), // Existing competitive data
@@ -137,6 +213,59 @@ export async function GET(request: NextRequest) {
       claudeInsights
     )
 
+    // SAVE INSIGHTS TO CACHE (async, don't block response)
+    const dataContext = {
+      inventory_size: userSKUs.length,
+      competitor_prices_analyzed: enhancedCompetitorData.length,
+      competitive_coverage_percentage: Math.round((enhancedCompetitorData.length / userSKUs.length) * 100),
+      unique_competitors: [...new Set(enhancedCompetitorData.map(c => c.competitor))].length,
+      categories_analyzed: [...new Set(userSKUs.map(s => s.category))].length,
+      brands_analyzed: [...new Set(userSKUs.filter(s => s.brand && s.brand !== 'Unknown').map(s => s.brand))].length,
+      analysis_period: '7 days',
+      total_revenue_at_risk: claudeInsights.reduce((sum, i) => sum + Math.abs(i.revenue_impact_estimate), 0),
+      auto_populated_data: enhancedCompetitorData.length > existingCompetitorData.length,
+      new_competitive_data_points: enhancedCompetitorData.length - existingCompetitorData.length,
+      portfolio_diversity_score: portfolioMetrics.diversity_score,
+      analysis_strategy: competitiveStrategy,
+      market_opportunity_count: marketOpportunities?.length || 0
+    }
+
+    const generatedAt = new Date()
+    const expiresAt = new Date(generatedAt.getTime() + 15 * 60 * 1000) // 15 minutes cache
+
+    // Save to database (don't await - fire and forget)
+    const prisma = new (await import('@prisma/client')).PrismaClient()
+    Promise.all(claudeInsights.map(insight =>
+      prisma.claudeInsight.create({
+        data: {
+          id: insight.id,
+          user_id: userId,
+          insight_type: insight.type,
+          priority: insight.priority,
+          title: insight.title,
+          claude_analysis: insight.claude_analysis,
+          strategic_recommendations: insight.strategic_recommendations,
+          immediate_actions: insight.immediate_actions,
+          revenue_impact_estimate: insight.revenue_impact_estimate,
+          confidence_score: insight.confidence_score,
+          affected_products: insight.affected_products,
+          competitors_involved: insight.competitors_involved,
+          market_context: insight.market_context,
+          urgency_timeline: insight.urgency_timeline,
+          analysis_depth: analysisDepth,
+          data_snapshot: dataContext,
+          generated_at: generatedAt,
+          expires_at: expiresAt
+        }
+      })
+    )).then(() => {
+      console.log(`💾 Saved ${claudeInsights.length} insights to cache (expires in 15min)`)
+      prisma.$disconnect()
+    }).catch(err => {
+      console.warn('Failed to cache insights:', err)
+      prisma.$disconnect()
+    })
+
     return NextResponse.json({
       success: true,
       analysis_depth: analysisDepth,
@@ -144,25 +273,13 @@ export async function GET(request: NextRequest) {
       monitoring_strategy: monitoringRecommendations,
       portfolio_assessment: portfolioAssessment,
       market_opportunities: marketOpportunities,
-      
+
       // ENHANCED: Comprehensive data context
-      data_context: {
-        inventory_size: userSKUs.length,
-        competitor_prices_analyzed: enhancedCompetitorData.length,
-        competitive_coverage_percentage: Math.round((enhancedCompetitorData.length / userSKUs.length) * 100),
-        unique_competitors: [...new Set(enhancedCompetitorData.map(c => c.competitor))].length,
-        categories_analyzed: [...new Set(userSKUs.map(s => s.category))].length,
-        brands_analyzed: [...new Set(userSKUs.filter(s => s.brand && s.brand !== 'Unknown').map(s => s.brand))].length,
-        analysis_period: '7 days',
-        total_revenue_at_risk: claudeInsights.reduce((sum, i) => sum + Math.abs(i.revenue_impact_estimate), 0),
-        auto_populated_data: enhancedCompetitorData.length > existingCompetitorData.length,
-        new_competitive_data_points: enhancedCompetitorData.length - existingCompetitorData.length,
-        portfolio_diversity_score: portfolioMetrics.diversity_score,
-        analysis_strategy: competitiveStrategy,
-        market_opportunity_count: marketOpportunities?.length || 0
-      },
-      
-      generated_at: new Date().toISOString(),
+      data_context: dataContext,
+
+      generated_at: generatedAt.toISOString(),
+      expires_at: expiresAt.toISOString(),
+      cached: false,
       powered_by: 'claude_ai_advanced_competitive_intelligence'
     })
 
@@ -581,7 +698,7 @@ Prioritize insights that address:
     const response = await anthropic.messages.create({
       model: 'claude-3-5-sonnet-20241022',
       max_tokens: 6000,
-      temperature: 0.2,
+      temperature: 0, // Deterministic for consistent insights
       messages: [{ role: 'user', content: enhancedPrompt }]
     })
 
@@ -654,7 +771,7 @@ Provide specific recommendations with £ thresholds, timing intervals, and autom
     const response = await anthropic.messages.create({
       model: 'claude-3-5-sonnet-20241022',
       max_tokens: 2000,
-      temperature: 0.3,
+      temperature: 0, // Deterministic for consistent results
       messages: [{ role: 'user', content: enhancedPrompt }]
     })
 
@@ -783,7 +900,7 @@ Provide direct, actionable insights for C-level decision making.`
     const response = await anthropic.messages.create({
       model: 'claude-3-5-sonnet-20241022',
       max_tokens: 2000,
-      temperature: 0.2,
+      temperature: 0, // Deterministic for consistent results
       messages: [{ role: 'user', content: advancedPrompt }]
     })
 

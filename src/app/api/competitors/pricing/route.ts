@@ -154,27 +154,67 @@ function transformToEnhancedComparisonResults(
     return acc
   }, {})
   
-  // Group competitor prices by SKU
+  // Group competitor prices by SKU and deduplicate by retailer (keep most recent)
   const groupedBySKU = competitorData.reduce((acc: Record<string, any>, comp: any) => {
     if (!acc[comp.sku]) {
       acc[comp.sku] = {
         sku: comp.sku,
         our_price: comp.our_price || 0,
-        competitors: []
+        competitors: [],
+        retailerMap: new Map() // Track latest price per retailer
       }
     }
-    acc[comp.sku].competitors.push(comp)
+
+    // Only keep the most recent price per retailer
+    const existingEntry = acc[comp.sku].retailerMap.get(comp.competitor)
+    if (!existingEntry || new Date(comp.last_updated) > new Date(existingEntry.last_updated)) {
+      acc[comp.sku].retailerMap.set(comp.competitor, comp)
+    }
+
     return acc
   }, {})
+
+  // Convert retailer maps to arrays
+  Object.values(groupedBySKU).forEach((skuData: any) => {
+    skuData.competitors = Array.from(skuData.retailerMap.values())
+    delete skuData.retailerMap // Clean up temporary map
+  })
   
   // Transform to enhanced comparison results
   return Object.values(groupedBySKU).map((skuData: any) => {
     const competitors = skuData.competitors
     const ourPrice = skuData.our_price || 0
     const inventoryItem = skuLookup[skuData.sku]
-    
-    // Calculate market position
-    const competitorPrices = competitors.map((c: any) => c.competitor_price)
+
+    // CRITICAL: Filter out price anomalies (likely wrong product matches)
+    const validCompetitors = competitors.filter((c: any) => {
+      const priceDiff = Math.abs(c.competitor_price - ourPrice)
+      const priceDiffPercent = ourPrice > 0 ? (priceDiff / ourPrice) * 100 : 999
+
+      // Flag extreme price differences (>500% or <90% off) as likely wrong matches
+      if (priceDiffPercent > 500) {
+        console.log(`⚠️ Price anomaly detected for ${skuData.sku}: ${c.competitor} at £${c.competitor_price} vs our £${ourPrice} (${priceDiffPercent.toFixed(0)}% difference) - possible wrong product match`)
+        return false // Remove this competitor price
+      }
+
+      // Also flag unusually cheap prices for alcohol (likely wrong volume)
+      if (c.competitor_price < 5 && ourPrice > 30) {
+        console.log(`⚠️ Suspicious low price for ${skuData.sku}: ${c.competitor} at £${c.competitor_price} (likely smaller size)`)
+        return false
+      }
+
+      return true
+    })
+
+    // Calculate market position with validated prices only
+    const competitorPrices = validCompetitors.map((c: any) => c.competitor_price)
+
+    // Skip if no valid competitors remain
+    if (competitorPrices.length === 0) {
+      console.log(`❌ No valid competitors for ${skuData.sku} after anomaly filtering`)
+      return null
+    }
+
     const allPrices = ourPrice > 0 ? [ourPrice, ...competitorPrices] : competitorPrices
     allPrices.sort((a: number, b: number) => a - b)
     
@@ -187,17 +227,17 @@ function transformToEnhancedComparisonResults(
     
     // Generate enhanced recommendations with inventory context
     const recommendations = generateEnhancedRecommendations(
-      ourPrice, 
-      avgCompPrice, 
-      priceAdvantage, 
+      ourPrice,
+      avgCompPrice,
+      priceAdvantage,
       inventoryItem,
-      competitors
+      validCompetitors // Use filtered competitors
     )
-    
+
     const result: PriceComparisonResult = {
       sku: skuData.sku,
       our_price: ourPrice,
-      competitor_prices: competitors,
+      competitor_prices: validCompetitors, // Use filtered competitors
       market_position: {
         rank: ourRank,
         percentile: Math.round(percentile),
@@ -229,9 +269,9 @@ function transformToEnhancedComparisonResults(
         result.recommendations.urgency = 'low'
       }
     }
-    
+
     return result
-  })
+  }).filter((result: PriceComparisonResult | null): result is PriceComparisonResult => result !== null)
 }
 
 function generateEnhancedRecommendations(
