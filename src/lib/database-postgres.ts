@@ -231,7 +231,7 @@ export class PostgreSQLService {
       
       // Then save smart alerts if provided
       if (analysisData.smart_alerts && analysisData.smart_alerts.length > 0) {
-        await this.saveSmartAlerts(analysisData.userEmail, analysisData.uploadId, analysisData.smart_alerts)
+        await this.saveSmartAlerts(analysisData.smart_alerts, analysisData.uploadId, analysisData.userEmail)
       }
       
       console.log(`✅ Enhanced analysis save complete with ${analysisData.smart_alerts?.length || 0} smart alerts`)
@@ -243,48 +243,6 @@ export class PostgreSQLService {
     }
   }
 
-  /**
-   * CRITICAL: Save smart alerts to the smart_alerts table
-   */
-  static async saveSmartAlerts(
-    userIdOrEmail: string,
-    analysisId: string,
-    smartAlerts: SmartAlert[]
-  ): Promise<void> {
-    try {
-      console.log(`💾 Saving ${smartAlerts.length} smart alerts`)
-      
-      if (!smartAlerts || smartAlerts.length === 0) {
-        console.log('⚠️ No smart alerts to save')
-        return
-      }
-      
-      // Save each smart alert
-      for (const alert of smartAlerts) {
-        await prisma.smartAlert.create({
-          data: {
-            analysis_id: analysisId,
-            type: alert.type,
-            severity: alert.severity,
-            message: alert.message,
-            recommendation: alert.recommendation,
-            auto_generated: alert.auto_generated,
-            requires_human: alert.requires_human,
-            escalation_path: alert.escalation_path ? alert.escalation_path : undefined, // FIXED: Use undefined instead of null
-            acknowledged: false,
-            resolved: false,
-            auto_resolved: false
-          }
-        })
-      }
-      
-      console.log(`✅ Saved ${smartAlerts.length} smart alerts`)
-      
-    } catch (error) {
-      console.error('❌ Error saving smart alerts:', error)
-      throw error
-    }
-  }
 
   /**
    * Get smart alerts for an analysis

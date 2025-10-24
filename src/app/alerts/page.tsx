@@ -53,7 +53,7 @@ export default function SmartAlertsPage() {
   const router = useRouter()
   const { user, login, isLoading } = useUser()
   const [authModalOpen, setAuthModalOpen] = useState(false)
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login')
+  const [authMode, setAuthMode] = useState<'login' | 'signup' | 'reset'>('login')
 
   const [alerts, setAlerts] = useState<SmartAlert[]>([])
   const [loading, setLoading] = useState(true)
@@ -250,7 +250,10 @@ export default function SmartAlertsPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-black">
-        <Navbar user={null} onLoginClick={() => {}} onSignUpClick={() => {}} />
+        <Navbar
+          onLogin={() => { setAuthMode('login'); setAuthModalOpen(true) }}
+          onSignup={() => { setAuthMode('signup'); setAuthModalOpen(true) }}
+        />
         <div className="flex items-center justify-center pt-32">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-white/10 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
@@ -265,9 +268,8 @@ export default function SmartAlertsPage() {
     return (
       <div className="min-h-screen bg-black">
         <Navbar
-          user={null}
-          onLoginClick={() => { setAuthMode('login'); setAuthModalOpen(true) }}
-          onSignUpClick={() => { setAuthMode('signup'); setAuthModalOpen(true) }}
+          onLogin={() => { setAuthMode('login'); setAuthModalOpen(true) }}
+          onSignup={() => { setAuthMode('signup'); setAuthModalOpen(true) }}
         />
         <div className="flex items-center justify-center pt-32">
           <div className="text-center max-w-md">
@@ -286,8 +288,12 @@ export default function SmartAlertsPage() {
           isOpen={authModalOpen}
           onClose={() => setAuthModalOpen(false)}
           mode={authMode}
-          onToggleMode={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
-          onLogin={login}
+          onSwitchMode={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+          onSuccess={(userData) => {
+            login({ ...userData, company: 'Demo', phone: '', location: 'UK' })
+            setAuthModalOpen(false)
+            router.push('/dashboard')
+          }}
         />
       </div>
     )
@@ -295,7 +301,10 @@ export default function SmartAlertsPage() {
 
   return (
     <div className="min-h-screen bg-black">
-      <Navbar user={user} onLoginClick={() => {}} onSignUpClick={() => {}} />
+      <Navbar
+        onLogin={() => { setAuthMode('login'); setAuthModalOpen(true) }}
+        onSignup={() => { setAuthMode('signup'); setAuthModalOpen(true) }}
+      />
 
       <div className="pt-20 pb-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
@@ -499,8 +508,11 @@ export default function SmartAlertsPage() {
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
         mode={authMode}
-        onToggleMode={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
-        onLogin={login}
+        onSwitchMode={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+        onSuccess={(userData) => {
+          login({ ...userData, company: 'Demo', phone: '', location: 'UK' })
+          setAuthModalOpen(false)
+        }}
       />
       <Toaster
         position="bottom-right"

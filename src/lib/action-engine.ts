@@ -183,8 +183,8 @@ export class ActionEngine {
     switch (payload.type) {
       case 'price_update':
         const priceValidation = await this.validatePriceUpdate(payload, userId, rules)
-        errors.push(...priceValidation.errors)
-        warnings.push(...priceValidation.warnings)
+        errors.push(...(priceValidation.errors || []))
+        warnings.push(...(priceValidation.warnings || []))
         if (priceValidation.requires_approval) {
           requires_approval = true
           approval_reason = priceValidation.approval_reason!
@@ -194,8 +194,8 @@ export class ActionEngine {
 
       case 'reorder_stock':
         const reorderValidation = await this.validateReorderStock(payload, userId, rules)
-        errors.push(...reorderValidation.errors)
-        warnings.push(...reorderValidation.warnings)
+        errors.push(...(reorderValidation.errors || []))
+        warnings.push(...(reorderValidation.warnings || []))
         if (reorderValidation.requires_approval) {
           requires_approval = true
           approval_reason = reorderValidation.approval_reason!
@@ -205,8 +205,8 @@ export class ActionEngine {
 
       case 'launch_campaign':
         const campaignValidation = await this.validateCampaign(payload, userId, rules)
-        errors.push(...campaignValidation.errors)
-        warnings.push(...campaignValidation.warnings)
+        errors.push(...(campaignValidation.errors || []))
+        warnings.push(...(campaignValidation.warnings || []))
         if (campaignValidation.requires_approval) {
           requires_approval = true
           approval_reason = campaignValidation.approval_reason!

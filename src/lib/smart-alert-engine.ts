@@ -71,66 +71,6 @@ export interface ActionableAlert {
 
 export class SmartAlertEngine {
 
-  /**
-   * MAIN ENTRY POINT - Generate smart, actionable alerts
-   */
-  static async generateSmartAlerts(
-    skuData: any[],
-    analysisId: string,
-    userEmail: string,
-    competitorData: any[] = []
-  ): Promise<ActionableAlert[]> {
-
-    console.log(`🧠 Generating SMART alerts for ${skuData.length} SKUs`)
-
-    const alerts: ActionableAlert[] = []
-
-    // Process each SKU
-    for (const sku of skuData) {
-      const price = parseFloat(sku.price) || 0
-      const weeklySales = parseFloat(sku.weekly_sales) || 0
-      const inventoryLevel = parseInt(sku.inventory_level) || 0
-      const weeksOfStock = weeklySales > 0 ? inventoryLevel / weeklySales : 999
-
-      // CRITICAL STOCKOUT (most urgent)
-      if (weeksOfStock < 1.5 && weeklySales > 0.5) {
-        alerts.push(this.createCriticalStockoutAlert(sku, weeksOfStock, price, weeklySales, inventoryLevel))
-      }
-      // OVERSTOCK CASH DRAIN
-      else if (weeksOfStock > 16 && inventoryLevel > 30 && price > 20) {
-        alerts.push(this.createOverstockCashDrainAlert(sku, weeksOfStock, price, weeklySales, inventoryLevel))
-      }
-      // DEAD STOCK (not selling at all)
-      else if (weeksOfStock > 26 && weeklySales < 0.3 && inventoryLevel > 20) {
-        alerts.push(this.createDeadStockAlert(sku, weeksOfStock, price, inventoryLevel))
-      }
-      // PRICE OPPORTUNITY (high demand, good margins)
-      else if (weeklySales > 2 && price > 30 && weeksOfStock > 4 && weeksOfStock < 12) {
-        alerts.push(this.createPriceOpportunityAlert(sku, price, weeklySales, inventoryLevel))
-      }
-    }
-
-    // Add competitor threats if available
-    if (competitorData.length > 0) {
-      const competitorAlerts = this.analyzeCompetitorThreats(skuData, competitorData)
-      alerts.push(...competitorAlerts)
-    }
-
-    // Enhance top alerts with Claude AI
-    const criticalAlerts = alerts.filter(a => a.severity === 'critical' || a.severity === 'high')
-    if (criticalAlerts.length > 0 && process.env.ANTHROPIC_API_KEY) {
-      await this.enhanceAlertsWithClaude(criticalAlerts.slice(0, 5))
-    }
-
-    // Sort by urgency and impact
-    return alerts.sort((a, b) => {
-      if (a.severity !== b.severity) {
-        const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 }
-        return severityOrder[b.severity] - severityOrder[a.severity]
-      }
-      return b.revenue_at_risk - a.revenue_at_risk
-    })
-  }
 
   /**
    * CRITICAL STOCKOUT - Immediate action required
@@ -547,45 +487,6 @@ export class SmartAlertEngine {
     return alerts
   }
 
-  /**
-   * Enhance alerts with Claude AI analysis
-   */
-  private static async enhanceAlertsWithClaude(alerts: ActionableAlert[]): Promise<void> {
-    try {
-      const prompt = `You are an expert inventory manager. For each alert, provide a 2-3 sentence strategic analysis focusing on WHY this matters and what the business risk/opportunity is.
-
-ALERTS:
-${alerts.map((a, i) => `${i + 1}. ${a.title}
-SKU: ${a.sku_code}
-Context: £${a.revenue_at_risk.toLocaleString()} at risk, ${a.product_context.weeks_of_stock.toFixed(1)} weeks stock
-`).join('\n')}
-
-Return as JSON array with just sku_code and analysis:
-[{"sku_code": "SKU-001", "analysis": "Strategic insight..."}]`
-
-      const response = await anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 1500,
-        temperature: 0,
-        messages: [{ role: 'user', content: prompt }]
-      })
-
-      const text = response.content[0].type === 'text' ? response.content[0].text : ''
-      const jsonMatch = text.match(/\[[\s\S]*\]/)
-
-      if (jsonMatch) {
-        const analyses = JSON.parse(jsonMatch[0])
-        for (const alert of alerts) {
-          const analysis = analyses.find((a: any) => a.sku_code === alert.sku_code)
-          if (analysis) {
-            alert.claude_analysis = analysis.analysis
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Claude enhancement failed:', error)
-    }
-  }
 
   /**
    * Get seasonal peak for category
@@ -631,7 +532,7 @@ Return as JSON array with just sku_code and analysis:
 
       // DEAD STOCK (> 20 weeks)
       else if (weeksOfStock > 20 && currentStock > 10) {
-        alerts.push(this.createDeadStockAlert(sku, weeksOfStock, price, weeklySales, currentStock))
+        alerts.push(this.createDeadStockAlert(sku, weeksOfStock, price, currentStock))
       }
 
       // PRICE OPPORTUNITY (competitor data available)

@@ -154,7 +154,6 @@ export function SmartAlertCard({
 
     switch (type) {
       case 'overstock_cash_drain':
-      case 'overstock':
         const excessWeeks = Math.max(0, weeks - 12)
         const excessUnits = Math.floor(excessWeeks * weeklyDemand)
         const cashTiedUp = Math.floor(excessUnits * price * 0.7)
@@ -192,7 +191,6 @@ export function SmartAlertCard({
         )
 
       case 'critical_stockout':
-      case 'stockout':
         const daysToStockout = Math.floor(weeks * 7)
         const weeksLostSales = Math.max(1, 4 - weeks)
         const lostUnits = Math.floor(weeksLostSales * weeklyDemand)
