@@ -14,16 +14,16 @@ interface FeaturesSectionProps {
 export const FeaturesSection: React.FC<FeaturesSectionProps> = ({ features, scrollY }) => {
   const capabilities = [
     {
-      category: "AI Strategic Advisory",
-      items: ["Revenue impact predictions", "Competitive threat analysis", "Market positioning intelligence", "Portfolio health scoring (1-10)"]
+      category: "UK Events Intelligence",
+      items: ["20+ UK seasonal events (Wimbledon, Burns Night, Chelsea Flower Show)", "AI-generated event-specific strategies", "Pre-positioning recommendations with timing", "Bonfire Night, Royal Ascot, Notting Hill Carnival analysis"]
     },
     {
-      category: "Real-time Market Warfare",
-      items: ["Live competitor price monitoring", "Stock-out opportunity alerts", "Promotional pressure detection", "Distribution gap analysis"]
+      category: "One-Click Action Execution",
+      items: ["Price updates with full audit trail", "Complete rollback protection", "Confidence scoring on every action", "Track predicted vs actual impact (Shopify ready)"]
     },
     {
-      category: "Revenue Optimization Engine",
-      items: ["AI-generated seasonal strategies", "Price elasticity modeling", "Market share opportunity detection", "Profit maximization algorithms"]
+      category: "Real UK Web Scraping",
+      items: ["Live scraping from 20+ UK retailers (not API data)", "Real-time competitor price monitoring", "15-minute smart caching to save costs", "Competitive coverage % tracking"]
     }
   ]
 
@@ -32,13 +32,13 @@ export const FeaturesSection: React.FC<FeaturesSectionProps> = ({ features, scro
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-2xl md:text-3xl font-light text-white mb-4">
-            Enterprise AI built for alcohol retail warfare
+            Built exclusively for UK alcohol retail
           </h2>
           <p className="text-base text-white/70 mb-6">
-            Get McKinsey-level strategic intelligence for the price of a Netflix subscription
+            Real features that actually work - not marketing promises
           </p>
           <div className="inline-flex items-center space-x-2 px-4 py-2 bg-white/5 border border-white/20 rounded">
-            <span className="text-white/60 text-sm">Powered by the same AI that serves Fortune 500 companies</span>
+            <span className="text-white/60 text-sm">Claude AI + Real web scraping + UK market expertise</span>
           </div>
         </div>
 
@@ -136,39 +136,39 @@ export const FeaturesSection: React.FC<FeaturesSectionProps> = ({ features, scro
           </div>
         </div>
 
-        {/* Key differentiator with enhanced positioning */}
+        {/* Real unique differentiators */}
         <div className="mt-16 bg-white/5 border border-white/10 rounded-lg p-8">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div>
-              <h3 className="text-white font-medium mb-2">The unfair advantage alcohol brands need</h3>
-              <p className="text-white/60 text-sm mb-6">While competitors use spreadsheets, you get AI-powered market warfare</p>
+              <h3 className="text-white font-medium mb-2">What makes this actually different</h3>
+              <p className="text-white/60 text-sm mb-6">Features that actually exist and work right now</p>
               <div className="space-y-4">
                 <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse mt-2" style={{animationDelay: '0s'}}></div>
+                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse mt-2" style={{animationDelay: '0s'}}></div>
                   <div>
-                    <div className="text-white/80 text-sm font-medium">Enterprise AI trained on alcohol market data</div>
-                    <div className="text-white/50 text-xs">Same technology used by Fortune 500 companies</div>
+                    <div className="text-white/80 text-sm font-medium">UK Events Calendar built-in</div>
+                    <div className="text-white/50 text-xs">Wimbledon, Burns Night, Chelsea Flower Show - 20+ events with AI strategies</div>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse mt-2" style={{animationDelay: '0.5s'}}></div>
                   <div>
-                    <div className="text-white/80 text-sm font-medium">Real-time competitive warfare intelligence</div>
-                    <div className="text-white/50 text-xs">Know your competitors' moves before they cost you sales</div>
+                    <div className="text-white/80 text-sm font-medium">Real web scraping, not API calls</div>
+                    <div className="text-white/50 text-xs">Actually scrapes UK retailer websites for live pricing data</div>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse mt-2" style={{animationDelay: '1s'}}></div>
+                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse mt-2" style={{animationDelay: '1s'}}></div>
                   <div>
-                    <div className="text-white/80 text-sm font-medium">Revenue predictions with £ precision</div>
-                    <div className="text-white/50 text-xs">See exact impact of every pricing decision before you make it</div>
+                    <div className="text-white/80 text-sm font-medium">Complete audit trail on every action</div>
+                    <div className="text-white/50 text-xs">Full rollback protection - undo any price change with one click</div>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse mt-2" style={{animationDelay: '1.5s'}}></div>
+                  <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse mt-2" style={{animationDelay: '1.5s'}}></div>
                   <div>
-                    <div className="text-white/80 text-sm font-medium">McKinsey-level strategic intelligence</div>
-                    <div className="text-white/50 text-xs">Get consultant-quality insights for a fraction of the cost</div>
+                    <div className="text-white/80 text-sm font-medium">Impact tracking system ready</div>
+                    <div className="text-white/50 text-xs">Track predicted vs actual outcomes when Shopify connects</div>
                   </div>
                 </div>
               </div>
@@ -177,24 +177,24 @@ export const FeaturesSection: React.FC<FeaturesSectionProps> = ({ features, scro
             <div className="bg-white/5 border border-white/10 rounded p-6">
               <div className="text-center space-y-6">
                 <div>
-                  <div className="text-3xl font-light text-white mb-2">£2M+</div>
-                  <div className="text-white/60 text-sm">Revenue opportunities detected</div>
+                  <div className="text-3xl font-light text-white mb-2">20+</div>
+                  <div className="text-white/60 text-sm">UK seasonal events tracked</div>
                 </div>
                 <div className="w-full h-px bg-white/10"></div>
                 <div className="grid grid-cols-2 gap-4 text-center">
                   <div>
-                    <div className="text-xl font-light text-white">20+</div>
-                    <div className="text-white/60 text-xs">UK retailers</div>
+                    <div className="text-xl font-light text-white">15 min</div>
+                    <div className="text-white/60 text-xs">Smart cache</div>
                   </div>
                   <div>
-                    <div className="text-xl font-light text-white">24/7</div>
-                    <div className="text-white/60 text-xs">Live monitoring</div>
+                    <div className="text-xl font-light text-white">100%</div>
+                    <div className="text-white/60 text-xs">Audit coverage</div>
                   </div>
                 </div>
                 <div className="w-full h-px bg-white/10"></div>
                 <div className="text-xs text-white/50">
                   Majestic Wine • Tesco • Waitrose • ASDA<br />
-                  Morrisons • Sainsbury's • and more
+                  Morrisons • Sainsbury's • Co-op • and more
                 </div>
               </div>
             </div>

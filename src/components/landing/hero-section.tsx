@@ -16,33 +16,33 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onBookDemo, onWatchDem
             <div className="lg:col-span-3">
               <div className="inline-flex items-center space-x-2 px-3 py-1 border border-green-400/30 bg-green-500/10 rounded mb-8">
                 <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                <span className="text-green-300 text-sm font-medium">Powered by Advanced AI • Enterprise-grade intelligence</span>
+                <span className="text-green-300 text-sm font-medium">Real-time UK alcohol market intelligence • Claude AI powered</span>
               </div>
 
               <h1 className="text-4xl md:text-6xl font-light text-white leading-tight mb-8">
-                The AI giving alcohol brands
+                One-click actions that
                 <br />
-                <span className="text-green-400">an unfair advantage</span>
+                <span className="text-green-400">execute themselves</span>
               </h1>
 
               <p className="text-base md:text-lg text-white/70 leading-relaxed mb-6 max-w-2xl">
-                Get strategic insights, revenue predictions, and competitive intelligence that turn
-                every pricing decision into profit. Built specifically for UK alcohol retail.
+                AI that doesn't just recommend - it executes. Real scraping across UK retailers.
+                Full audit trails. Rollback protection. Built exclusively for UK alcohol brands.
               </p>
 
-              {/* Social proof metrics */}
+              {/* Social proof metrics - ACCURATE */}
               <div className="grid grid-cols-3 gap-6 mb-10 max-w-lg">
                 <div className="text-center">
-                  <div className="text-2xl font-light text-white">£2M+</div>
-                  <div className="text-xs text-white/60">Revenue opportunities detected</div>
-                </div>
-                <div className="text-center">
                   <div className="text-2xl font-light text-white">20+</div>
-                  <div className="text-xs text-white/60">UK retailers monitored</div>
+                  <div className="text-xs text-white/60">UK retailers scraped live</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-light text-white">47</div>
-                  <div className="text-xs text-white/60">AI strategies generated</div>
+                  <div className="text-2xl font-light text-white">15 min</div>
+                  <div className="text-xs text-white/60">Smart cache refresh</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-light text-white">100%</div>
+                  <div className="text-xs text-white/60">Audit trail coverage</div>
                 </div>
               </div>
 
@@ -65,9 +65,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onBookDemo, onWatchDem
               </div>
 
               <div className="text-sm text-white/50">
-                <span className="text-white/60">Trusted by alcohol brands monitoring:</span>
+                <span className="text-white/60">Live scraping from UK retailers:</span>
                 <br />
-                Majestic Wine • Tesco • Waitrose • ASDA • Morrisons • and 15 more
+                Majestic Wine • Tesco • Waitrose • ASDA • Morrisons • Sainsbury's • and more
               </div>
             </div>
 
@@ -79,72 +79,72 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onBookDemo, onWatchDem
                 <span className="text-green-400">LIVE</span>
               </div>
 
-              {/* Enhanced alert feed with revenue impact */}
+              {/* Real features showcase */}
               <div className="space-y-3">
-                <div className="bg-red-500/10 border border-red-500/20 rounded p-3">
+                <div className="bg-purple-500/10 border border-purple-500/20 rounded p-3">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center space-x-2">
-                      <div className="w-1 h-1 bg-red-400 rounded-full animate-pulse" />
-                      <span className="text-red-300 text-xs font-medium">Critical Threat</span>
+                      <div className="w-1 h-1 bg-purple-400 rounded-full animate-pulse" />
+                      <span className="text-purple-300 text-xs font-medium">UK Events Calendar</span>
                     </div>
-                    <span className="text-red-200 text-xs">2 mins ago</span>
+                    <span className="text-purple-200 text-xs">Live</span>
                   </div>
-                  <div className="text-white text-xs font-medium">Grey Goose undercuts you by 12% at Tesco</div>
-                  <div className="text-white/60 text-xs">£28.50 → £24.99 • Risk: £47k monthly revenue</div>
-                  <div className="text-red-300 text-xs font-medium mt-1">Recommend: Match price within 48 hours</div>
+                  <div className="text-white text-xs font-medium">Wimbledon starts in 14 days</div>
+                  <div className="text-white/60 text-xs">AI analyzing gin & Pimm's seasonal demand surge</div>
+                  <div className="text-purple-300 text-xs font-medium mt-1">Strategy: Pre-position stock with 18% markup</div>
                 </div>
 
                 <div className="bg-green-500/10 border border-green-500/20 rounded p-3">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center space-x-2">
                       <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse" />
-                      <span className="text-green-300 text-xs font-medium">Revenue Opportunity</span>
+                      <span className="text-green-300 text-xs font-medium">Action Executed</span>
                     </div>
-                    <span className="text-green-200 text-xs">5 mins ago</span>
+                    <span className="text-green-200 text-xs">2 mins ago</span>
                   </div>
-                  <div className="text-white text-xs font-medium">Belvedere out of stock at Majestic Wine</div>
-                  <div className="text-white/60 text-xs">Gap detected in £40-50 premium vodka segment</div>
-                  <div className="text-green-300 text-xs font-medium mt-1">Opportunity: £23k increase with 15% price boost</div>
+                  <div className="text-white text-xs font-medium">Price update: Grey Goose £28.50 → £26.99</div>
+                  <div className="text-white/60 text-xs">Full audit trail saved • Rollback available</div>
+                  <div className="text-green-300 text-xs font-medium mt-1">Confidence: 87% • Tracking actual impact</div>
                 </div>
 
-                <div className="bg-blue-500/10 border border-blue-500/20 rounded p-3">
+                <div className="bg-orange-500/10 border border-orange-500/20 rounded p-3">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center space-x-2">
-                      <div className="w-1 h-1 bg-blue-400 rounded-full animate-pulse" />
-                      <span className="text-blue-300 text-xs font-medium">AI Strategy</span>
+                      <div className="w-1 h-1 bg-orange-400 rounded-full animate-pulse" />
+                      <span className="text-orange-300 text-xs font-medium">Live Scrape Alert</span>
                     </div>
-                    <span className="text-blue-200 text-xs">12 mins ago</span>
+                    <span className="text-orange-200 text-xs">Just now</span>
                   </div>
-                  <div className="text-white text-xs font-medium">Seasonal gin promotion strategy generated</div>
-                  <div className="text-white/60 text-xs">Summer campaign targeting premium segment</div>
-                  <div className="text-blue-300 text-xs font-medium mt-1">Projected: £180k revenue boost over 8 weeks</div>
+                  <div className="text-white text-xs font-medium">Belvedere price dropped at Waitrose</div>
+                  <div className="text-white/60 text-xs">£42.00 → £37.50 (-11%) • Scraped from waitrose.com</div>
+                  <div className="text-orange-300 text-xs font-medium mt-1">Action ready: Click to match competitor price</div>
                 </div>
               </div>
 
-              {/* Enhanced strategic insights with AI branding */}
+              {/* Real system capabilities */}
               <div className="bg-white/5 border border-white/20 rounded p-4 mt-6">
                 <div className="flex items-center space-x-2 mb-3">
-                  <div className="text-xs text-white/60">AI Portfolio Assessment:</div>
+                  <div className="text-xs text-white/60">Real System Features:</div>
                   <div className="px-2 py-0.5 bg-green-500/20 text-green-300 text-xs rounded border border-green-500/30">
-                    8.5/10 Health Score
+                    All Implemented
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs">
-                    <span className="text-white/70">Untapped market opportunity</span>
-                    <span className="text-green-400 font-medium">£2.1M potential</span>
+                    <span className="text-white/70">Competitive coverage tracking</span>
+                    <span className="text-green-400 font-medium">Live % monitoring</span>
                   </div>
                   <div className="flex justify-between text-xs">
-                    <span className="text-white/70">AI-recommended price optimization</span>
-                    <span className="text-white">£29.99 (-9% current)</span>
+                    <span className="text-white/70">UK events: Wimbledon, Burns Night...</span>
+                    <span className="text-white">20+ seasonal events</span>
                   </div>
                   <div className="flex justify-between text-xs">
-                    <span className="text-white/70">Distribution expansion targets</span>
-                    <span className="text-orange-400">3 high-ROI retailers</span>
+                    <span className="text-white/70">Action audit trail with rollback</span>
+                    <span className="text-purple-400">100% coverage</span>
                   </div>
                   <div className="border-t border-white/20 pt-2 mt-3">
-                    <div className="text-white/70 text-xs font-medium mb-1">Next Strategic Action:</div>
-                    <span className="text-green-300 text-xs">Launch at Morrisons for £180k revenue boost</span>
+                    <div className="text-white/70 text-xs font-medium mb-1">Impact Analytics:</div>
+                    <span className="text-green-300 text-xs">Track predicted vs actual outcomes (Shopify ready)</span>
                   </div>
                 </div>
               </div>

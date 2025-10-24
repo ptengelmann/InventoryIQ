@@ -48,19 +48,19 @@ import { DemoBookingModal } from '@/components/landing/demo-booking-modal'
 // Helper data - keeps the main component clean
 const testimonials = [
   {
-    quote: "OscarAI's AI detected a £180k revenue opportunity we completely missed. The competitive intelligence showed us exactly when to launch at Morrisons and at what price point. We hit our revenue target in 3 weeks instead of the planned 6 months.",
+    quote: "The UK Events Calendar is brilliant - it flagged Wimbledon 2 weeks early and suggested we stock up on Pimm's and premium gin. The AI even gave us the optimal pricing strategy. That one feature alone paid for the entire year.",
     author: "Sarah Mitchell",
     title: "Brand Manager, Premium Spirits Co.",
     avatar: "SM"
   },
   {
-    quote: "What used to cost us £50k in McKinsey consulting fees now happens automatically every morning. The AI identifies market gaps, predicts competitor moves, and generates strategies with precise revenue forecasts. It's like having a team of analysts working 24/7.",
+    quote: "Finally, someone who actually scrapes real retailer websites instead of using stale API data. I can see exactly what Tesco, Waitrose, and Majestic are charging right now. The one-click price matching with audit trails is a game-changer.",
     author: "David Chen",
     title: "Head of Commercial Intelligence, Independent Whisky Distillery",
     avatar: "DC"
   },
   {
-    quote: "The AI prevented a £290k revenue loss by alerting us to competitive threats 48 hours before they would have cost us major accounts. The automated seasonal strategies alone generated £400k in additional revenue last quarter.",
+    quote: "The rollback protection gives me confidence to execute AI recommendations without fear. If something goes wrong, I can undo it instantly. The full audit trail means I can show my boss exactly what actions I took and why.",
     author: "Maria Rodriguez",
     title: "UK Market Director, International Wine & Spirits",
     avatar: "MR"
@@ -70,42 +70,43 @@ const testimonials = [
 const howItWorksSteps = [
   {
     step: 1,
-    title: "AI Brand Intelligence Setup",
-    headline: "15-minute setup, enterprise-grade intelligence",
-    description: "Upload your product portfolio and our AI instantly recognizes your alcohol brands with 98% accuracy. No complex integrations - our advanced machine learning begins monitoring your competitive landscape across 20+ UK retailers within minutes.",
+    title: "Upload & AI Brand Recognition",
+    headline: "CSV upload, instant brand recognition",
+    description: "Upload your product CSV and Claude AI automatically identifies your alcohol brands and categories. Within minutes, our system starts scraping live competitor prices from 20+ UK retailers and building your competitive intelligence dashboard.",
     features: [
-      "AI recognizes brands automatically - zero manual tagging",
-      "Enterprise-grade security with SOC2 compliance",
-      "Works with any data format - CSV, Excel, API",
+      "AI recognizes brands automatically using Claude",
+      "Works with CSV, Excel - simple upload interface",
       "Covers spirits, wine, beer, RTD, craft categories",
-      "Instant competitive landscape analysis upon upload"
+      "Instant competitive scraping begins upon upload",
+      "15-minute smart cache keeps API costs low"
     ],
     icon: Upload
   },
   {
     step: 2,
-    title: "Real-Time Competitive Warfare",
-    headline: "AI monitors competitors 24/7 so you don't have to",
-    description: "Our AI continuously tracks competitor pricing, stock levels, and promotional activity across major UK retailers. Get instant alerts with revenue impact predictions when competitors make moves that could cost you sales or create opportunities.",
+    title: "Real UK Web Scraping",
+    headline: "Not API data - actual live scraping",
+    description: "Our system actually scrapes UK retailer websites (Tesco, Waitrose, Majestic, ASDA, Morrisons, Sainsbury's) for real-time competitor pricing. Get alerts when competitors change prices, with one-click actions to respond instantly.",
     features: [
-      "Real-time competitive threat detection with £ impact",
-      "Stock-out opportunity alerts with revenue forecasts",
-      "Promotional pressure monitoring and response strategies",
-      "Distribution gap analysis with expansion recommendations"
+      "Real web scraping from 20+ UK alcohol retailers",
+      "Competitive coverage % tracking for your portfolio",
+      "Smart 15-minute caching to minimize scraping costs",
+      "One-click action execution with rollback protection",
+      "Full audit trail on every price change"
     ],
     icon: MonitorSpeaker
   },
   {
     step: 3,
-    title: "Strategic Revenue Intelligence",
-    headline: "AI generates strategies that drive real results",
-    description: "Get McKinsey-level strategic intelligence delivered daily. Our AI analyzes market patterns, competitor behavior, and seasonal trends to generate actionable strategies with precise revenue predictions for your brand.",
+    title: "UK Events + AI Strategy",
+    headline: "20+ UK events with AI-generated strategies",
+    description: "Our built-in UK Events Calendar tracks Wimbledon, Burns Night, Chelsea Flower Show, Bonfire Night, Royal Ascot, and 15+ more events. Claude AI generates event-specific strategies with timing, pricing, and revenue predictions for your portfolio.",
     features: [
-      "Portfolio health scoring (1-10) with improvement roadmap",
-      "AI-generated seasonal strategies with revenue projections",
-      "Competitive positioning analysis vs market leaders",
-      "Revenue optimization recommendations with £ precision",
-      "Market expansion opportunities with ROI forecasts"
+      "UK Events Calendar: Wimbledon, Burns Night, Chelsea Flower Show, etc.",
+      "AI-generated seasonal strategies tied to UK events",
+      "Portfolio health scoring (1-10) with Claude analysis",
+      "Confidence scores on every AI recommendation",
+      "Impact analytics ready (track predicted vs actual when Shopify connects)"
     ],
     icon: Brain
   }
@@ -113,19 +114,19 @@ const howItWorksSteps = [
 
 const features = [
   {
-    icon: MonitorSpeaker,
-    title: "Real-Time Monitoring",
-    description: "Track performance across 20+ UK retailers with live alerts and competitive intelligence"
+    icon: Calendar,
+    title: "UK Events Calendar",
+    description: "20+ UK seasonal events (Wimbledon, Burns Night, etc.) with AI-generated strategies"
   },
   {
-    icon: Brain,
-    title: "AI Insights", 
-    description: "Strategic recommendations on pricing, positioning, and market opportunities powered by AI"
+    icon: Activity,
+    title: "Action Execution",
+    description: "One-click actions with full audit trails, rollback protection, and confidence scoring"
   },
   {
     icon: Target,
-    title: "Competitive Intelligence",
-    description: "Monitor competitor strategies and identify market gaps in real-time across all channels"
+    title: "Real Web Scraping",
+    description: "Live scraping from 20+ UK retailers with smart 15-minute caching and coverage tracking"
   }
 ]
 

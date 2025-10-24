@@ -12,14 +12,14 @@ export const InteractiveDemo: React.FC<InteractiveDemoProps> = ({ animatedNumber
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-2xl md:text-3xl font-light text-white mb-4">
-            Live AI intelligence dashboard
+            Real features, real implementation
           </h2>
           <p className="text-base text-white/70 mb-4">
-            This is what £2M revenue opportunities look like in real-time
+            See the actual dashboard with UK Events Calendar and action execution
           </p>
           <div className="inline-flex items-center space-x-2 px-3 py-1 bg-green-500/10 border border-green-400/30 rounded">
             <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-green-300 text-xs">Live data from UK alcohol retailers</span>
+            <span className="text-green-300 text-xs">Real scraping from UK retailers + Claude AI</span>
           </div>
         </div>
 
@@ -89,43 +89,43 @@ export const InteractiveDemo: React.FC<InteractiveDemoProps> = ({ animatedNumber
               </div>
 
               <div className="space-y-3">
-                <div className="p-3 bg-red-500/5 rounded border border-red-400/20">
+                <div className="p-3 bg-purple-500/5 rounded border border-purple-400/20">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-2">
-                      <AlertTriangle className="h-3 w-3 text-red-400" />
-                      <span className="text-red-300 text-xs font-medium">Critical Revenue Threat</span>
+                      <Package className="h-3 w-3 text-purple-400" />
+                      <span className="text-purple-300 text-xs font-medium">UK Events Calendar</span>
                     </div>
-                    <span className="text-red-200 text-xs">2 mins ago</span>
+                    <span className="text-purple-200 text-xs">Live</span>
                   </div>
-                  <div className="text-white/80 text-sm font-medium">Grey Goose undercuts you by 12% at Tesco</div>
-                  <div className="text-white/60 text-xs">£28.50 → £24.99 • Risk: £47k monthly revenue</div>
-                  <div className="text-red-300 text-xs font-medium mt-1">AI Rec: Match price within 48 hours</div>
+                  <div className="text-white/80 text-sm font-medium">Burns Night in 8 days (Jan 25)</div>
+                  <div className="text-white/60 text-xs">AI detected whisky demand surge pattern from last year</div>
+                  <div className="text-purple-300 text-xs font-medium mt-1">Strategy: Pre-stock premium Scotch, 12% markup</div>
                 </div>
 
                 <div className="p-3 bg-green-500/5 rounded border border-green-400/20">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-2">
-                      <TrendingUp className="h-3 w-3 text-green-400" />
-                      <span className="text-green-300 text-xs font-medium">Revenue Opportunity</span>
+                      <CheckCircle className="h-3 w-3 text-green-400" />
+                      <span className="text-green-300 text-xs font-medium">Action Executed</span>
                     </div>
-                    <span className="text-green-200 text-xs">5 mins ago</span>
+                    <span className="text-green-200 text-xs">3 mins ago</span>
                   </div>
-                  <div className="text-white/80 text-sm font-medium">Premium vodka gap detected at Majestic</div>
-                  <div className="text-white/60 text-xs">Belvedere stock-out in £40-50 segment</div>
-                  <div className="text-green-300 text-xs font-medium mt-1">AI Rec: 15% price increase = £23k boost</div>
+                  <div className="text-white/80 text-sm font-medium">Price updated: Tanqueray £22.50 → £21.99</div>
+                  <div className="text-white/60 text-xs">Full audit trail saved • Rollback available • Confidence: 89%</div>
+                  <div className="text-green-300 text-xs font-medium mt-1">Tracking: Predicted +£2.8k/mo vs actual (Shopify ready)</div>
                 </div>
 
-                <div className="p-3 bg-blue-500/5 rounded border border-blue-400/20">
+                <div className="p-3 bg-orange-500/5 rounded border border-orange-400/20">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-2">
-                      <Package className="h-3 w-3 text-blue-400" />
-                      <span className="text-blue-300 text-xs font-medium">AI Seasonal Strategy</span>
+                      <Activity className="h-3 w-3 text-orange-400" />
+                      <span className="text-orange-300 text-xs font-medium">Live Scrape Alert</span>
                     </div>
-                    <span className="text-blue-200 text-xs">12 mins ago</span>
+                    <span className="text-orange-200 text-xs">Just now</span>
                   </div>
-                  <div className="text-white/80 text-sm font-medium">Summer gin campaign strategy generated</div>
-                  <div className="text-white/60 text-xs">Premium segment targeting with 3-phase rollout</div>
-                  <div className="text-blue-300 text-xs font-medium mt-1">AI Projection: £180k revenue over 8 weeks</div>
+                  <div className="text-white/80 text-sm font-medium">Competitor price drop detected at Waitrose</div>
+                  <div className="text-white/60 text-xs">Hendrick's Gin: £32.00 → £28.50 • Scraped from waitrose.com</div>
+                  <div className="text-orange-300 text-xs font-medium mt-1">Action ready: Click to match price with audit trail</div>
                 </div>
               </div>
             </div>
