@@ -4,7 +4,7 @@ import { PostgreSQLService } from '@/lib/database-postgres'
 import { RealCompetitiveScraping } from '@/lib/real-competitive-scraping'
 import { EnhancedSeasonalRecommendations } from '@/lib/enhanced-seasonal-recommendations'
 import { AlcoholSKU } from '@/types'
-import { AlertEngine } from '@/lib/alert-engine' // FIXED: Import corrected
+import { SmartAlertEngine } from '@/lib/smart-alert-engine' // NEW: Smart alerts with real revenue calculations
 
 interface CSVRow {
   sku?: string
@@ -258,33 +258,24 @@ export async function POST(request: NextRequest) {
       seasonalRecommendations = []
     }
 
-    // Step 5: Generate intelligent alerts with Claude AI - FIXED VERSION
-    console.log('🧠 Generating AI-powered alerts with Claude integration...')
+    // Step 5: Generate SMART ACTIONABLE ALERTS with real revenue calculations
+    console.log('🧠 Generating SMART actionable alerts with real revenue calculations...')
 
-    let alerts: any[] = []
     let smartAlerts: any[] = []
 
     try {
-      const alertResults = await AlertEngine.generateIntelligentAlerts(
+      // Use SmartAlertEngine for actionable, automated alerts
+      smartAlerts = await SmartAlertEngine.generateSmartAlerts(
         alcoholSKUs,
-        uploadId,
+        competitorData,
         userEmail
       )
-      
-      alerts = alertResults.alerts
-      smartAlerts = alertResults.smart_alerts
-      
-      console.log(`🚨 Generated ${alerts.length} regular alerts`)
-      console.log(`⚡ Generated ${smartAlerts.length} smart alerts with Claude AI`)
-      
+
+      console.log(`⚡ Generated ${smartAlerts.length} SMART ACTIONABLE alerts with real revenue calculations`)
+
     } catch (alertError) {
-      console.error('❌ AI alert generation failed:', alertError)
-      
-      // Fallback to basic alerts
-      alerts = AlertEngine.generateAlertsFromAnalysis(alcoholSKUs, [], [])
+      console.error('❌ Smart alert generation failed:', alertError)
       smartAlerts = []
-      
-      console.log(`🚨 Generated ${alerts.length} fallback alerts`)
     }
 
     // Step 6: Generate inventory alerts (keep existing logic for compatibility)
@@ -385,8 +376,15 @@ export async function POST(request: NextRequest) {
 
     const processingTime = Date.now() - startTime
 
-    // Step 9: Save to database with smart alerts - ENHANCED VERSION
+    // Step 9: Save to database with SMART ACTIONABLE ALERTS
     try {
+      // First, save the smart alerts to the alerts table
+      if (smartAlerts.length > 0) {
+        await PostgreSQLService.saveSmartAlerts(smartAlerts, uploadId, userEmail)
+        console.log(`✅ Saved ${smartAlerts.length} smart actionable alerts to database`)
+      }
+
+      // Then save the full analysis
       await PostgreSQLService.saveAnalysisWithSmartAlerts({
         uploadId,
         fileName,
@@ -395,22 +393,22 @@ export async function POST(request: NextRequest) {
         summary,
         priceRecommendations,
         inventoryAlerts,
-        smartAlerts: [], // Keep empty for backward compatibility
+        smartAlerts: smartAlerts, // Now includes real smart alerts
         competitorData,
         marketInsights,
         processingTimeMs: processingTime,
         seasonalStrategies: seasonalRecommendations,
-        smart_alerts: smartAlerts // Add the new field for smart alerts
+        smart_alerts: smartAlerts // Both fields for compatibility
       })
-      
+
       console.log(`✅ Analysis and ${smartAlerts.length} smart alerts saved to database`)
-      
+
       // CRITICAL: Save competitor prices separately to ensure they persist
       if (competitorData.length > 0) {
         const saved = await PostgreSQLService.saveCompetitorPrices(userEmail, competitorData)
         console.log(`✅ SEPARATELY SAVED ${competitorData.length} real competitor prices to database: ${saved}`)
       }
-      
+
     } catch (saveError) {
       console.error('❌ Enhanced database save failed:', saveError)
     }

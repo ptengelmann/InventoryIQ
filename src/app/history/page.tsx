@@ -51,6 +51,18 @@ interface HistoryStats {
   totalRevenuePotential: number
   alertsGenerated: number
   avgProcessingTime: number
+  competitivelyTrackedSKUs?: number
+  totalCompetitorPrices?: number
+  avgPriceDifference?: number
+}
+
+interface CompetitiveHistoryData {
+  sku_code: string
+  product_name: string
+  our_price: number
+  competitor_count: number
+  avg_competitor_price: number
+  last_scanned: string
 }
 
 export default function HistoryPage() {
@@ -64,13 +76,15 @@ export default function HistoryPage() {
   const [stats, setStats] = useState<HistoryStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  
+  const [competitiveHistory, setCompetitiveHistory] = useState<CompetitiveHistoryData[]>([])
+
   // Filter and search state
   const [searchTerm, setSearchTerm] = useState('')
   const [dateFilter, setDateFilter] = useState<'all' | '7d' | '30d' | '90d'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'processing' | 'failed'>('all')
   const [sortBy, setSortBy] = useState<'date' | 'revenue' | 'skus'>('date')
-  
+  const [showCompetitiveTracking, setShowCompetitiveTracking] = useState(false)
+
   // UI state
   const [selectedAnalysis, setSelectedAnalysis] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
@@ -84,14 +98,17 @@ export default function HistoryPage() {
 
   const fetchHistoryData = async () => {
     if (!user) return
-    
+
     setLoading(true)
     setError(null)
-    
+
     try {
-      // Fetch analyses from database
-      const analysesResponse = await fetch(`/api/dashboard/analyses?userId=${encodeURIComponent(user.email)}`)
-      
+      // Fetch analyses and competitive pricing data in parallel
+      const [analysesResponse, competitivePricingResponse] = await Promise.all([
+        fetch(`/api/dashboard/analyses?userId=${encodeURIComponent(user.email)}`),
+        fetch(`/api/competitors/pricing?userId=${encodeURIComponent(user.email)}`)
+      ])
+
       if (analysesResponse.ok) {
         const analysesData = await analysesResponse.json()
         const formattedAnalyses: HistoryAnalysis[] = (analysesData.analyses || []).map((analysis: any) => ({
@@ -109,18 +126,60 @@ export default function HistoryPage() {
           alertCount: (analysis.alerts || []).length,
           status: 'completed' as const
         }))
-        
+
         setAnalyses(formattedAnalyses)
-        
+
+        // Process competitive pricing data
+        let competitiveStats = {
+          competitivelyTrackedSKUs: 0,
+          totalCompetitorPrices: 0,
+          avgPriceDifference: 0
+        }
+
+        if (competitivePricingResponse.ok) {
+          const competitiveData = await competitivePricingResponse.json()
+
+          if (competitiveData.success && competitiveData.comparisons) {
+            const competitiveProducts: CompetitiveHistoryData[] = competitiveData.comparisons
+              .map((comp: any) => {
+                const competitorPrices = comp.competitor_prices || []
+                const avgPrice = competitorPrices.length > 0
+                  ? competitorPrices.reduce((sum: number, p: any) => sum + (p.price || 0), 0) / competitorPrices.length
+                  : 0
+
+                return {
+                  sku_code: comp.sku,
+                  product_name: comp.product_name || comp.sku,
+                  our_price: comp.our_price || 0,
+                  competitor_count: competitorPrices.length,
+                  avg_competitor_price: avgPrice,
+                  last_scanned: competitorPrices[0]?.last_updated || new Date().toISOString()
+                }
+              })
+              .filter((p: CompetitiveHistoryData) => p.competitor_count > 0)
+
+            setCompetitiveHistory(competitiveProducts)
+
+            competitiveStats = {
+              competitivelyTrackedSKUs: competitiveProducts.length,
+              totalCompetitorPrices: competitiveProducts.reduce((sum, p) => sum + p.competitor_count, 0),
+              avgPriceDifference: competitiveProducts.length > 0
+                ? competitiveProducts.reduce((sum, p) => sum + (p.our_price - p.avg_competitor_price), 0) / competitiveProducts.length
+                : 0
+            }
+          }
+        }
+
         // Calculate stats from analyses
         const calculatedStats: HistoryStats = {
           totalAnalyses: formattedAnalyses.length,
           totalSKUsAnalyzed: formattedAnalyses.reduce((sum, a) => sum + (a.summary.totalSKUs || 0), 0),
           totalRevenuePotential: formattedAnalyses.reduce((sum, a) => sum + (a.summary.totalRevenuePotential || 0), 0),
           alertsGenerated: formattedAnalyses.reduce((sum, a) => sum + (a.alertCount || 0), 0),
-          avgProcessingTime: 2.3 // Would be calculated from actual processing times
+          avgProcessingTime: 2.3, // Would be calculated from actual processing times
+          ...competitiveStats
         }
-        
+
         setStats(calculatedStats)
       } else {
         throw new Error('Failed to fetch analyses')
@@ -319,7 +378,7 @@ export default function HistoryPage() {
                 <span>Refresh</span>
               </button>
               <button
-                onClick={() => router.push('/analytics')}
+                onClick={() => router.push('/upload')}
                 className="inline-flex items-center space-x-2 px-6 py-3 bg-white text-black font-medium rounded hover:bg-gray-100 transition-colors"
               >
                 <Activity className="h-5 w-5" />
@@ -347,66 +406,201 @@ export default function HistoryPage() {
 
         {/* Statistics Overview */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-            <div className="bg-white/5 border border-white/20 rounded p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-white/60">Total Analyses</p>
-                  <p className="text-2xl font-light text-white">{stats.totalAnalyses}</p>
+          <div className="space-y-6 mb-8">
+            {/* Main Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+              <div className="bg-white/5 border border-white/20 rounded p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-white/60">Total Analyses</p>
+                    <p className="text-2xl font-light text-white">{stats.totalAnalyses}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-white/10 rounded flex items-center justify-center">
+                    <BarChart3 className="h-6 w-6 text-white/60" />
+                  </div>
                 </div>
-                <div className="w-12 h-12 bg-white/10 rounded flex items-center justify-center">
-                  <BarChart3 className="h-6 w-6 text-white/60" />
+              </div>
+
+              <div className="bg-white/5 border border-white/20 rounded p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-white/60">SKUs Analyzed</p>
+                    <p className="text-2xl font-light text-white">{stats.totalSKUsAnalyzed.toLocaleString()}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-white/10 rounded flex items-center justify-center">
+                    <Package className="h-6 w-6 text-white/60" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-green-500/10 border border-green-500/20 rounded p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-green-300">Revenue Potential</p>
+                    <p className="text-2xl font-light text-green-400">£{Math.round(stats.totalRevenuePotential).toLocaleString()}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-green-500/20 rounded flex items-center justify-center">
+                    <DollarSign className="h-6 w-6 text-green-400" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-red-500/10 border border-red-500/20 rounded p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-red-300">Alerts Generated</p>
+                    <p className="text-2xl font-light text-red-400">{stats.alertsGenerated}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-red-500/20 rounded flex items-center justify-center">
+                    <AlertTriangle className="h-6 w-6 text-red-400" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white/5 border border-white/20 rounded p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-white/60">Avg Processing</p>
+                    <p className="text-2xl font-light text-white">{stats.avgProcessingTime}s</p>
+                  </div>
+                  <div className="w-12 h-12 bg-white/10 rounded flex items-center justify-center">
+                    <Clock className="h-6 w-6 text-white/60" />
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white/5 border border-white/20 rounded p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-white/60">SKUs Analyzed</p>
-                  <p className="text-2xl font-light text-white">{stats.totalSKUsAnalyzed.toLocaleString()}</p>
+            {/* Competitive Intelligence Stats */}
+            {stats.competitivelyTrackedSKUs !== undefined && stats.competitivelyTrackedSKUs > 0 && (
+              <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-blue-500/20 rounded flex items-center justify-center">
+                      <Target className="h-5 w-5 text-blue-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold">Competitive Intelligence Tracking</h3>
+                      <p className="text-white/60 text-sm">Real-time market positioning insights</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowCompetitiveTracking(!showCompetitiveTracking)}
+                    className="px-4 py-2 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded hover:bg-blue-500/30 transition-colors text-sm"
+                  >
+                    {showCompetitiveTracking ? 'Hide Details' : 'Show Details'}
+                  </button>
                 </div>
-                <div className="w-12 h-12 bg-white/10 rounded flex items-center justify-center">
-                  <Package className="h-6 w-6 text-white/60" />
-                </div>
-              </div>
-            </div>
 
-            <div className="bg-green-500/10 border border-green-500/20 rounded p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-green-300">Revenue Potential</p>
-                  <p className="text-2xl font-light text-green-400">£{Math.round(stats.totalRevenuePotential).toLocaleString()}</p>
-                </div>
-                <div className="w-12 h-12 bg-green-500/20 rounded flex items-center justify-center">
-                  <DollarSign className="h-6 w-6 text-green-400" />
-                </div>
-              </div>
-            </div>
+                <div className="grid grid-cols-3 gap-6">
+                  <div className="text-center p-4 bg-blue-500/10 border border-blue-500/20 rounded">
+                    <div className="text-3xl font-light text-blue-400 mb-1">
+                      {stats.competitivelyTrackedSKUs}
+                    </div>
+                    <div className="text-sm text-blue-300">Products Tracked</div>
+                    <div className="text-xs text-white/60 mt-1">
+                      {((stats.competitivelyTrackedSKUs / stats.totalSKUsAnalyzed) * 100).toFixed(1)}% of inventory
+                    </div>
+                  </div>
 
-            <div className="bg-red-500/10 border border-red-500/20 rounded p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-red-300">Alerts Generated</p>
-                  <p className="text-2xl font-light text-red-400">{stats.alertsGenerated}</p>
-                </div>
-                <div className="w-12 h-12 bg-red-500/20 rounded flex items-center justify-center">
-                  <AlertTriangle className="h-6 w-6 text-red-400" />
-                </div>
-              </div>
-            </div>
+                  <div className="text-center p-4 bg-blue-500/10 border border-blue-500/20 rounded">
+                    <div className="text-3xl font-light text-blue-400 mb-1">
+                      {stats.totalCompetitorPrices || 0}
+                    </div>
+                    <div className="text-sm text-blue-300">Competitor Data Points</div>
+                    <div className="text-xs text-white/60 mt-1">
+                      Avg {((stats.totalCompetitorPrices || 0) / stats.competitivelyTrackedSKUs).toFixed(1)} per product
+                    </div>
+                  </div>
 
-            <div className="bg-white/5 border border-white/20 rounded p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-white/60">Avg Processing</p>
-                  <p className="text-2xl font-light text-white">{stats.avgProcessingTime}s</p>
-                </div>
-                <div className="w-12 h-12 bg-white/10 rounded flex items-center justify-center">
-                  <Clock className="h-6 w-6 text-white/60" />
+                  <div className="text-center p-4 bg-blue-500/10 border border-blue-500/20 rounded">
+                    <div className={`text-3xl font-light mb-1 ${
+                      (stats.avgPriceDifference || 0) > 0 ? 'text-green-400' : 'text-red-400'
+                    }`}>
+                      {(stats.avgPriceDifference || 0) > 0 ? '+' : ''}£{Math.abs(stats.avgPriceDifference || 0).toFixed(2)}
+                    </div>
+                    <div className="text-sm text-blue-300">Avg Price vs Market</div>
+                    <div className="text-xs text-white/60 mt-1">
+                      {(stats.avgPriceDifference || 0) > 0 ? 'Premium pricing' : 'Competitive pricing'}
+                    </div>
+                  </div>
                 </div>
               </div>
+            )}
+          </div>
+        )}
+
+        {/* Competitive Tracking Details */}
+        {showCompetitiveTracking && competitiveHistory.length > 0 && (
+          <div className="bg-white/5 border border-white/20 rounded-lg overflow-hidden mb-8">
+            <div className="p-6 border-b border-white/20">
+              <h3 className="text-white font-semibold mb-1">Competitively Tracked Products</h3>
+              <p className="text-white/60 text-sm">
+                Products with live competitor pricing data from UK retailers
+              </p>
             </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-white/5">
+                  <tr>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-white/80">Product</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-white/80">SKU</th>
+                    <th className="text-right px-6 py-4 text-sm font-medium text-white/80">Our Price</th>
+                    <th className="text-right px-6 py-4 text-sm font-medium text-white/80">Market Avg</th>
+                    <th className="text-right px-6 py-4 text-sm font-medium text-white/80">Difference</th>
+                    <th className="text-center px-6 py-4 text-sm font-medium text-white/80">Data Points</th>
+                    <th className="text-right px-6 py-4 text-sm font-medium text-white/80">Last Scanned</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/10">
+                  {competitiveHistory.slice(0, 10).map((product, idx) => {
+                    const priceDiff = product.our_price - product.avg_competitor_price
+                    const priceDiffPercent = ((priceDiff / product.avg_competitor_price) * 100).toFixed(1)
+
+                    return (
+                      <tr key={idx} className="hover:bg-white/5 transition-colors">
+                        <td className="px-6 py-4 text-white text-sm">{product.product_name}</td>
+                        <td className="px-6 py-4 text-white/60 text-sm font-mono">{product.sku_code}</td>
+                        <td className="px-6 py-4 text-right text-white text-sm">
+                          £{product.our_price.toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4 text-right text-white/80 text-sm">
+                          £{product.avg_competitor_price.toFixed(2)}
+                        </td>
+                        <td className={`px-6 py-4 text-right text-sm font-medium ${
+                          priceDiff > 0 ? 'text-green-400' : priceDiff < 0 ? 'text-red-400' : 'text-white/60'
+                        }`}>
+                          {priceDiff > 0 ? '+' : ''}£{priceDiff.toFixed(2)}
+                          <span className="text-xs ml-1">
+                            ({priceDiff > 0 ? '+' : ''}{priceDiffPercent}%)
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                            {product.competitor_count} retailer{product.competitor_count > 1 ? 's' : ''}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right text-white/60 text-sm">
+                          {new Date(product.last_scanned).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {competitiveHistory.length > 10 && (
+              <div className="p-4 border-t border-white/20 text-center">
+                <p className="text-white/60 text-sm">
+                  Showing 10 of {competitiveHistory.length} tracked products.{' '}
+                  <button
+                    onClick={() => router.push('/competitive')}
+                    className="text-blue-400 hover:text-blue-300 underline"
+                  >
+                    View all in Competitive Intelligence
+                  </button>
+                </p>
+              </div>
+            )}
           </div>
         )}
 
@@ -476,7 +670,7 @@ export default function HistoryPage() {
                 }
               </p>
               <button
-                onClick={() => router.push('/analytics')}
+                onClick={() => router.push('/upload')}
                 className="inline-flex items-center space-x-2 px-6 py-3 bg-white text-black font-medium rounded hover:bg-gray-100 transition-colors"
               >
                 <Activity className="h-5 w-5" />
@@ -485,93 +679,158 @@ export default function HistoryPage() {
               </button>
             </div>
           ) : (
-            filteredAnalyses.map((analysis) => (
-              <div
-                key={analysis._id}
-                className="bg-white/5 border border-white/20 rounded-lg p-6 hover:bg-white/8 transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="text-lg font-medium text-white">{analysis.fileName}</h3>
-                      <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-500/20 text-green-300 border border-green-500/30">
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Completed
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center space-x-6 text-sm text-white/60 mb-4">
-                      <span className="flex items-center space-x-1">
-                        <Clock className="h-4 w-4" />
-                        <span>{new Date(analysis.processedAt).toLocaleDateString()}</span>
-                      </span>
-                      <span className="flex items-center space-x-1">
-                        <Package className="h-4 w-4" />
-                        <span>{analysis.summary.totalSKUs} SKUs</span>
-                      </span>
-                      <span className="flex items-center space-x-1">
-                        <DollarSign className="h-4 w-4" />
-                        <span>£{Math.round(analysis.summary.totalRevenuePotential).toLocaleString()} potential</span>
-                      </span>
-                      {analysis.alertCount && analysis.alertCount > 0 && (
-                        <span className="flex items-center space-x-1">
-                          <AlertTriangle className="h-4 w-4" />
-                          <span>{analysis.alertCount} alerts</span>
-                        </span>
-                      )}
+            filteredAnalyses.map((analysis) => {
+              const increasePercent = (analysis.summary.priceIncreases / analysis.summary.totalSKUs) * 100
+              const decreasePercent = (analysis.summary.priceDecreases / analysis.summary.totalSKUs) * 100
+              const noChangePercent = 100 - increasePercent - decreasePercent
+
+              return (
+                <div
+                  key={analysis._id}
+                  className="bg-gradient-to-br from-white/[0.07] to-white/[0.03] border border-white/20 rounded-xl overflow-hidden hover:border-white/30 transition-all hover:shadow-lg hover:shadow-white/5"
+                >
+                  {/* Header Section */}
+                  <div className="p-6 border-b border-white/10">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <FileText className="h-5 w-5 text-white/60" />
+                          <h3 className="text-xl font-medium text-white">{analysis.fileName}</h3>
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-300 border border-green-500/30">
+                            <CheckCircle className="w-3 h-3 mr-1.5" />
+                            Completed
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-1 text-sm text-white/60">
+                          <Clock className="h-3.5 w-3.5" />
+                          <span>{new Date(analysis.processedAt).toLocaleDateString('en-GB', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}</span>
+                          <span className="mx-2">•</span>
+                          <span>{Math.floor((new Date().getTime() - new Date(analysis.processedAt).getTime()) / (1000 * 60 * 60 * 24))} days ago</span>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center p-3 bg-green-500/10 border border-green-500/20 rounded">
-                        <div className="text-lg font-light text-green-400">{analysis.summary.priceIncreases}</div>
-                        <div className="text-xs text-green-300">Price Increases</div>
-                      </div>
-                      <div className="text-center p-3 bg-red-500/10 border border-red-500/20 rounded">
-                        <div className="text-lg font-light text-red-400">{analysis.summary.priceDecreases}</div>
-                        <div className="text-xs text-red-300">Price Decreases</div>
-                      </div>
-                      <div className="text-center p-3 bg-white/5 border border-white/20 rounded">
-                        <div className="text-lg font-light text-white">
-                          {analysis.summary.totalSKUs - analysis.summary.priceIncreases - analysis.summary.priceDecreases}
+                    {/* Key Metrics */}
+                    <div className="grid grid-cols-4 gap-4">
+                      <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <Package className="h-5 w-5 text-blue-400" />
+                          <span className="text-2xl font-light text-white">{analysis.summary.totalSKUs}</span>
                         </div>
-                        <div className="text-xs text-white/60">No Change</div>
+                        <p className="text-xs text-white/60">SKUs Analyzed</p>
+                      </div>
+
+                      <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <TrendingUp className="h-5 w-5 text-green-400" />
+                          <span className="text-2xl font-light text-green-400">{analysis.summary.priceIncreases}</span>
+                        </div>
+                        <p className="text-xs text-green-300">Price Increases</p>
+                      </div>
+
+                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <TrendingUp className="h-5 w-5 text-red-400 rotate-180" />
+                          <span className="text-2xl font-light text-red-400">{analysis.summary.priceDecreases}</span>
+                        </div>
+                        <p className="text-xs text-red-300">Price Decreases</p>
+                      </div>
+
+                      <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <DollarSign className="h-5 w-5 text-green-400" />
+                          <span className="text-2xl font-light text-green-400">
+                            £{(analysis.summary.totalRevenuePotential / 1000).toFixed(1)}k
+                          </span>
+                        </div>
+                        <p className="text-xs text-green-300 font-medium">Revenue Potential</p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => router.push(`/dashboard?analysis=${analysis.uploadId}`)}
-                      className="inline-flex items-center space-x-1 px-3 py-2 bg-white/10 text-white border border-white/20 rounded hover:bg-white/15 transition-colors text-sm"
-                    >
-                      <Eye className="h-4 w-4" />
-                      <span>View</span>
-                    </button>
-                    
-                    <button
-                      onClick={() => downloadAnalysisReport(analysis)}
-                      className="inline-flex items-center space-x-1 px-3 py-2 bg-white/10 text-white border border-white/20 rounded hover:bg-white/15 transition-colors text-sm"
-                    >
-                      <Download className="h-4 w-4" />
-                      <span>Export</span>
-                    </button>
-                    
-                    <button
-                      onClick={() => handleDeleteAnalysis(analysis._id)}
-                      disabled={deleting === analysis._id}
-                      className="inline-flex items-center space-x-1 px-3 py-2 bg-red-500/20 text-red-300 border border-red-500/30 rounded hover:bg-red-500/30 transition-colors text-sm disabled:opacity-50"
-                    >
-                      {deleting === analysis._id ? (
-                        <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
+                  {/* Progress Bar Section */}
+                  <div className="px-6 py-4 bg-black/20">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs text-white/60 font-medium">Recommendation Breakdown</span>
+                      <span className="text-xs text-white/60">
+                        {analysis.summary.priceIncreases + analysis.summary.priceDecreases} of {analysis.summary.totalSKUs} SKUs ({((analysis.summary.priceIncreases + analysis.summary.priceDecreases) / analysis.summary.totalSKUs * 100).toFixed(0)}%)
+                      </span>
+                    </div>
+                    <div className="h-3 bg-white/10 rounded-full overflow-hidden flex">
+                      <div
+                        className="bg-gradient-to-r from-green-500 to-green-400 transition-all duration-500"
+                        style={{ width: `${increasePercent}%` }}
+                        title={`${analysis.summary.priceIncreases} increases (${increasePercent.toFixed(1)}%)`}
+                      />
+                      <div
+                        className="bg-gradient-to-r from-red-500 to-red-400 transition-all duration-500"
+                        style={{ width: `${decreasePercent}%` }}
+                        title={`${analysis.summary.priceDecreases} decreases (${decreasePercent.toFixed(1)}%)`}
+                      />
+                      <div
+                        className="bg-white/20 transition-all duration-500"
+                        style={{ width: `${noChangePercent}%` }}
+                        title={`${analysis.summary.totalSKUs - analysis.summary.priceIncreases - analysis.summary.priceDecreases} no change (${noChangePercent.toFixed(1)}%)`}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between mt-2 text-xs">
+                      <span className="text-green-400">{increasePercent.toFixed(0)}% ↑</span>
+                      <span className="text-red-400">{decreasePercent.toFixed(0)}% ↓</span>
+                      <span className="text-white/60">{noChangePercent.toFixed(0)}% →</span>
+                    </div>
+                  </div>
+
+                  {/* Actions Footer */}
+                  <div className="p-6 bg-black/10 flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      {analysis.alertCount && analysis.alertCount > 0 && (
+                        <div className="flex items-center space-x-2 px-3 py-1.5 bg-red-500/20 border border-red-500/30 rounded-lg">
+                          <AlertTriangle className="h-4 w-4 text-red-400" />
+                          <span className="text-sm text-red-300 font-medium">{analysis.alertCount} alert{analysis.alertCount > 1 ? 's' : ''}</span>
+                        </div>
                       )}
-                      <span>Delete</span>
-                    </button>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => router.push(`/dashboard?analysis=${analysis.uploadId}`)}
+                        className="inline-flex items-center space-x-2 px-4 py-2 bg-white text-black font-medium rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <Eye className="h-4 w-4" />
+                        <span>View Details</span>
+                      </button>
+
+                      <button
+                        onClick={() => downloadAnalysisReport(analysis)}
+                        className="inline-flex items-center space-x-1 px-3 py-2 bg-white/10 text-white border border-white/20 rounded-lg hover:bg-white/15 transition-colors"
+                      >
+                        <Download className="h-4 w-4" />
+                        <span>Export</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteAnalysis(analysis._id)}
+                        disabled={deleting === analysis._id}
+                        className="inline-flex items-center space-x-1 px-3 py-2 bg-red-500/20 text-red-300 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-colors disabled:opacity-50"
+                      >
+                        {deleting === analysis._id ? (
+                          <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                        <span>Delete</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              )
+            })
           )}
         </div>
       </main>

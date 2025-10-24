@@ -212,15 +212,34 @@ function ConfirmationModal({
   const getConfirmationDetails = () => {
     switch (action.type) {
       case 'price_update':
-        const { sku_code, current_price, new_price } = action.params
-        const change = ((new_price - current_price) / current_price * 100).toFixed(1)
+        const { sku_code, current_price, new_price, adjustment_type, percentage_change, affected_skus } = action.params
+
+        // Handle bulk percentage updates
+        if (adjustment_type === 'percentage' && percentage_change) {
+          return {
+            title: 'Confirm Bulk Price Update',
+            details: [
+              { label: 'Products', value: `${affected_skus?.length || 0} SKUs` },
+              { label: 'Price Change', value: `${percentage_change}%` },
+              { label: 'Type', value: 'Bulk percentage adjustment' }
+            ],
+            warning: Math.abs(percentage_change) > 15
+              ? 'Large price change - verify before proceeding'
+              : null
+          }
+        }
+
+        // Handle single SKU price update
+        const change = current_price && current_price > 0
+          ? ((new_price - current_price) / current_price * 100).toFixed(1)
+          : '0'
         return {
           title: 'Confirm Price Update',
           details: [
-            { label: 'SKU', value: sku_code },
-            { label: 'Current Price', value: `£${current_price.toFixed(2)}` },
-            { label: 'New Price', value: `£${new_price.toFixed(2)}` },
-            { label: 'Change', value: `${change > 0 ? '+' : ''}${change}%` }
+            { label: 'SKU', value: sku_code || 'Multiple' },
+            ...(current_price > 0 ? [{ label: 'Current Price', value: `£${current_price.toFixed(2)}` }] : []),
+            { label: 'New Price', value: new_price ? `£${new_price.toFixed(2)}` : 'TBD' },
+            ...(current_price > 0 ? [{ label: 'Change', value: `${parseFloat(change) > 0 ? '+' : ''}${change}%` }] : [])
           ],
           warning: Math.abs(parseFloat(change)) > 15
             ? 'Large price change - verify before proceeding'

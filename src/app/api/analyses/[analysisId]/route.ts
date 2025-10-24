@@ -89,12 +89,12 @@ function formatAnalysisResponse(analysis: any, competitorData: any[] = [], alert
     brand: rec.brand || 'Unknown'
   })) || []
 
-  // Filter competitor data to this analysis timeframe
+  // Filter competitor data to this analysis timeframe (within 30 days)
   const analysisCompetitorData = competitorData.filter(comp => {
     const compDate = new Date(comp.last_updated || comp.created_at)
     const analysisDate = new Date(analysis.processed_at || analysis.uploaded_at)
     const timeDiff = Math.abs(compDate.getTime() - analysisDate.getTime())
-    return timeDiff < (24 * 60 * 60 * 1000) // Within 24 hours of analysis
+    return timeDiff < (30 * 24 * 60 * 60 * 1000) // Within 30 days of analysis
   }).map(comp => ({
     sku: comp.sku,
     our_price: comp.our_price,
@@ -145,6 +145,11 @@ function formatAnalysisResponse(analysis: any, competitorData: any[] = [], alert
   const seasonalRevenuePotential = seasonalStrategies.reduce((sum, s) => sum + (s.estimated_revenue_impact || 0), 0)
 
   // FIXED: Ensure seasonal strategies are included in the response
+  // Calculate ABSOLUTE revenue potential (not net)
+  const totalRevenuePotential = recommendations.reduce((sum: number, r: any) => {
+    return sum + Math.abs(r.revenueImpact || 0)
+  }, 0)
+
   return {
     analysisId: analysis.upload_id,
     summary: {
@@ -152,7 +157,7 @@ function formatAnalysisResponse(analysis: any, competitorData: any[] = [], alert
       priceIncreases: recommendations.filter((r: any) => r.changePercentage > 0).length,
       priceDecreases: recommendations.filter((r: any) => r.changePercentage < 0).length,
       noChange: recommendations.filter((r: any) => r.changePercentage === 0).length,
-      totalRevenuePotential: analysis.revenue_potential || 0,
+      totalRevenuePotential: totalRevenuePotential, // Use calculated absolute value
       brandsIdentified: analysis.summary?.brandsIdentified || 0,
       competitorPricesFound: analysisCompetitorData.length,
       marketInsightsGenerated: marketInsights.length,

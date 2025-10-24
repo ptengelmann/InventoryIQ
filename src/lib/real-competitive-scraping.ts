@@ -457,10 +457,14 @@ export class RealCompetitiveScraping {
     return results
       .filter(result => result.extracted_price && result.extracted_price > 0)
       .map(result => {
-        const retailerInfo = this.UK_ALCOHOL_RETAILERS.find(r => 
+        const retailerInfo = this.UK_ALCOHOL_RETAILERS.find(r =>
           result.source.toLowerCase().includes(r.domain.replace('.co.uk', '').replace('.com', ''))
         )
-        
+
+        // Calculate relevance and match quality
+        const relevanceScore = this.calculateRelevanceScore(searchTerm, result.title)
+        const matchQuality = this.assessMatchQuality(searchTerm, result.title, result.extracted_price!)
+
         return {
           sku: originalSKU,
           competitor: retailerInfo?.name || result.source,
@@ -473,25 +477,62 @@ export class RealCompetitiveScraping {
           source: 'serp_api' as any,
           url: result.link,
           product_name: result.title,
-          relevance_score: this.calculateRelevanceScore(searchTerm, result.title),
+          relevance_score: relevanceScore,
           promotional: this.detectPromotion(result.title, result.price),
-          promotion_details: this.extractPromotionDetails(result.title)
+          promotion_details: this.extractPromotionDetails(result.title),
+          match_confidence: matchQuality.confidence,
+
+          // Enhanced metadata stored in existing JSON fields for compatibility
+          data_anomaly_flags: {
+            match_quality: matchQuality.overall_score,
+            volume_matched: matchQuality.volume_matched,
+            brand_matched: matchQuality.brand_matched,
+            category_validated: matchQuality.category_validated,
+            quality_flags: matchQuality.quality_flags,
+            scraping_metadata: {
+              search_term_used: searchTerm,
+              serp_position: result.position || 0,
+              retailer_domain: result.source,
+              scrape_timestamp: new Date().toISOString(),
+              validation_passed: relevanceScore > 0.5,
+              price_extracted: result.extracted_price!,
+              title_matched: result.title
+            }
+          }
         }
       })
-      .filter(price => price.relevance_score > 0.2)
+      .filter(price => price.relevance_score > 0.3) // Keep good quality matches (30%+)
       .sort((a, b) => b.relevance_score - a.relevance_score)
   }
 
   /**
    * Calculate relevance score between search term and found product
+   * ENHANCED with strict alcohol category validation
    */
   private static calculateRelevanceScore(searchTerm: string, foundTitle: string): number {
-    const searchWords = searchTerm.toLowerCase().split(/\s+/).filter(w => w.length > 2)
-    const titleWords = foundTitle.toLowerCase().split(/\s+/)
-    
+    const searchLower = searchTerm.toLowerCase()
+    const titleLower = foundTitle.toLowerCase()
+
+    // CRITICAL: Must be alcohol product (not shoes, clothes, electronics)
+    const isAlcoholProduct = this.isAlcoholProduct(titleLower)
+    if (!isAlcoholProduct) {
+      console.log(`❌ Rejected non-alcohol product: "${foundTitle}"`)
+      return 0 // HARD REJECT
+    }
+
+    // Detect non-alcohol contamination
+    const nonAlcoholIndicators = /\b(shoes?|trainers?|boots?|shirt|pants|t-shirt|clothing|clothes|electronics|phone|laptop|computer|furniture|toys?|books?|dvd|cd|games?)\b/i
+    if (nonAlcoholIndicators.test(titleLower)) {
+      console.log(`❌ Rejected contaminated result: "${foundTitle}"`)
+      return 0 // HARD REJECT
+    }
+
+    const searchWords = searchLower.split(/\s+/).filter(w => w.length > 2)
+    const titleWords = titleLower.split(/\s+/)
+
     let exactMatches = 0
     let partialMatches = 0
-    
+
     for (const searchWord of searchWords) {
       if (titleWords.some(tw => tw === searchWord)) {
         exactMatches++
@@ -499,13 +540,129 @@ export class RealCompetitiveScraping {
         partialMatches++
       }
     }
-    
+
     const baseScore = searchWords.length > 0 ? (exactMatches + partialMatches * 0.4) / searchWords.length : 0
-    
-    // Boost for alcohol indicators
-    const hasAlcoholIndicator = /\b(70cl|75cl|1l|750ml|wine|beer|spirits|gin|vodka|whisky|whiskey)\b/i.test(foundTitle)
-    
-    return Math.min(1.0, baseScore + (hasAlcoholIndicator ? 0.1 : 0))
+
+    // Volume/size matching bonus (70cl, 750ml, 1L etc)
+    const volumeBonus = this.calculateVolumeMatchBonus(searchLower, titleLower)
+
+    // Brand matching bonus
+    const brandBonus = this.calculateBrandMatchBonus(searchLower, titleLower)
+
+    const finalScore = Math.min(1.0, baseScore + volumeBonus + brandBonus)
+
+    console.log(`✓ Match quality for "${foundTitle}": ${(finalScore * 100).toFixed(0)}% (exact: ${exactMatches}, partial: ${partialMatches})`)
+
+    return finalScore
+  }
+
+  /**
+   * Strict alcohol product validation
+   */
+  private static isAlcoholProduct(title: string): boolean {
+    // Must contain at least one alcohol indicator
+    const alcoholKeywords = [
+      // Wines
+      'wine', 'chardonnay', 'merlot', 'cabernet', 'sauvignon', 'pinot', 'riesling', 'shiraz',
+      'prosecco', 'champagne', 'cava', 'sparkling', 'rose', 'rioja', 'bordeaux', 'chianti',
+      // Spirits
+      'gin', 'vodka', 'whisky', 'whiskey', 'rum', 'tequila', 'brandy', 'cognac',
+      // Beer
+      'beer', 'lager', 'ale', 'ipa', 'stout', 'porter', 'pilsner',
+      // Liqueurs & Fortified
+      'liqueur', 'baileys', 'amaretto', 'sambuca', 'port', 'sherry', 'vermouth',
+      // Volume indicators (strong signal)
+      '70cl', '75cl', '750ml', '1l', '1 litre', '500ml', 'litre'
+    ]
+
+    return alcoholKeywords.some(keyword => title.includes(keyword))
+  }
+
+  /**
+   * Calculate volume matching bonus
+   */
+  private static calculateVolumeMatchBonus(search: string, title: string): number {
+    const volumePatterns = ['70cl', '75cl', '750ml', '1l', '1 litre', '500ml', 'litre']
+
+    for (const volume of volumePatterns) {
+      if (search.includes(volume) && title.includes(volume)) {
+        return 0.15 // Strong volume match bonus
+      }
+    }
+
+    return 0
+  }
+
+  /**
+   * Calculate brand matching bonus
+   */
+  private static calculateBrandMatchBonus(search: string, title: string): number {
+    // Extract potential brand names (capitalized words)
+    const searchBrands = search.match(/\b[A-Z][a-z]+\b/g) || []
+    const titleBrands = title.match(/\b[A-Z][a-z]+\b/gi) || []
+
+    for (const brand of searchBrands) {
+      if (titleBrands.some(tb => tb.toLowerCase() === brand.toLowerCase())) {
+        return 0.1 // Brand match bonus
+      }
+    }
+
+    return 0
+  }
+
+  /**
+   * Comprehensive match quality assessment
+   */
+  private static assessMatchQuality(search: string, title: string, price: number): {
+    overall_score: number
+    confidence: number
+    volume_matched: boolean
+    brand_matched: boolean
+    category_validated: boolean
+    quality_flags: string[]
+  } {
+    const searchLower = search.toLowerCase()
+    const titleLower = title.toLowerCase()
+    const qualityFlags: string[] = []
+
+    // Volume matching
+    const volumePatterns = ['70cl', '75cl', '750ml', '1l', '1 litre', '500ml']
+    const volumeMatched = volumePatterns.some(vol =>
+      searchLower.includes(vol) && titleLower.includes(vol)
+    )
+    if (volumeMatched) qualityFlags.push('volume_match')
+
+    // Brand matching
+    const brandMatched = this.calculateBrandMatchBonus(search, title) > 0
+    if (brandMatched) qualityFlags.push('brand_match')
+
+    // Category validation
+    const categoryValidated = this.isAlcoholProduct(titleLower)
+    if (categoryValidated) qualityFlags.push('alcohol_verified')
+
+    // Price reasonableness (alcohol typically £5-£200)
+    const priceReasonable = price >= 5 && price <= 200
+    if (priceReasonable) qualityFlags.push('price_reasonable')
+    else if (price > 0) qualityFlags.push('price_suspicious')
+
+    // Overall scoring
+    let score = 0.5 // Base score
+    if (volumeMatched) score += 0.2
+    if (brandMatched) score += 0.15
+    if (categoryValidated) score += 0.1
+    if (priceReasonable) score += 0.05
+
+    // Confidence calculation
+    const confidence = Math.min(1.0, qualityFlags.length / 4)
+
+    return {
+      overall_score: Math.min(1.0, score),
+      confidence,
+      volume_matched: volumeMatched,
+      brand_matched: brandMatched,
+      category_validated: categoryValidated,
+      quality_flags: qualityFlags
+    }
   }
 
   /**

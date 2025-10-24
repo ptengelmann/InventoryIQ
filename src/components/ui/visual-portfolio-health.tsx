@@ -1,12 +1,12 @@
 // src/components/ui/visual-portfolio-health.tsx
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, RadialBarChart, RadialBar, LineChart, Line, Area, AreaChart
 } from 'recharts'
-import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle, DollarSign, Package, Target, Activity } from 'lucide-react'
+import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle, DollarSign, Package, Target, Activity, Loader2 } from 'lucide-react'
 
 interface PortfolioHealthProps {
   healthScore: number
@@ -14,7 +14,103 @@ interface PortfolioHealthProps {
   dataContext: any
 }
 
+// Chart wrapper with error boundary
+function ChartWrapper({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+  const [chartError, setChartError] = useState(false)
+
+  useEffect(() => {
+    setChartError(false)
+  }, [children])
+
+  if (chartError) {
+    return (
+      <div className="bg-white/5 border border-white/20 rounded-lg p-6">
+        <div className="mb-4">
+          <h3 className="text-xl font-light text-white mb-1">{title}</h3>
+          <p className="text-xs text-white/50">{description}</p>
+        </div>
+        <div className="h-64 flex items-center justify-center">
+          <div className="text-center space-y-2">
+            <AlertTriangle className="h-8 w-8 text-orange-400 mx-auto" />
+            <p className="text-sm text-white/50">Chart temporarily unavailable</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  try {
+    return (
+      <div className="bg-white/5 border border-white/20 rounded-lg p-6" style={{ userSelect: 'none' }}>
+        <div className="mb-4">
+          <h3 className="text-xl font-light text-white mb-1">{title}</h3>
+          <p className="text-xs text-white/50">{description}</p>
+        </div>
+        {children}
+      </div>
+    )
+  } catch (error) {
+    console.error('Chart wrapper error:', error)
+    setChartError(true)
+    return null
+  }
+}
+
 export function VisualPortfolioHealth({ healthScore, portfolioAssessment, dataContext }: PortfolioHealthProps) {
+  // CRITICAL FIX: Add mounted state to prevent SSR/hydration issues with Recharts
+  const [isMounted, setIsMounted] = useState(false)
+  const [hasError, setHasError] = useState(false)
+
+  useEffect(() => {
+    // Delay rendering charts until component is fully mounted on client
+    const timer = setTimeout(() => {
+      setIsMounted(true)
+    }, 100)
+
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Error boundary simulation
+  useEffect(() => {
+    const handleError = (error: ErrorEvent) => {
+      console.error('Chart rendering error:', error)
+      setHasError(true)
+    }
+
+    window.addEventListener('error', handleError)
+    return () => window.removeEventListener('error', handleError)
+  }, [])
+
+  // Show loading state while mounting
+  if (!isMounted) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white/5 border border-white/20 rounded-lg p-12">
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <Loader2 className="h-12 w-12 text-purple-400 animate-spin" />
+            <p className="text-white/60 text-sm">Loading portfolio analytics...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state if something went wrong
+  if (hasError) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-6">
+          <div className="flex items-center space-x-3">
+            <AlertTriangle className="h-6 w-6 text-red-400" />
+            <div>
+              <h3 className="text-lg font-medium text-red-300">Chart Rendering Error</h3>
+              <p className="text-sm text-red-200 mt-1">Unable to display charts. Try refreshing the page.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // Parse the Claude assessment text to extract metrics
   const parseMetrics = () => {
@@ -324,11 +420,7 @@ export function VisualPortfolioHealth({ healthScore, portfolioAssessment, dataCo
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Category Revenue Breakdown (Donut Chart) */}
-        <div className="bg-white/5 border border-white/20 rounded-lg p-6" style={{ userSelect: 'none' }}>
-          <div className="mb-4">
-            <h3 className="text-xl font-light text-white mb-1">Revenue by Category</h3>
-            <p className="text-xs text-white/50">Portfolio composition by revenue contribution</p>
-          </div>
+        <ChartWrapper title="Revenue by Category" description="Portfolio composition by revenue contribution">
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -357,14 +449,10 @@ export function VisualPortfolioHealth({ healthScore, portfolioAssessment, dataCo
               </div>
             ))}
           </div>
-        </div>
+        </ChartWrapper>
 
         {/* Sales Velocity Distribution */}
-        <div className="bg-white/5 border border-white/20 rounded-lg p-6">
-          <div className="mb-4">
-            <h3 className="text-xl font-light text-white mb-1">Sales Velocity Distribution</h3>
-            <p className="text-xs text-white/50">Product count by sales performance (Fast: 5+ weekly, Moderate: 1-5, Slow: &lt;1)</p>
-          </div>
+        <ChartWrapper title="Sales Velocity Distribution" description="Product count by sales performance (Fast: 5+ weekly, Moderate: 1-5, Slow: <1)">
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={velocityData}>
@@ -389,14 +477,10 @@ export function VisualPortfolioHealth({ healthScore, portfolioAssessment, dataCo
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </ChartWrapper>
 
         {/* Revenue Opportunity vs Risk (Waterfall-style) */}
-        <div className="bg-white/5 border border-white/20 rounded-lg p-6">
-          <div className="mb-4">
-            <h3 className="text-xl font-light text-white mb-1">Revenue Impact Analysis</h3>
-            <p className="text-xs text-white/50">Potential revenue gain vs revenue at risk from pricing issues</p>
-          </div>
+        <ChartWrapper title="Revenue Impact Analysis" description="Potential revenue gain vs revenue at risk from pricing issues">
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={opportunityData}>
@@ -432,14 +516,10 @@ export function VisualPortfolioHealth({ healthScore, portfolioAssessment, dataCo
               <span className="text-white/70">At Risk: ${metrics.revenueLeakage || 97}K</span>
             </div>
           </div>
-        </div>
+        </ChartWrapper>
 
         {/* Risk Heat Map */}
-        <div className="bg-white/5 border border-white/20 rounded-lg p-6">
-          <div className="mb-4">
-            <h3 className="text-xl font-light text-white mb-1">Risk Assessment Heat Map</h3>
-            <p className="text-xs text-white/50">Current risk levels across key business areas (0-100 scale)</p>
-          </div>
+        <ChartWrapper title="Risk Assessment Heat Map" description="Current risk levels across key business areas (0-100 scale)">
           <div className="space-y-4">
             {riskData.map((risk, idx) => (
               <div key={idx}>
@@ -471,7 +551,7 @@ export function VisualPortfolioHealth({ healthScore, portfolioAssessment, dataCo
               <span>✗ High (70+)</span>
             </div>
           </div>
-        </div>
+        </ChartWrapper>
 
       </div>
 
@@ -504,11 +584,7 @@ export function VisualPortfolioHealth({ healthScore, portfolioAssessment, dataCo
       </div>
 
       {/* Pricing Distribution Analysis */}
-      <div className="bg-white/5 border border-white/20 rounded-lg p-6">
-        <div className="mb-4">
-          <h3 className="text-xl font-light text-white mb-1">Portfolio Pricing Distribution</h3>
-          <p className="text-xs text-white/50">Revenue and product count across price segments</p>
-        </div>
+      <ChartWrapper title="Portfolio Pricing Distribution" description="Revenue and product count across price segments">
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={pricingData}>
@@ -560,7 +636,7 @@ export function VisualPortfolioHealth({ healthScore, portfolioAssessment, dataCo
             <span className="text-white/70">Product Count</span>
           </div>
         </div>
-      </div>
+      </ChartWrapper>
 
     </div>
   )

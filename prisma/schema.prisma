@@ -203,6 +203,15 @@ model CompetitorPrice {
   original_price       Float?
   price_history_trend  String?
   data_anomaly_flags   Json?
+
+  // Enhanced match quality metadata
+  match_quality        Float?
+  volume_matched       Boolean   @default(false)
+  brand_matched        Boolean   @default(false)
+  category_validated   Boolean   @default(false)
+  data_quality_flags   Json?
+  scraping_metadata    Json?
+
   analysis             Analysis? @relation(fields: [analysis_id], references: [upload_id])
   sku                  SKU       @relation(fields: [sku_code, user_id], references: [sku_code, user_id], onDelete: Cascade)
 
@@ -641,4 +650,33 @@ model ActionApproval {
   @@index([approver_id, approval_status])
   @@index([requester_id, created_at(sort: Desc)])
   @@map("action_approvals")
+}
+
+// Claude AI Insight Caching - stores generated insights to prevent regeneration
+model ClaudeInsight {
+  id                          String   @id @default(cuid())
+  user_id                     String
+  insight_type                String   // 'strategic_alert' | 'market_opportunity' | 'competitive_threat' | 'pricing_strategy'
+  priority                    String   // 'critical' | 'high' | 'medium' | 'low'
+  title                       String
+  claude_analysis             String   @db.Text
+  strategic_recommendations   Json     // array of strings
+  immediate_actions           Json     // array of strings
+  revenue_impact_estimate     Float
+  confidence_score            Float
+  affected_products           Json     // array of SKU codes
+  competitors_involved        Json     // array of competitor names
+  market_context              String   @db.Text
+  urgency_timeline            String
+  analysis_depth              String   @default("standard") // 'surface' | 'standard' | 'deep'
+  data_snapshot               Json     // Store the data used to generate this insight
+  generated_at                DateTime @default(now())
+  expires_at                  DateTime // When this insight should be regenerated
+  view_count                  Int      @default(0)
+  last_viewed_at              DateTime?
+
+  @@index([user_id, expires_at])
+  @@index([user_id, generated_at(sort: Desc)])
+  @@index([insight_type, priority])
+  @@map("claude_insights")
 }

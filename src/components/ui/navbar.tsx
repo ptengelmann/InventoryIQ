@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Menu, X, User, LogOut, ChevronDown, BarChart3, LineChart, Bell, Clock, Target, Users, MapPin, Mail, Wine, Activity, Zap } from 'lucide-react'
+import { Menu, X, User, LogOut, ChevronDown, BarChart3, LineChart, Bell, Clock, Target, Users, MapPin, Mail, Wine, Activity, Zap, Upload } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -44,6 +44,7 @@ export function Navbar({ onLogin, onSignup, onForgotPassword }: NavbarProps) {
   // Navigation items with better organization
   const loggedInNavItems = [
     { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
+    { href: "/upload", label: "Upload", icon: Upload },
     { href: "/analytics", label: "Analytics", icon: Activity },
     { href: "/competitive", label: "Intelligence", icon: Target },
     { href: "/alerts", label: "Alerts", icon: Bell },
